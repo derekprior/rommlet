@@ -5,7 +5,10 @@
 #include "roms.h"
 #include "../ui.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+
+#define LOAD_MORE_THRESHOLD 5
 
 static Rom *romList = NULL;
 static int romCount = 0;
@@ -30,6 +33,29 @@ void roms_set_data(Rom *roms, int count, int total, const char *platformName) {
     strncpy(currentPlatform, platformName, sizeof(currentPlatform) - 1);
     selectedIndex = 0;
     scrollOffset = 0;
+}
+
+void roms_append_data(Rom *roms, int count) {
+    if (!roms || count == 0) return;
+    
+    Rom *newList = realloc(romList, (romCount + count) * sizeof(Rom));
+    if (!newList) {
+        free(roms);
+        return;
+    }
+    
+    romList = newList;
+    memcpy(&romList[romCount], roms, count * sizeof(Rom));
+    romCount += count;
+    free(roms);
+}
+
+bool roms_needs_more_data(void) {
+    return romCount < romTotal && selectedIndex >= romCount - LOAD_MORE_THRESHOLD;
+}
+
+int roms_get_count(void) {
+    return romCount;
 }
 
 RomsResult roms_update(u32 kDown) {
@@ -89,6 +115,11 @@ RomsResult roms_update(u32 kDown) {
     // Select ROM (future: show details)
     if (kDown & KEY_A) {
         return ROMS_SELECTED;
+    }
+    
+    // Check if we need to load more data
+    if (roms_needs_more_data()) {
+        return ROMS_LOAD_MORE;
     }
     
     return ROMS_NONE;

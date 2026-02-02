@@ -161,7 +161,7 @@ int main(int argc, char *argv[]) {
                         api_free_roms(roms, romCount);
                         roms = NULL;
                     }
-                    roms = api_get_roms(platforms[selectedPlatformIndex].id, 0, 20, &romCount, &romTotal);
+                    roms = api_get_roms(platforms[selectedPlatformIndex].id, 0, 50, &romCount, &romTotal);
                     if (roms) {
                         printf("Found %d/%d ROMs\n", romCount, romTotal);
                         roms_set_data(roms, romCount, romTotal, platforms[selectedPlatformIndex].displayName);
@@ -191,6 +191,16 @@ int main(int argc, char *argv[]) {
                 RomsResult result = roms_update(kDown);
                 if (result == ROMS_BACK) {
                     currentState = STATE_PLATFORMS;
+                } else if (result == ROMS_LOAD_MORE) {
+                    // Fetch next page of ROMs
+                    int offset = roms_get_count();
+                    int newCount, newTotal;
+                    printf("Loading more ROMs (offset %d)...\n", offset);
+                    Rom *moreRoms = api_get_roms(platforms[selectedPlatformIndex].id, offset, 50, &newCount, &newTotal);
+                    if (moreRoms) {
+                        printf("Loaded %d more ROMs\n", newCount);
+                        roms_append_data(moreRoms, newCount);
+                    }
                 }
                 break;
             }
