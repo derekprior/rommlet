@@ -13,7 +13,7 @@
 #define MAX_RESPONSE_SIZE (512 * 1024)  // 512KB max response
 
 static char baseUrl[256] = "";
-static char authHeader[256] = "";
+static char authHeader[512] = "";
 
 // Base64 encoding table
 static const char base64_table[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";

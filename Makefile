@@ -77,9 +77,11 @@ RSVG_CONVERT  := rsvg-convert
 #---------------------------------------------------------------------------------
 # No changes needed below this line
 #---------------------------------------------------------------------------------
+OUTPUT_DIR      := $(BUILD)/output
+
 ifneq ($(BUILD),$(notdir $(CURDIR)))
 
-export OUTPUT   := $(CURDIR)/$(TARGET)
+export OUTPUT   := $(CURDIR)/$(OUTPUT_DIR)/$(TARGET)
 export TOPDIR   := $(CURDIR)
 
 export VPATH    := $(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) \
@@ -122,18 +124,18 @@ export _3DSXDEPS      := $(if $(NO_SMDH),,$(OUTPUT).smdh)
 .PHONY: all clean cia 3dsx dist
 
 #---------------------------------------------------------------------------------
-all: $(BUILD) $(GFXFILES)
+all: $(BUILD) $(OUTPUT_DIR) $(GFXFILES) meta/icon.png
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
 
 3dsx: all
 
-$(BUILD):
+$(BUILD) $(OUTPUT_DIR):
 	@mkdir -p $@
 
 #---------------------------------------------------------------------------------
 clean:
 	@echo "Cleaning..."
-	@rm -rf $(BUILD) $(OUTPUT).3dsx $(OUTPUT).smdh $(OUTPUT).elf $(OUTPUT).cia
+	@rm -rf $(BUILD)
 	@rm -f meta/banner.bin meta/icon.bin meta/icon.png meta/banner.png
 
 #---------------------------------------------------------------------------------
@@ -150,9 +152,12 @@ cia: all meta/banner.bin meta/icon.bin
 		-DAPP_UNIQUE_ID="$(APP_UNIQUE_ID)"
 	@echo "Built: $(OUTPUT).cia"
 
-meta/banner.bin: meta/banner.png
-	$(BANNERTOOL) makebanner -i meta/banner.png -a meta/audio.wav -o meta/banner.bin 2>/dev/null || \
-	$(BANNERTOOL) makebanner -i meta/banner.png -o meta/banner.bin
+meta/banner.bin: meta/banner.png meta/audio.wav
+	$(BANNERTOOL) makebanner -i meta/banner.png -a meta/audio.wav -o meta/banner.bin
+
+meta/audio.wav:
+	@echo "Generating silent audio file..."
+	@python3 -c "import struct; f=open('$@','wb'); f.write(b'RIFF'+struct.pack('<I',36)+b'WAVEfmt '+struct.pack('<IHHIIHH',16,1,1,44100,88200,2,16)+b'data'+struct.pack('<I',0)); f.close()"
 
 meta/icon.bin: meta/icon.png
 	$(BANNERTOOL) makesmdh -s "$(APP_TITLE)" -l "$(APP_DESC)" -p "$(APP_AUTHOR)" \
