@@ -89,20 +89,20 @@ int main(int argc, char *argv[]) {
         }
         
         // Global debug level controls
-        if (kDown & KEY_R) {
+        if (kDown & KEY_ZR) {
             int level = api_get_debug_level();
             level = (level + 1) % 3;  // Cycle 0 -> 1 -> 2 -> 0
             api_set_debug_level(level);
             printf("\x1b[4;1H\x1b[2K");  // Move to line 4, clear it
-            printf("L/R: Debug level (currently: %s)\n",
+            printf("ZL/ZR: Debug level (currently: %s)\n",
                    level == 0 ? "OFF" : (level == 1 ? "REQUESTS" : "BODIES"));
         }
-        if (kDown & KEY_L) {
+        if (kDown & KEY_ZL) {
             int level = api_get_debug_level();
             level = (level + 2) % 3;  // Cycle 0 -> 2 -> 1 -> 0
             api_set_debug_level(level);
             printf("\x1b[4;1H\x1b[2K");  // Move to line 4, clear it
-            printf("L/R: Debug level (currently: %s)\n",
+            printf("ZL/ZR: Debug level (currently: %s)\n",
                    level == 0 ? "OFF" : (level == 1 ? "REQUESTS" : "BODIES"));
         }
         
