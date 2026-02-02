@@ -1,0 +1,40 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: devkitpro/devkitarm:latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install build tools
+        run: |
+          apt-get update && apt-get install -y --no-install-recommends librsvg2-bin wget unzip
+          mkdir -p /opt/3ds-tools && cd /opt/3ds-tools
+          wget -q https://github.com/Epicpkmn11/bannertool/releases/download/v1.2.2/bannertool.zip
+          unzip -q bannertool.zip
+          cp linux-x86_64/bannertool /usr/local/bin/
+          chmod +x /usr/local/bin/bannertool
+          wget -q https://github.com/3DSGuy/Project_CTR/releases/download/makerom-v0.18.4/makerom-v0.18.4-ubuntu_x86_64.zip
+          unzip -q makerom-v0.18.4-ubuntu_x86_64.zip
+          cp makerom /usr/local/bin/
+          chmod +x /usr/local/bin/makerom
+
+      - name: Build
+        run: make && make cia
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: rommlet
+          path: |
+            build/output/rommlet.3dsx
+            build/output/rommlet.cia
