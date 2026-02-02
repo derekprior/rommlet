@@ -32,10 +32,19 @@ static void base64_encode(const char *input, char *output, size_t outlen) {
         
         output[j++] = base64_table[(triple >> 18) & 0x3F];
         output[j++] = base64_table[(triple >> 12) & 0x3F];
-        output[j++] = (i > len + 1) ? '=' : base64_table[(triple >> 6) & 0x3F];
-        output[j++] = (i > len) ? '=' : base64_table[triple & 0x3F];
+        output[j++] = base64_table[(triple >> 6) & 0x3F];
+        output[j++] = base64_table[triple & 0x3F];
     }
     output[j] = '\0';
+    
+    // Add padding based on input length
+    size_t remainder = len % 3;
+    if (remainder == 1 && j >= 2) {
+        output[j - 1] = '=';
+        output[j - 2] = '=';
+    } else if (remainder == 2 && j >= 1) {
+        output[j - 1] = '=';
+    }
 }
 
 void api_init(void) {
