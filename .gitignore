@@ -39,3 +39,20 @@ luac.out
 *.x86_64
 *.hex
 
+# Build artifacts
+build/
+romfs/
+dist/
+
+# Generated assets
+meta/icon.png
+meta/banner.png
+meta/icon.bin
+meta/banner.bin
+
+# lpp-3ds build artifacts
+vendor/lpp-3ds/build/
+vendor/lpp-3ds/*.3dsx
+vendor/lpp-3ds/*.elf
+vendor/lpp-3ds/*.smdh
+

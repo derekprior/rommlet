@@ -108,14 +108,11 @@ $(OUTPUT_ELF):
 #---------------------------------------------------------------------------------
 # Copy Lua scripts to romfs
 #---------------------------------------------------------------------------------
-romfs: $(ROMFS_DIR)/index.lua
-
-$(ROMFS_DIR)/index.lua: $(LUA_FILES) $(LUA_SCREENS)
+romfs: $(LUA_FILES) $(LUA_SCREENS)
 	@echo "Copying Lua scripts to romfs..."
 	@mkdir -p $(ROMFS_DIR)/screens
 	@cp $(LUA_FILES) $(ROMFS_DIR)/
 	@cp $(LUA_SCREENS) $(ROMFS_DIR)/screens/
-	@touch $(ROMFS_DIR)/index.lua
 
 #---------------------------------------------------------------------------------
 # Generate SMDH (icon metadata for 3DSX)
