@@ -8,49 +8,28 @@ A Nintendo 3DS homebrew app for browsing ROMs on a [RomM](https://github.com/rom
 - Browse ROMs within each platform
 - Paginated ROM lists for large collections
 - In-app settings with on-screen keyboard
+- HTTP Basic Auth support
 
 ## Requirements
 
+### For Building
+
+- [devkitPro](https://devkitpro.org/wiki/Getting_Started) with devkitARM
+- 3ds-dev packages: `(dkp-)pacman -S 3ds-dev`
+- [bannertool](https://github.com/Steveice10/bannertool) and [makerom](https://github.com/3DSGuy/Project_CTR) (for CIA builds)
+- [librsvg](https://wiki.gnome.org/Projects/LibRsvg) for icon conversion: `brew install librsvg`
+
+Or use the included devcontainer for GitHub Codespaces.
+
+### For Running
+
 - Nintendo 3DS with custom firmware (Luma3DS recommended)
-- [lpp-3ds](https://github.com/Rinnegatamante/lpp-3ds) (Lua Player Plus 3DS)
-- A running RomM server (v4.6.0 or newer)
-- Wi-Fi connection on your 3DS
+- Homebrew Launcher (for .3dsx) or FBI (for .cia)
+- WiFi connection to your RomM server
 
-## Installation
+## Building
 
-### Option 1: Quick Install (3DSX)
-
-1. Download [lpp-3ds](https://www.rinnegatamante.eu/lpp-nightly.php) nightly build
-2. Copy the `lpp-3ds.3dsx` file to `/3ds/rommlet/` on your SD card
-3. Copy all `.lua` files from this project to `/3ds/rommlet/`:
-   - `index.lua`
-   - `config.lua`
-   - `api.lua`
-   - `ui.lua`
-   - `json.lua`
-4. Create a `screens` folder inside `/3ds/rommlet/`
-5. Copy the screen files to `/3ds/rommlet/screens/`:
-   - `settings.lua`
-   - `platforms.lua`
-   - `roms.lua`
-
-Your SD card structure should look like:
-```
-/3ds/
-  rommlet/
-    lpp-3ds.3dsx
-    index.lua
-    config.lua
-    api.lua
-    ui.lua
-    json.lua
-    screens/
-      settings.lua
-      platforms.lua
-      roms.lua
-```
-
-### Option 2: Build with GitHub Codespaces (Recommended)
+### Option 1: GitHub Codespaces (Recommended)
 
 No local setup required! Build in the cloud with a pre-configured environment.
 
@@ -61,119 +40,93 @@ No local setup required! Build in the cloud with a pre-configured environment.
    ```bash
    make
    ```
-5. Download `build/Rommlet.cia` and `build/Rommlet.3dsx` from the file explorer
+5. Download `rommlet.3dsx` from the file explorer
 
-The devcontainer includes all required tools: devkitARM, bannertool, makerom, and librsvg.
-
-### Option 3: Build Locally
-
-If you prefer to build on your own machine:
-
-**Prerequisites:**
-- [devkitPro](https://devkitpro.org/wiki/Getting_Started) with devkitARM
-- 3ds-dev package: `(dkp-)pacman -S 3ds-dev`
-- `bannertool` and `makerom` in your PATH
-- `librsvg` for icon conversion: `brew install librsvg` (macOS) or `apt install librsvg2-bin` (Linux)
-
-**Build:**
+### Option 2: Build Locally
 
 ```bash
-git clone https://github.com/derekprior/rommlet.git
-cd rommlet
+# Build .3dsx (for Homebrew Launcher)
 make
+
+# Build .cia (installable title)
+make cia
+
+# Clean build files
+make clean
 ```
 
-That's it! The build system uses vendored lpp-3ds source code, so no additional setup is needed.
+## Installation
 
-**Output:**
-- `build/Rommlet.3dsx` - For Homebrew Launcher
-- `build/Rommlet.cia` - Installable via FBI
+### Using .3dsx (Homebrew Launcher)
 
-**Other targets:**
-```bash
-make 3dsx   # Build .3dsx only
-make cia    # Build .cia only
-make dist   # Create distribution package
-make clean  # Clean build artifacts
-make help   # Show all options
+1. Copy `rommlet.3dsx` to `/3ds/` on your SD card
+2. Launch via Homebrew Launcher
+
+### Using .cia (Installable)
+
+1. Copy `rommlet.cia` to your SD card
+2. Install with FBI or similar
+3. Launch from Home Menu
+
+## Usage
+
+1. On first launch, you'll be prompted to configure the server
+2. Enter your RomM server URL (e.g., `http://192.168.1.100:8080`)
+3. Optionally enter username/password if your server requires authentication
+4. Browse platforms and ROMs!
+
+### Controls
+
+| Button | Action |
+|--------|--------|
+| D-Pad | Navigate |
+| A | Select / Edit |
+| B | Back |
+| L/R | Page up/down |
+| X | Refresh |
+| SELECT | Settings |
+| START | Exit |
+
+## Configuration
+
+Settings are stored at `/3ds/rommlet/config.ini` on your SD card.
+
+## Development
+
+The app is written in C using:
+
+- **libctru** - Core 3DS library for HTTP, input, filesystem
+- **citro2d** - 2D graphics library
+- **cJSON** - JSON parsing (MIT license, vendored)
+
+### Project Structure
+
+```
+source/
+├── main.c              # Entry point, state machine
+├── config.c/h          # Settings load/save
+├── api.c/h             # RomM API wrapper
+├── ui.c/h              # UI drawing helpers
+├── cJSON/              # JSON parser (vendored)
+└── screens/
+    ├── settings.c/h    # Settings screen
+    ├── platforms.c/h   # Platform list
+    └── roms.c/h        # ROM list
 ```
 
-## First Run
+## RomM API Compatibility
 
-1. Launch the Homebrew Launcher on your 3DS
-2. Select "rommlet" from the list
-3. On first run, you'll see the Settings screen
-4. Enter your RomM server details:
-   - **Server URL**: Your RomM server address (e.g., `http://192.168.1.100:3000`)
-   - **Username**: Your RomM username
-   - **Password**: Your RomM password
-5. Press START to save settings and continue
+Requires RomM 4.6.0 or newer. Key API differences from earlier versions:
 
-## Controls
-
-### Platforms Screen
-- **D-Pad Up/Down**: Navigate platform list
-- **A**: Select platform (view ROMs)
-- **Y**: Refresh platform list
-- **SELECT**: Open settings
-- **START**: Exit app
-
-### ROMs Screen
-- **D-Pad Up/Down**: Navigate ROM list
-- **D-Pad Left/Right**: Previous/Next page
-- **Y**: Refresh current page
-- **B**: Back to platforms
-
-### Settings Screen
-- **D-Pad Up/Down**: Navigate fields
-- **A**: Edit selected field
-- **START**: Save settings and continue
-- **B**: Cancel (if already configured)
-
-## Troubleshooting
-
-### "Failed to connect to server"
-- Ensure your 3DS Wi-Fi is enabled and connected
-- Verify the server URL is correct (include `http://` and port if needed)
-- Check that your RomM server is accessible from your network
-
-### "Authentication failed"
-- Double-check your username and password
-- Ensure the user has API access permissions in RomM
-
-### No platforms showing
-- Press Y to refresh
-- Check server connection in settings
-- Verify your RomM server has scanned platforms
-
-## Technical Notes
-
-- Uses HTTP Basic Authentication for RomM API
-- Compatible with RomM v4.6.0+ API
-- Configuration stored at `/3ds/rommlet/config.txt`
-
-## Building
-
-```bash
-make          # Build both .3dsx and .cia
-make 3dsx     # Build .3dsx only
-make cia      # Build .cia only  
-make dist     # Create distribution package
-make clean    # Clean build artifacts
-make help     # Show all options
-```
-
-The build uses vendored lpp-3ds source in `vendor/lpp-3ds/`.
+- Uses `platform_ids` parameter (not `platform_id`)
+- Paginated ROM responses with `items`, `offset`, `limit`, `total`
 
 ## License
 
-This project is licensed under the **GNU General Public License v3.0** (GPL-3.0).
-
-This is required because Rommlet includes [lpp-3ds](https://github.com/Rinnegatamante/lpp-3ds), which is GPL v3 licensed.
-
-See [LICENSE](LICENSE) for the full text.
+MIT License - see [LICENSE](LICENSE) for details.
 
 ## Credits
 
-- [RomM](https://github.com/rommapp/romm) - ROM Manager
-- [lpp-3ds](https://github.com/Rinnegatamante/lpp-3ds) - Lua Player Plus 3DS by Rinnegatamante
+- [RomM](https://github.com/rommapp/romm) - ROM management server
+- [devkitPro](https://devkitpro.org/) - 3DS homebrew toolchain
+- [cJSON](https://github.com/DaveGamble/cJSON) - JSON parser

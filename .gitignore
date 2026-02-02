@@ -1,48 +1,15 @@
-# Compiled Lua sources
-luac.out
-
-# luarocks build files
-*.src.rock
-*.zip
-*.tar.gz
+# Build outputs
+build/
+dist/
+*.3dsx
+*.cia
+*.elf
+*.smdh
+*.map
 
 # Object files
 *.o
-*.os
-*.ko
-*.obj
-*.elf
-
-# Precompiled Headers
-*.gch
-*.pch
-
-# Libraries
-*.lib
-*.a
-*.la
-*.lo
-*.def
-*.exp
-
-# Shared objects (inc. Windows DLLs)
-*.dll
-*.so
-*.so.*
-*.dylib
-
-# Executables
-*.exe
-*.out
-*.app
-*.i*86
-*.x86_64
-*.hex
-
-# Build artifacts
-build/
-romfs/
-dist/
+*.d
 
 # Generated assets
 meta/icon.png
@@ -50,9 +17,12 @@ meta/banner.png
 meta/icon.bin
 meta/banner.bin
 
-# lpp-3ds build artifacts
-vendor/lpp-3ds/build/
-vendor/lpp-3ds/*.3dsx
-vendor/lpp-3ds/*.elf
-vendor/lpp-3ds/*.smdh
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
 
+# macOS
+.DS_Store

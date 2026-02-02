@@ -7,11 +7,16 @@
   "customizations": {
     "vscode": {
       "extensions": [
-        "sumneko.lua",
+        "ms-vscode.cpptools",
         "ms-vscode.makefile-tools"
       ],
       "settings": {
-        "terminal.integrated.defaultProfile.linux": "bash"
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "C_Cpp.default.includePath": [
+          "${workspaceFolder}/source",
+          "/opt/devkitpro/libctru/include",
+          "/opt/devkitpro/devkitARM/arm-none-eabi/include"
+        ]
       }
     }
   },
