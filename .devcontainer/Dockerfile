@@ -16,7 +16,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN mkdir -p /opt/3ds-tools && \
     cd /opt/3ds-tools && \
     # Download bannertool
-    wget -q https://github.com/Steveice10/bannertool/releases/download/1.2.0/bannertool.zip && \
+    wget -q https://github.com/Epicpkmn11/bannertool/releases/download/v1.2.2/bannertool.zip
     unzip -q bannertool.zip && \
     cp linux-x86_64/bannertool /usr/local/bin/ && \
     chmod +x /usr/local/bin/bannertool && \
