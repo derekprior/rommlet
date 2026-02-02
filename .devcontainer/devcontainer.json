@@ -1,0 +1,20 @@
+{
+  "name": "Rommlet 3DS Development",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "sumneko.lua",
+        "ms-vscode.makefile-tools"
+      ],
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash"
+      }
+    }
+  },
+  "postCreateCommand": "echo '✅ Ready for 3DS development! Run: make'",
+  "remoteUser": "vscode"
+}

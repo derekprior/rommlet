@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+  <!-- Background -->
+  <rect width="48" height="48" rx="8" fill="#1a1a2e"/>
+  
+  <!-- Omelette/Egg shape (yellow-orange gradient) -->
+  <ellipse cx="24" cy="26" rx="18" ry="14" fill="#f59e0b"/>
+  <ellipse cx="24" cy="25" rx="16" ry="12" fill="#fbbf24"/>
+  
+  <!-- Egg white edge highlight -->
+  <ellipse cx="24" cy="26" rx="18" ry="14" fill="none" stroke="#fef3c7" stroke-width="1.5" opacity="0.6"/>
+  
+  <!-- D-Pad (dark, like it's "cooked into" the omelette) -->
+  <g fill="#7c3aed" transform="translate(24, 24)">
+    <!-- Center -->
+    <rect x="-4" y="-4" width="8" height="8" rx="1"/>
+    <!-- Up -->
+    <rect x="-3" y="-10" width="6" height="7" rx="1"/>
+    <!-- Down -->
+    <rect x="-3" y="3" width="6" height="7" rx="1"/>
+    <!-- Left -->
+    <rect x="-10" y="-3" width="7" height="6" rx="1"/>
+    <!-- Right -->
+    <rect x="3" y="-3" width="7" height="6" rx="1"/>
+  </g>
+  
+  <!-- D-Pad highlight/shine -->
+  <g fill="#a78bfa" opacity="0.5" transform="translate(24, 24)">
+    <rect x="-3" y="-9" width="2" height="3" rx="0.5"/>
+    <rect x="-9" y="-2" width="3" height="2" rx="0.5"/>
+  </g>
+  
+  <!-- Small "button" accents like controller buttons -->
+  <circle cx="36" cy="18" r="2.5" fill="#ef4444"/>
+  <circle cx="40" cy="22" r="2" fill="#22c55e"/>
+  
+  <!-- Sparkle/steam effect -->
+  <g fill="#fef3c7" opacity="0.7">
+    <ellipse cx="10" cy="16" rx="1.5" ry="2.5" transform="rotate(-20 10 16)"/>
+    <ellipse cx="14" cy="12" rx="1" ry="2" transform="rotate(-10 14 12)"/>
+  </g>
+</svg>
