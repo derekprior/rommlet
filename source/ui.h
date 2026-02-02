@@ -26,7 +26,7 @@
 #define UI_PADDING 8
 #define UI_LINE_HEIGHT 20
 #define UI_HEADER_HEIGHT 30
-#define UI_VISIBLE_ITEMS 10
+#define UI_VISIBLE_ITEMS 8
 
 // Initialize UI module (load font, etc)
 void ui_init(void);
