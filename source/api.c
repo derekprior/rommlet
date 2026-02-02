@@ -270,7 +270,7 @@ Rom *api_get_roms(int platformId, int offset, int limit, int *count, int *total)
     *total = 0;
     
     char url[MAX_URL_LEN];
-    snprintf(url, sizeof(url), "%s/api/roms?platform_ids=%d&offset=%d&limit=%d", 
+    snprintf(url, sizeof(url), "%s/api/roms?platform_ids=%d&offset=%d&limit=%d&order_by=name", 
              baseUrl, platformId, offset, limit);
     
     int statusCode;
