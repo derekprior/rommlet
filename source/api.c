@@ -106,7 +106,7 @@ static char *http_get(const char *url, int *statusCode) {
     if (authHeader[0] != '\0') {
         ret = httpcAddRequestHeaderField(&context, "Authorization", authHeader);
         if (debugLevel >= API_DEBUG_REQUESTS) {
-            printf("[DEBUG] Auth: Basic ***\n");
+            printf("[DEBUG] Auth: %s\n", authHeader);
         }
     }
     

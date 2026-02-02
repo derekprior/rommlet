@@ -62,6 +62,9 @@ int main(int argc, char *argv[]) {
         needsConfigSetup = true;
         currentState = STATE_SETTINGS;
     } else {
+        // Set up API with loaded config
+        api_set_base_url(config.serverUrl);
+        api_set_auth(config.username, config.password);
         currentState = STATE_PLATFORMS;
     }
     

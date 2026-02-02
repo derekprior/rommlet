@@ -74,16 +74,13 @@ float ui_get_text_width(const char *text) {
 }
 
 bool ui_show_keyboard(const char *hint, char *buffer, size_t bufferSize, bool password) {
+    (void)password;  // No longer used - show all input as plaintext
     SwkbdState swkbd;
     
-    // Initialize with type based on password flag
-    swkbdInit(&swkbd, password ? SWKBD_TYPE_WESTERN : SWKBD_TYPE_NORMAL, 2, bufferSize - 1);
+    // Initialize keyboard - use NORMAL type for longer input support
+    swkbdInit(&swkbd, SWKBD_TYPE_NORMAL, 2, bufferSize - 1);
     swkbdSetHintText(&swkbd, hint);
     swkbdSetInitialText(&swkbd, buffer);
-    
-    if (password) {
-        swkbdSetPasswordMode(&swkbd, SWKBD_PASSWORD_HIDE_DELAY);
-    }
     
     // Allow empty input
     swkbdSetFeatures(&swkbd, SWKBD_DEFAULT_QWERTY);
