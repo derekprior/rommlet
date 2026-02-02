@@ -11,9 +11,11 @@
 
 #define MAX_URL_LEN 512
 #define MAX_RESPONSE_SIZE (512 * 1024)  // 512KB max response
+#define DEBUG_BODY_PREVIEW_LEN 500      // Max chars to show for response body
 
 static char baseUrl[256] = "";
 static char authHeader[512] = "";
+static int debugLevel = API_DEBUG_OFF;
 
 // Base64 encoding table
 static const char base64_table[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -37,11 +39,21 @@ static void base64_encode(const char *input, char *output, size_t outlen) {
 }
 
 void api_init(void) {
-    // Nothing to initialize yet
+    debugLevel = API_DEBUG_OFF;
 }
 
 void api_exit(void) {
     // Nothing to cleanup yet
+}
+
+void api_set_debug_level(int level) {
+    if (level < API_DEBUG_OFF) level = API_DEBUG_OFF;
+    if (level > API_DEBUG_BODIES) level = API_DEBUG_BODIES;
+    debugLevel = level;
+}
+
+int api_get_debug_level(void) {
+    return debugLevel;
 }
 
 void api_set_base_url(const char *url) {
@@ -74,6 +86,11 @@ static char *http_get(const char *url, int *statusCode) {
     
     *statusCode = 0;
     
+    // Debug: log outgoing request
+    if (debugLevel >= API_DEBUG_REQUESTS) {
+        printf("[DEBUG] GET %s\n", url);
+    }
+    
     ret = httpcOpenContext(&context, HTTPC_METHOD_GET, url, 1);
     if (R_FAILED(ret)) {
         printf("httpcOpenContext failed: %08lX\n", ret);
@@ -88,6 +105,9 @@ static char *http_get(const char *url, int *statusCode) {
     
     if (authHeader[0] != '\0') {
         ret = httpcAddRequestHeaderField(&context, "Authorization", authHeader);
+        if (debugLevel >= API_DEBUG_REQUESTS) {
+            printf("[DEBUG] Auth: Basic ***\n");
+        }
     }
     
     ret = httpcBeginRequest(&context);
@@ -105,6 +125,11 @@ static char *http_get(const char *url, int *statusCode) {
         return NULL;
     }
     *statusCode = (int)status;
+    
+    // Debug: log response status
+    if (debugLevel >= API_DEBUG_REQUESTS) {
+        printf("[DEBUG] Status: %lu\n", status);
+    }
     
     if (status != 200) {
         printf("HTTP error: %lu\n", status);
@@ -139,6 +164,22 @@ static char *http_get(const char *url, int *statusCode) {
     
     buffer[downloadedSize] = '\0';
     httpcCloseContext(&context);
+    
+    // Debug: log response size and body
+    if (debugLevel >= API_DEBUG_REQUESTS) {
+        printf("[DEBUG] Size: %lu bytes\n", downloadedSize);
+    }
+    if (debugLevel >= API_DEBUG_BODIES) {
+        printf("[DEBUG] Body:\n");
+        if (downloadedSize <= DEBUG_BODY_PREVIEW_LEN) {
+            printf("%s\n", buffer);
+        } else {
+            // Print truncated body
+            printf("%.*s...\n[truncated, %lu more bytes]\n", 
+                   DEBUG_BODY_PREVIEW_LEN, buffer, 
+                   downloadedSize - DEBUG_BODY_PREVIEW_LEN);
+        }
+    }
     
     return buffer;
 }

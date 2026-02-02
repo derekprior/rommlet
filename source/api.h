@@ -7,6 +7,11 @@
 
 #include <stdbool.h>
 
+// Debug levels
+#define API_DEBUG_OFF      0  // No debug output
+#define API_DEBUG_REQUESTS 1  // Log URLs, status codes, sizes
+#define API_DEBUG_BODIES   2  // Log request info + response bodies
+
 // Platform data from /api/platforms
 typedef struct {
     int id;
@@ -36,6 +41,10 @@ void api_set_base_url(const char *url);
 
 // Set authentication credentials (HTTP Basic Auth)
 void api_set_auth(const char *username, const char *password);
+
+// Debug level control
+void api_set_debug_level(int level);
+int api_get_debug_level(void);
 
 // Fetch platforms from server
 // Returns array of platforms, sets count. Caller must free with api_free_platforms
