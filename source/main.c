@@ -114,6 +114,16 @@ int main(int argc, char *argv[]) {
                     currentState = STATE_SETTINGS;
                 } else {
                     currentState = STATE_PLATFORMS;
+                    
+                    // Fetch platforms on startup
+                    printf("Fetching platforms...\n");
+                    platforms = api_get_platforms(&platformCount);
+                    if (platforms) {
+                        printf("Found %d platforms\n", platformCount);
+                        platforms_set_data(platforms, platformCount);
+                    } else {
+                        printf("Failed to fetch platforms\n");
+                    }
                 }
                 break;
                 
