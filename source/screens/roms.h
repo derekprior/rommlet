@@ -19,7 +19,10 @@ typedef enum {
 // Initialize ROMs screen
 void roms_init(void);
 
-// Set ROM data
+// Clear ROM data and free memory
+void roms_clear(void);
+
+// Set ROM data (takes ownership of roms pointer)
 void roms_set_data(Rom *roms, int count, int total, const char *platformName);
 
 // Append more ROM data (for infinite scroll)

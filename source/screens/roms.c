@@ -26,7 +26,23 @@ void roms_init(void) {
     scrollOffset = 0;
 }
 
+void roms_clear(void) {
+    if (romList) {
+        free(romList);
+        romList = NULL;
+    }
+    romCount = 0;
+    romTotal = 0;
+    currentPlatform[0] = '\0';
+    selectedIndex = 0;
+    scrollOffset = 0;
+}
+
 void roms_set_data(Rom *roms, int count, int total, const char *platformName) {
+    // Free any existing data first
+    if (romList) {
+        free(romList);
+    }
     romList = roms;
     romCount = count;
     romTotal = total;

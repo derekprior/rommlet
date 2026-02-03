@@ -36,9 +36,6 @@ static Config config;
 static Platform *platforms = NULL;
 static int platformCount = 0;
 static int selectedPlatformIndex = 0;
-static Rom *roms = NULL;
-static int romCount = 0;
-static int romTotal = 0;
 static RomDetail *romDetail = NULL;
 static int selectedRomIndex = 0;
 
@@ -162,11 +159,9 @@ int main(int argc, char *argv[]) {
                 if (result == PLATFORMS_SELECTED && platforms && selectedPlatformIndex < platformCount) {
                     // Fetch ROMs for selected platform
                     printf("Fetching ROMs for %s...\n", platforms[selectedPlatformIndex].displayName);
-                    if (roms) {
-                        api_free_roms(roms, romCount);
-                        roms = NULL;
-                    }
-                    roms = api_get_roms(platforms[selectedPlatformIndex].id, 0, 50, &romCount, &romTotal);
+                    roms_clear();
+                    int romCount, romTotal;
+                    Rom *roms = api_get_roms(platforms[selectedPlatformIndex].id, 0, 50, &romCount, &romTotal);
                     if (roms) {
                         printf("Found %d/%d ROMs\n", romCount, romTotal);
                         roms_set_data(roms, romCount, romTotal, platforms[selectedPlatformIndex].displayName);
@@ -272,7 +267,7 @@ int main(int argc, char *argv[]) {
     
     // Cleanup
     if (platforms) api_free_platforms(platforms, platformCount);
-    if (roms) api_free_roms(roms, romCount);
+    roms_clear();
     if (romDetail) api_free_rom_detail(romDetail);
     
     ui_exit();
