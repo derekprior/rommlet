@@ -71,5 +71,8 @@ bool config_save(const Config *config) {
 }
 
 bool config_is_valid(const Config *config) {
-    return config->serverUrl[0] != '\0';
+    return config->serverUrl[0] != '\0' &&
+           config->username[0] != '\0' &&
+           config->password[0] != '\0' &&
+           config->romFolder[0] != '\0';
 }
