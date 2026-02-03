@@ -8,14 +8,22 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define LOAD_MORE_THRESHOLD 5
-
 static Rom *romList = NULL;
 static int romCount = 0;
 static int romTotal = 0;
 static char currentPlatform[128] = "";
 static int selectedIndex = 0;
 static int scrollOffset = 0;
+
+// Check if there are more ROMs to load
+static bool has_more_to_load(void) {
+    return romCount < romTotal;
+}
+
+// Get total display count (including "Load more..." row if applicable)
+static int get_display_count(void) {
+    return romCount + (has_more_to_load() ? 1 : 0);
+}
 
 void roms_init(void) {
     romList = NULL;
@@ -67,7 +75,8 @@ void roms_append_data(Rom *roms, int count) {
 }
 
 bool roms_needs_more_data(void) {
-    return romCount < romTotal && selectedIndex >= romCount - LOAD_MORE_THRESHOLD;
+    // Now triggered when "Load more..." row is selected
+    return has_more_to_load() && selectedIndex == romCount;
 }
 
 int roms_get_count(void) {
@@ -91,10 +100,12 @@ RomsResult roms_update(u32 kDown, int *outSelectedIndex) {
         return ROMS_NONE;
     }
     
+    int displayCount = get_display_count();
+    
     // Navigation
     if (kDown & KEY_DOWN) {
         selectedIndex++;
-        if (selectedIndex >= romCount) {
+        if (selectedIndex >= displayCount) {
             selectedIndex = 0;
             scrollOffset = 0;
         }
@@ -106,8 +117,8 @@ RomsResult roms_update(u32 kDown, int *outSelectedIndex) {
     if (kDown & KEY_UP) {
         selectedIndex--;
         if (selectedIndex < 0) {
-            selectedIndex = romCount - 1;
-            scrollOffset = romCount > UI_VISIBLE_ITEMS ? romCount - UI_VISIBLE_ITEMS : 0;
+            selectedIndex = displayCount - 1;
+            scrollOffset = displayCount > UI_VISIBLE_ITEMS ? displayCount - UI_VISIBLE_ITEMS : 0;
         }
         if (selectedIndex < scrollOffset) {
             scrollOffset = selectedIndex;
@@ -117,8 +128,8 @@ RomsResult roms_update(u32 kDown, int *outSelectedIndex) {
     // Page up/down
     if (kDown & KEY_R) {
         selectedIndex += UI_VISIBLE_ITEMS;
-        if (selectedIndex >= romCount) {
-            selectedIndex = romCount - 1;
+        if (selectedIndex >= displayCount) {
+            selectedIndex = displayCount - 1;
         }
         if (selectedIndex >= scrollOffset + UI_VISIBLE_ITEMS) {
             scrollOffset = selectedIndex - UI_VISIBLE_ITEMS + 1;
@@ -135,13 +146,15 @@ RomsResult roms_update(u32 kDown, int *outSelectedIndex) {
         }
     }
     
-    // Select ROM
+    // Select ROM (only if not on "Load more..." row)
     if (kDown & KEY_A) {
-        if (outSelectedIndex) *outSelectedIndex = selectedIndex;
-        return ROMS_SELECTED;
+        if (selectedIndex < romCount) {
+            if (outSelectedIndex) *outSelectedIndex = selectedIndex;
+            return ROMS_SELECTED;
+        }
     }
     
-    // Check if we need to load more data
+    // Check if we're on "Load more..." row
     if (roms_needs_more_data()) {
         return ROMS_LOAD_MORE;
     }
@@ -166,18 +179,31 @@ void roms_draw(void) {
     float y = UI_HEADER_HEIGHT + UI_PADDING;
     float itemWidth = SCREEN_TOP_WIDTH - (UI_PADDING * 2);
     
+    int displayCount = get_display_count();
+    
     // Draw visible items
     int visibleEnd = scrollOffset + UI_VISIBLE_ITEMS;
-    if (visibleEnd > romCount) visibleEnd = romCount;
+    if (visibleEnd > displayCount) visibleEnd = displayCount;
     
     for (int i = scrollOffset; i < visibleEnd; i++) {
-        ui_draw_list_item(UI_PADDING, y, itemWidth, romList[i].name, i == selectedIndex);
+        if (i < romCount) {
+            ui_draw_list_item(UI_PADDING, y, itemWidth, romList[i].name, i == selectedIndex);
+        } else {
+            // "Load more..." row
+            if (i == selectedIndex) {
+                ui_draw_rect(UI_PADDING, y, itemWidth, UI_LINE_HEIGHT, UI_COLOR_SELECTED);
+                ui_draw_text(UI_PADDING + UI_PADDING, y + 2, "Load more...", UI_COLOR_TEXT);
+            } else {
+                ui_draw_text(UI_PADDING + UI_PADDING, y + 2, "Load more...", UI_COLOR_TEXT_DIM);
+            }
+        }
         y += UI_LINE_HEIGHT;
     }
     
     // Scroll/count indicator
     char scrollText[64];
-    snprintf(scrollText, sizeof(scrollText), "%d/%d", selectedIndex + 1, romTotal);
+    int displayIndex = selectedIndex < romCount ? selectedIndex + 1 : romCount;
+    snprintf(scrollText, sizeof(scrollText), "%d/%d", displayIndex, romTotal);
     float textWidth = ui_get_text_width(scrollText);
     ui_draw_text(SCREEN_TOP_WIDTH - textWidth - UI_PADDING, 
                  UI_HEADER_HEIGHT + UI_PADDING, scrollText, UI_COLOR_TEXT_DIM);

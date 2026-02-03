@@ -13,7 +13,6 @@
 #include "config.h"
 #include "api.h"
 #include "ui.h"
-#include "loader.h"
 #include "screens/settings.h"
 #include "screens/platforms.h"
 #include "screens/roms.h"
@@ -58,7 +57,6 @@ int main(int argc, char *argv[]) {
     ui_init();
     config_init(&config);
     api_init();
-    loader_init();
     
     // Load configuration
     if (!config_load(&config)) {
@@ -188,16 +186,6 @@ int main(int argc, char *argv[]) {
             }
                 
             case STATE_ROMS: {
-                // Check if background load completed
-                if (loader_is_complete()) {
-                    int newCount, newTotal;
-                    Rom *moreRoms = loader_get_roms(&newCount, &newTotal);
-                    if (moreRoms) {
-                        printf("Loaded %d more ROMs\n", newCount);
-                        roms_append_data(moreRoms, newCount);
-                    }
-                }
-                
                 RomsResult result = roms_update(kDown, &selectedRomIndex);
                 if (result == ROMS_BACK) {
                     currentState = STATE_PLATFORMS;
@@ -218,11 +206,16 @@ int main(int argc, char *argv[]) {
                             printf("Failed to fetch ROM details\n");
                         }
                     }
-                } else if (result == ROMS_LOAD_MORE && !loader_is_busy()) {
-                    // Start background fetch for next page
+                } else if (result == ROMS_LOAD_MORE) {
+                    // Fetch next page synchronously
                     int offset = roms_get_count();
+                    int newCount, newTotal;
                     printf("Loading more ROMs (offset %d)...\n", offset);
-                    loader_start_roms(platforms[selectedPlatformIndex].id, offset, 50);
+                    Rom *moreRoms = api_get_roms(platforms[selectedPlatformIndex].id, offset, 50, &newCount, &newTotal);
+                    if (moreRoms) {
+                        printf("Loaded %d more ROMs\n", newCount);
+                        roms_append_data(moreRoms, newCount);
+                    }
                 }
                 break;
             }
@@ -272,7 +265,6 @@ int main(int argc, char *argv[]) {
     
     ui_exit();
     api_exit();
-    loader_exit();
     
     httpcExit();
     romfsExit();
