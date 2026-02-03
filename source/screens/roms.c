@@ -162,5 +162,5 @@ void roms_draw(void) {
     
     // Help text
     ui_draw_text(UI_PADDING, SCREEN_TOP_HEIGHT - UI_LINE_HEIGHT - UI_PADDING,
-                 "D-Pad: Navigate | L/R: Page | B: Back", UI_COLOR_TEXT_DIM);
+                 "A: Details | D-Pad: Navigate | L/R: Page | B: Back", UI_COLOR_TEXT_DIM);
 }
