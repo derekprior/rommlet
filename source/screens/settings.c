@@ -181,5 +181,5 @@ void settings_draw(void) {
     
     // Help text at bottom
     ui_draw_text(UI_PADDING, SCREEN_TOP_HEIGHT - UI_LINE_HEIGHT - UI_PADDING,
-                 "D-Pad: Navigate | A: Edit/Select | B: Cancel", UI_COLOR_TEXT_DIM);
+                 "A: Edit/Select | B: Cancel", UI_COLOR_TEXT_DIM);
 }
