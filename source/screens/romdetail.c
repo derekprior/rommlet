@@ -41,51 +41,79 @@ RomDetailResult romdetail_update(u32 kDown) {
 static int draw_wrapped_text(float x, float y, float maxWidth, const char *text, u32 color, int maxLines, int skipLines) {
     if (!text || !text[0]) return 0;
     
-    char line[128];
-    int lineStart = 0;
+    char line[256];
+    char word[128];
+    int lineLen = 0;
+    int wordLen = 0;
     int lineCount = 0;
     int drawnLines = 0;
     int len = strlen(text);
     
+    line[0] = '\0';
+    
     for (int i = 0; i <= len; i++) {
-        bool endOfWord = (text[i] == ' ' || text[i] == '\0' || text[i] == '\n');
+        char c = text[i];
+        bool isSpace = (c == ' ' || c == '\0' || c == '\n');
         
-        if (endOfWord || i - lineStart >= (int)sizeof(line) - 1) {
-            // Check if this segment fits
-            int segLen = i - lineStart;
-            if (segLen > 0) {
-                strncpy(line, &text[lineStart], segLen);
-                line[segLen] = '\0';
+        if (isSpace) {
+            if (wordLen > 0) {
+                word[wordLen] = '\0';
                 
-                float textWidth = ui_get_text_width(line);
-                if (textWidth > maxWidth && segLen > 10) {
-                    // Line too long, find a break point
-                    int breakPoint = segLen;
-                    for (int j = segLen - 1; j > 0; j--) {
-                        if (text[lineStart + j] == ' ') {
-                            breakPoint = j;
-                            break;
-                        }
-                    }
-                    strncpy(line, &text[lineStart], breakPoint);
-                    line[breakPoint] = '\0';
-                    i = lineStart + breakPoint;
+                // Check if word fits on current line
+                char testLine[256];
+                if (lineLen > 0) {
+                    snprintf(testLine, sizeof(testLine), "%s %s", line, word);
+                } else {
+                    snprintf(testLine, sizeof(testLine), "%s", word);
                 }
                 
+                float testWidth = ui_get_text_width(testLine);
+                
+                if (testWidth <= maxWidth || lineLen == 0) {
+                    // Word fits, add to line
+                    if (lineLen > 0) {
+                        strcat(line, " ");
+                    }
+                    strcat(line, word);
+                    lineLen = strlen(line);
+                } else {
+                    // Word doesn't fit, output current line and start new one
+                    if (lineCount >= skipLines && drawnLines < maxLines) {
+                        ui_draw_text(x, y + drawnLines * UI_LINE_HEIGHT, line, color);
+                        drawnLines++;
+                    }
+                    lineCount++;
+                    
+                    strcpy(line, word);
+                    lineLen = strlen(line);
+                }
+                
+                wordLen = 0;
+            }
+            
+            // Handle newline
+            if (c == '\n' && lineLen > 0) {
                 if (lineCount >= skipLines && drawnLines < maxLines) {
                     ui_draw_text(x, y + drawnLines * UI_LINE_HEIGHT, line, color);
                     drawnLines++;
                 }
                 lineCount++;
-                lineStart = i + 1;
+                line[0] = '\0';
+                lineLen = 0;
+            }
+        } else {
+            if (wordLen < (int)sizeof(word) - 1) {
+                word[wordLen++] = c;
             }
         }
         
-        if (text[i] == '\n') {
-            lineStart = i + 1;
-        }
-        
-        if (drawnLines >= maxLines) break;
+        if (drawnLines >= maxLines && lineCount >= skipLines) break;
+    }
+    
+    // Output remaining line
+    if (lineLen > 0 && drawnLines < maxLines && lineCount >= skipLines) {
+        ui_draw_text(x, y + drawnLines * UI_LINE_HEIGHT, line, color);
+        drawnLines++;
     }
     
     return drawnLines;
@@ -105,13 +133,11 @@ void romdetail_draw(void) {
     
     // Title (prominent)
     ui_draw_text(UI_PADDING, y, currentDetail->name, UI_COLOR_TEXT);
-    y += UI_LINE_HEIGHT + UI_PADDING;
+    y += UI_LINE_HEIGHT;
     
-    // Platform
+    // Platform (no label)
     if (currentDetail->platformName[0]) {
-        char platformText[160];
-        snprintf(platformText, sizeof(platformText), "Platform: %s", currentDetail->platformName);
-        ui_draw_text(UI_PADDING, y, platformText, UI_COLOR_TEXT_DIM);
+        ui_draw_text(UI_PADDING, y, currentDetail->platformName, UI_COLOR_TEXT_DIM);
         y += UI_LINE_HEIGHT;
     }
     
@@ -120,14 +146,6 @@ void romdetail_draw(void) {
         char dateText[64];
         snprintf(dateText, sizeof(dateText), "Released: %s", currentDetail->firstReleaseDate);
         ui_draw_text(UI_PADDING, y, dateText, UI_COLOR_TEXT_DIM);
-        y += UI_LINE_HEIGHT;
-    }
-    
-    // MD5 hash
-    if (currentDetail->md5Hash[0]) {
-        char hashText[96];
-        snprintf(hashText, sizeof(hashText), "MD5: %.32s...", currentDetail->md5Hash);
-        ui_draw_text(UI_PADDING, y, hashText, UI_COLOR_TEXT_DIM);
         y += UI_LINE_HEIGHT;
     }
     
