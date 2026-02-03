@@ -13,6 +13,7 @@
 #include "config.h"
 #include "api.h"
 #include "ui.h"
+#include "loader.h"
 #include "screens/settings.h"
 #include "screens/platforms.h"
 #include "screens/roms.h"
@@ -56,6 +57,7 @@ int main(int argc, char *argv[]) {
     ui_init();
     config_init(&config);
     api_init();
+    loader_init();
     
     // Load configuration
     if (!config_load(&config)) {
@@ -188,19 +190,24 @@ int main(int argc, char *argv[]) {
             }
                 
             case STATE_ROMS: {
-                RomsResult result = roms_update(kDown);
-                if (result == ROMS_BACK) {
-                    currentState = STATE_PLATFORMS;
-                } else if (result == ROMS_LOAD_MORE) {
-                    // Fetch next page of ROMs
-                    int offset = roms_get_count();
+                // Check if background load completed
+                if (loader_is_complete()) {
                     int newCount, newTotal;
-                    printf("Loading more ROMs (offset %d)...\n", offset);
-                    Rom *moreRoms = api_get_roms(platforms[selectedPlatformIndex].id, offset, 50, &newCount, &newTotal);
+                    Rom *moreRoms = loader_get_roms(&newCount, &newTotal);
                     if (moreRoms) {
                         printf("Loaded %d more ROMs\n", newCount);
                         roms_append_data(moreRoms, newCount);
                     }
+                }
+                
+                RomsResult result = roms_update(kDown);
+                if (result == ROMS_BACK) {
+                    currentState = STATE_PLATFORMS;
+                } else if (result == ROMS_LOAD_MORE && !loader_is_busy()) {
+                    // Start background fetch for next page
+                    int offset = roms_get_count();
+                    printf("Loading more ROMs (offset %d)...\n", offset);
+                    loader_start_roms(platforms[selectedPlatformIndex].id, offset, 50);
                 }
                 break;
             }
@@ -238,6 +245,7 @@ int main(int argc, char *argv[]) {
     
     ui_exit();
     api_exit();
+    loader_exit();
     
     httpcExit();
     romfsExit();
