@@ -4,6 +4,7 @@
 
 #include "settings.h"
 #include "../ui.h"
+#include "../browser.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -11,20 +12,37 @@ typedef enum {
     FIELD_SERVER_URL,
     FIELD_USERNAME,
     FIELD_PASSWORD,
+    FIELD_ROM_FOLDER,
     FIELD_SAVE,
     FIELD_COUNT
 } SettingsField;
 
 static Config *currentConfig = NULL;
 static int selectedField = FIELD_SERVER_URL;
+static bool browsingFolders = false;
 
 void settings_init(Config *config) {
     currentConfig = config;
     selectedField = FIELD_SERVER_URL;
+    browsingFolders = false;
 }
 
 SettingsResult settings_update(u32 kDown) {
     if (!currentConfig) return SETTINGS_NONE;
+    
+    // Handle folder browser mode
+    if (browsingFolders) {
+        bool selected = browser_update(kDown);
+        if (selected) {
+            strncpy(currentConfig->romFolder, browser_get_selected_path(), CONFIG_MAX_PATH_LEN - 1);
+            browsingFolders = false;
+            browser_exit();
+        } else if (browser_was_cancelled()) {
+            browsingFolders = false;
+            browser_exit();
+        }
+        return SETTINGS_NONE;
+    }
     
     // Navigation
     if (kDown & KEY_DOWN) {
@@ -46,6 +64,10 @@ SettingsResult settings_update(u32 kDown) {
             case FIELD_PASSWORD:
                 ui_show_keyboard("Password", currentConfig->password, CONFIG_MAX_PASS_LEN, true);
                 break;
+            case FIELD_ROM_FOLDER:
+                browser_init(currentConfig->romFolder[0] ? currentConfig->romFolder : "sdmc:/");
+                browsingFolders = true;
+                break;
             case FIELD_SAVE:
                 return SETTINGS_SAVED;
             default:
@@ -63,6 +85,12 @@ SettingsResult settings_update(u32 kDown) {
 
 void settings_draw(void) {
     if (!currentConfig) return;
+    
+    // If browsing folders, draw browser instead
+    if (browsingFolders) {
+        browser_draw();
+        return;
+    }
     
     ui_draw_header("Settings");
     
@@ -100,6 +128,14 @@ void settings_draw(void) {
         strcpy(masked, "(optional)");
     }
     ui_draw_list_item(UI_PADDING, y, fieldWidth, masked, selectedField == FIELD_PASSWORD);
+    y += UI_LINE_HEIGHT + UI_PADDING;
+    
+    // ROM Folder
+    ui_draw_text(UI_PADDING, y, "ROM Folder:", UI_COLOR_TEXT_DIM);
+    y += UI_LINE_HEIGHT;
+    ui_draw_list_item(UI_PADDING, y, fieldWidth,
+                      currentConfig->romFolder[0] ? currentConfig->romFolder : "(not set)",
+                      selectedField == FIELD_ROM_FOLDER);
     y += UI_LINE_HEIGHT + UI_PADDING * 2;
     
     // Save button

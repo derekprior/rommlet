@@ -12,6 +12,7 @@
 void config_init(Config *config) {
     memset(config, 0, sizeof(Config));
     strncpy(config->serverUrl, "http://pinbox.local", CONFIG_MAX_URL_LEN - 1);
+    strncpy(config->romFolder, "sdmc:/roms", CONFIG_MAX_PATH_LEN - 1);
 }
 
 bool config_load(Config *config) {
@@ -42,6 +43,8 @@ bool config_load(Config *config) {
             strncpy(config->username, value, CONFIG_MAX_USER_LEN - 1);
         } else if (strcmp(key, "password") == 0) {
             strncpy(config->password, value, CONFIG_MAX_PASS_LEN - 1);
+        } else if (strcmp(key, "romFolder") == 0) {
+            strncpy(config->romFolder, value, CONFIG_MAX_PATH_LEN - 1);
         }
     }
     
@@ -61,6 +64,7 @@ bool config_save(const Config *config) {
     fprintf(f, "serverUrl=%s\n", config->serverUrl);
     fprintf(f, "username=%s\n", config->username);
     fprintf(f, "password=%s\n", config->password);
+    fprintf(f, "romFolder=%s\n", config->romFolder);
     
     fclose(f);
     return true;
