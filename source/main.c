@@ -17,13 +17,15 @@
 #include "screens/settings.h"
 #include "screens/platforms.h"
 #include "screens/roms.h"
+#include "screens/romdetail.h"
 
 // App states
 typedef enum {
     STATE_LOADING,
     STATE_SETTINGS,
     STATE_PLATFORMS,
-    STATE_ROMS
+    STATE_ROMS,
+    STATE_ROM_DETAIL
 } AppState;
 
 static AppState currentState = STATE_LOADING;
@@ -37,6 +39,8 @@ static int selectedPlatformIndex = 0;
 static Rom *roms = NULL;
 static int romCount = 0;
 static int romTotal = 0;
+static RomDetail *romDetail = NULL;
+static int selectedRomIndex = 0;
 
 int main(int argc, char *argv[]) {
     // Initialize services
@@ -72,6 +76,7 @@ int main(int argc, char *argv[]) {
     settings_init(&config);
     platforms_init();
     roms_init();
+    romdetail_init();
     
     printf("\x1b[1;1H\x1b[2J"); // Clear console
     printf("Rommlet - RomM Client\n");
@@ -198,14 +203,36 @@ int main(int argc, char *argv[]) {
                     }
                 }
                 
-                RomsResult result = roms_update(kDown);
+                RomsResult result = roms_update(kDown, &selectedRomIndex);
                 if (result == ROMS_BACK) {
                     currentState = STATE_PLATFORMS;
+                } else if (result == ROMS_SELECTED && roms && selectedRomIndex < romCount) {
+                    // Fetch ROM details
+                    printf("Fetching ROM details for ID %d...\n", roms[selectedRomIndex].id);
+                    if (romDetail) {
+                        api_free_rom_detail(romDetail);
+                        romDetail = NULL;
+                    }
+                    romDetail = api_get_rom_detail(roms[selectedRomIndex].id);
+                    if (romDetail) {
+                        romdetail_set_data(romDetail);
+                        currentState = STATE_ROM_DETAIL;
+                    } else {
+                        printf("Failed to fetch ROM details\n");
+                    }
                 } else if (result == ROMS_LOAD_MORE && !loader_is_busy()) {
                     // Start background fetch for next page
                     int offset = roms_get_count();
                     printf("Loading more ROMs (offset %d)...\n", offset);
                     loader_start_roms(platforms[selectedPlatformIndex].id, offset, 50);
+                }
+                break;
+            }
+            
+            case STATE_ROM_DETAIL: {
+                RomDetailResult result = romdetail_update(kDown);
+                if (result == ROMDETAIL_BACK) {
+                    currentState = STATE_ROMS;
                 }
                 break;
             }
@@ -229,6 +256,9 @@ int main(int argc, char *argv[]) {
             case STATE_ROMS:
                 roms_draw();
                 break;
+            case STATE_ROM_DETAIL:
+                romdetail_draw();
+                break;
         }
         
         C3D_FrameEnd(0);
@@ -240,6 +270,7 @@ int main(int argc, char *argv[]) {
     // Cleanup
     if (platforms) api_free_platforms(platforms, platformCount);
     if (roms) api_free_roms(roms, romCount);
+    if (romDetail) api_free_rom_detail(romDetail);
     
     ui_exit();
     api_exit();

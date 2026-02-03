@@ -341,3 +341,60 @@ void api_free_roms(Rom *roms, int count) {
     (void)count;
     if (roms) free(roms);
 }
+
+RomDetail *api_get_rom_detail(int romId) {
+    char url[MAX_URL_LEN];
+    snprintf(url, sizeof(url), "%s/api/roms/%d", baseUrl, romId);
+    
+    int statusCode;
+    char *response = http_get(url, &statusCode);
+    if (!response) {
+        return NULL;
+    }
+    
+    cJSON *json = cJSON_Parse(response);
+    free(response);
+    
+    if (!json) {
+        printf("JSON parse error\n");
+        return NULL;
+    }
+    
+    RomDetail *detail = calloc(1, sizeof(RomDetail));
+    if (!detail) {
+        cJSON_Delete(json);
+        return NULL;
+    }
+    
+    // Basic fields
+    cJSON *id = cJSON_GetObjectItem(json, "id");
+    cJSON *platformId = cJSON_GetObjectItem(json, "platform_id");
+    cJSON *name = cJSON_GetObjectItem(json, "name");
+    cJSON *summary = cJSON_GetObjectItem(json, "summary");
+    cJSON *md5Hash = cJSON_GetObjectItem(json, "md5_hash");
+    cJSON *pathCoverSmall = cJSON_GetObjectItem(json, "path_cover_small");
+    cJSON *firstReleaseDate = cJSON_GetObjectItem(json, "first_release_date");
+    
+    // Platform name from nested platform object
+    cJSON *platform = cJSON_GetObjectItem(json, "platform");
+    cJSON *platformName = platform ? cJSON_GetObjectItem(platform, "display_name") : NULL;
+    if (!platformName && platform) {
+        platformName = cJSON_GetObjectItem(platform, "name");
+    }
+    
+    if (cJSON_IsNumber(id)) detail->id = id->valueint;
+    if (cJSON_IsNumber(platformId)) detail->platformId = platformId->valueint;
+    if (cJSON_IsString(name)) strncpy(detail->name, name->valuestring, sizeof(detail->name) - 1);
+    if (cJSON_IsString(summary)) strncpy(detail->summary, summary->valuestring, sizeof(detail->summary) - 1);
+    if (cJSON_IsString(md5Hash)) strncpy(detail->md5Hash, md5Hash->valuestring, sizeof(detail->md5Hash) - 1);
+    if (cJSON_IsString(pathCoverSmall)) strncpy(detail->pathCoverSmall, pathCoverSmall->valuestring, sizeof(detail->pathCoverSmall) - 1);
+    if (cJSON_IsString(platformName)) strncpy(detail->platformName, platformName->valuestring, sizeof(detail->platformName) - 1);
+    if (cJSON_IsString(firstReleaseDate)) strncpy(detail->firstReleaseDate, firstReleaseDate->valuestring, sizeof(detail->firstReleaseDate) - 1);
+    
+    cJSON_Delete(json);
+    return detail;
+}
+
+void api_free_rom_detail(RomDetail *detail) {
+    if (detail) free(detail);
+}

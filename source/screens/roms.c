@@ -58,7 +58,7 @@ int roms_get_count(void) {
     return romCount;
 }
 
-RomsResult roms_update(u32 kDown) {
+RomsResult roms_update(u32 kDown, int *outSelectedIndex) {
     // Back to platforms
     if (kDown & KEY_B) {
         return ROMS_BACK;
@@ -112,8 +112,9 @@ RomsResult roms_update(u32 kDown) {
         }
     }
     
-    // Select ROM (future: show details)
+    // Select ROM
     if (kDown & KEY_A) {
+        if (outSelectedIndex) *outSelectedIndex = selectedIndex;
         return ROMS_SELECTED;
     }
     

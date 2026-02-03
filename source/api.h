@@ -30,6 +30,18 @@ typedef struct {
     char pathCoverSmall[512];
 } Rom;
 
+// Detailed ROM data from /api/roms/{id}
+typedef struct {
+    int id;
+    int platformId;
+    char name[256];
+    char summary[1024];
+    char platformName[128];
+    char firstReleaseDate[32];
+    char md5Hash[64];
+    char pathCoverSmall[512];
+} RomDetail;
+
 // Initialize API module
 void api_init(void);
 
@@ -59,5 +71,12 @@ Rom *api_get_roms(int platformId, int offset, int limit, int *count, int *total)
 
 // Free ROMs array
 void api_free_roms(Rom *roms, int count);
+
+// Fetch single ROM details
+// Returns ROM detail, caller must free with api_free_rom_detail
+RomDetail *api_get_rom_detail(int romId);
+
+// Free ROM detail
+void api_free_rom_detail(RomDetail *detail);
 
 #endif // API_H

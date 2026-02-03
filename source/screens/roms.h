@@ -32,7 +32,8 @@ bool roms_needs_more_data(void);
 int roms_get_count(void);
 
 // Update ROMs screen, returns result
-RomsResult roms_update(u32 kDown);
+// selectedIndex is set when ROMS_SELECTED is returned
+RomsResult roms_update(u32 kDown, int *selectedIndex);
 
 // Draw ROMs screen
 void roms_draw(void);
