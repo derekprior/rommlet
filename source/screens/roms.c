@@ -161,8 +161,7 @@ void roms_draw(void) {
     
     // Scroll/count indicator
     char scrollText[64];
-    snprintf(scrollText, sizeof(scrollText), "%d/%d (showing %d)", 
-             selectedIndex + 1, romTotal, romCount);
+    snprintf(scrollText, sizeof(scrollText), "%d/%d", selectedIndex + 1, romTotal);
     float textWidth = ui_get_text_width(scrollText);
     ui_draw_text(SCREEN_TOP_WIDTH - textWidth - UI_PADDING, 
                  UI_HEADER_HEIGHT + UI_PADDING, scrollText, UI_COLOR_TEXT_DIM);
