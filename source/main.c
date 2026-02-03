@@ -206,19 +206,22 @@ int main(int argc, char *argv[]) {
                 RomsResult result = roms_update(kDown, &selectedRomIndex);
                 if (result == ROMS_BACK) {
                     currentState = STATE_PLATFORMS;
-                } else if (result == ROMS_SELECTED && roms && selectedRomIndex < romCount) {
+                } else if (result == ROMS_SELECTED) {
                     // Fetch ROM details
-                    printf("Fetching ROM details for ID %d...\n", roms[selectedRomIndex].id);
-                    if (romDetail) {
-                        api_free_rom_detail(romDetail);
-                        romDetail = NULL;
-                    }
-                    romDetail = api_get_rom_detail(roms[selectedRomIndex].id);
-                    if (romDetail) {
-                        romdetail_set_data(romDetail);
-                        currentState = STATE_ROM_DETAIL;
-                    } else {
-                        printf("Failed to fetch ROM details\n");
+                    int romId = roms_get_id_at(selectedRomIndex);
+                    if (romId >= 0) {
+                        printf("Fetching ROM details for ID %d...\n", romId);
+                        if (romDetail) {
+                            api_free_rom_detail(romDetail);
+                            romDetail = NULL;
+                        }
+                        romDetail = api_get_rom_detail(romId);
+                        if (romDetail) {
+                            romdetail_set_data(romDetail);
+                            currentState = STATE_ROM_DETAIL;
+                        } else {
+                            printf("Failed to fetch ROM details\n");
+                        }
                     }
                 } else if (result == ROMS_LOAD_MORE && !loader_is_busy()) {
                     // Start background fetch for next page

@@ -31,6 +31,9 @@ bool roms_needs_more_data(void);
 // Get current ROM count (for calculating offset)
 int roms_get_count(void);
 
+// Get ROM ID at index (returns -1 if invalid)
+int roms_get_id_at(int index);
+
 // Update ROMs screen, returns result
 // selectedIndex is set when ROMS_SELECTED is returned
 RomsResult roms_update(u32 kDown, int *selectedIndex);
