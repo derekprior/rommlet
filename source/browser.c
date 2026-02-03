@@ -185,6 +185,20 @@ bool browser_update(u32 kDown) {
         return true;
     }
     
+    // Create new folder
+    if (kDown & KEY_Y) {
+        char newFolderName[256] = "";
+        if (ui_show_keyboard("New Folder Name", newFolderName, sizeof(newFolderName), false)) {
+            if (newFolderName[0] != '\0') {
+                char newPath[MAX_PATH_LEN];
+                snprintf(newPath, sizeof(newPath), "%s/%s", currentPath, newFolderName);
+                if (mkdir(newPath, 0755) == 0) {
+                    load_directory(currentPath);  // Refresh to show new folder
+                }
+            }
+        }
+    }
+    
     // Cancel
     if (kDown & KEY_B) {
         cancelled = true;
@@ -230,5 +244,5 @@ void browser_draw(void) {
     
     // Help text
     ui_draw_text(UI_PADDING, SCREEN_TOP_HEIGHT - UI_LINE_HEIGHT - UI_PADDING,
-                 "A: Open | X: Select This Folder | B: Cancel", UI_COLOR_TEXT_DIM);
+                 "A: Open | X: Select | Y: New Folder | B: Cancel", UI_COLOR_TEXT_DIM);
 }
