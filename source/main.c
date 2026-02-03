@@ -78,7 +78,7 @@ int main(int argc, char *argv[]) {
     printf("\x1b[1;1H\x1b[2J"); // Clear console
     printf("Rommlet - RomM Client\n");
     printf("=====================\n\n");
-    printf("L/R: Debug level (currently: OFF)\n\n");
+    printf("ZL/ZR: Debug level (currently: OFF)\n\n");
     
     // Main loop
     while (aptMainLoop()) {
