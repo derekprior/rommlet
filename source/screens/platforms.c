@@ -102,7 +102,7 @@ void platforms_draw(void) {
         ui_draw_text(UI_PADDING, SCREEN_TOP_HEIGHT / 2, 
                      "No platforms found. Press X to refresh.", UI_COLOR_TEXT_DIM);
         ui_draw_text(UI_PADDING, SCREEN_TOP_HEIGHT - UI_LINE_HEIGHT - UI_PADDING,
-                     "SELECT: Settings | X: Refresh", UI_COLOR_TEXT_DIM);
+                     "X: Refresh", UI_COLOR_TEXT_DIM);
         return;
     }
     
