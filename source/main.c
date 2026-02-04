@@ -40,6 +40,22 @@ static int selectedPlatformIndex = 0;
 static RomDetail *romDetail = NULL;
 static int selectedRomIndex = 0;
 
+// Helper to fetch platforms from API
+static void fetch_platforms(void) {
+    bottom_log("Fetching platforms...");
+    if (platforms) {
+        api_free_platforms(platforms, platformCount);
+        platforms = NULL;
+    }
+    platforms = api_get_platforms(&platformCount);
+    if (platforms) {
+        bottom_log("Found %d platforms", platformCount);
+        platforms_set_data(platforms, platformCount);
+    } else {
+        bottom_log("Failed to fetch platforms");
+    }
+}
+
 int main(int argc, char *argv[]) {
     // Initialize services
     gfxInitDefault();
@@ -98,20 +114,7 @@ int main(int argc, char *argv[]) {
             api_set_base_url(config.serverUrl);
             bottom_set_mode(BOTTOM_MODE_DEFAULT);
             currentState = STATE_PLATFORMS;
-            
-            // Fetch platforms
-            bottom_log("Fetching platforms...");
-            if (platforms) {
-                api_free_platforms(platforms, platformCount);
-                platforms = NULL;
-            }
-            platforms = api_get_platforms(&platformCount);
-            if (platforms) {
-                bottom_log("Found %d platforms", platformCount);
-                platforms_set_data(platforms, platformCount);
-            } else {
-                bottom_log("Failed to fetch platforms");
-            }
+            fetch_platforms();
         }
         
         // Handle cancel from bottom screen button
@@ -137,16 +140,7 @@ int main(int argc, char *argv[]) {
                 } else {
                     currentState = STATE_PLATFORMS;
                     bottom_set_mode(BOTTOM_MODE_DEFAULT);
-                    
-                    // Fetch platforms on startup
-                    bottom_log("Fetching platforms...");
-                    platforms = api_get_platforms(&platformCount);
-                    if (platforms) {
-                        bottom_log("Found %d platforms", platformCount);
-                        platforms_set_data(platforms, platformCount);
-                    } else {
-                        bottom_log("Failed to fetch platforms");
-                    }
+                    fetch_platforms();
                 }
                 break;
                 
@@ -158,20 +152,7 @@ int main(int argc, char *argv[]) {
                     api_set_base_url(config.serverUrl);
                     bottom_set_mode(BOTTOM_MODE_DEFAULT);
                     currentState = STATE_PLATFORMS;
-                    
-                    // Fetch platforms
-                    bottom_log("Fetching platforms...");
-                    if (platforms) {
-                        api_free_platforms(platforms, platformCount);
-                        platforms = NULL;
-                    }
-                    platforms = api_get_platforms(&platformCount);
-                    if (platforms) {
-                        bottom_log("Found %d platforms", platformCount);
-                        platforms_set_data(platforms, platformCount);
-                    } else {
-                        bottom_log("Failed to fetch platforms");
-                    }
+                    fetch_platforms();
                 } else if (result == SETTINGS_CANCELLED) {
                     if (config_is_valid(&config)) {
                         bottom_set_mode(BOTTOM_MODE_DEFAULT);
@@ -199,17 +180,7 @@ int main(int argc, char *argv[]) {
                         bottom_log("Failed to fetch ROMs");
                     }
                 } else if (result == PLATFORMS_REFRESH) {
-                    // Refresh platforms
-                    bottom_log("Refreshing platforms...");
-                    if (platforms) {
-                        api_free_platforms(platforms, platformCount);
-                        platforms = NULL;
-                    }
-                    platforms = api_get_platforms(&platformCount);
-                    if (platforms) {
-                        bottom_log("Found %d platforms", platformCount);
-                        platforms_set_data(platforms, platformCount);
-                    }
+                    fetch_platforms();
                 }
                 break;
             }
