@@ -98,15 +98,15 @@ bool bottom_update(void) {
             return true;
         }
         
-        // Scroll log with D-pad when modal is open
-        if (kDown & KEY_UP) {
+        // Scroll log with C-stick (New 3DS only)
+        circlePosition cstick;
+        hidCstickRead(&cstick);
+        if (cstick.dy > 40) {
             if (logScrollOffset > 0) logScrollOffset--;
-            return true;
         }
-        if (kDown & KEY_DOWN) {
+        if (cstick.dy < -40) {
             int maxScroll = logCount > 10 ? logCount - 10 : 0;
             if (logScrollOffset < maxScroll) logScrollOffset++;
-            return true;
         }
     }
     
