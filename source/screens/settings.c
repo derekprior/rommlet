@@ -169,14 +169,14 @@ void settings_draw(void) {
         float scrollbarHeight = SCREEN_TOP_HEIGHT - UI_HEADER_HEIGHT - UI_LINE_HEIGHT - (UI_PADDING * 3);
         
         // Track (thin line)
-        ui_draw_rect(scrollbarX, scrollbarY, 4, scrollbarHeight, C2D_Color32(0x3a, 0x3a, 0x50, 0xFF));
+        ui_draw_rect(scrollbarX, scrollbarY, 4, scrollbarHeight, UI_COLOR_SCROLLBAR_TRACK);
         
         // Thumb
         int maxScroll = FIELD_COUNT - SETTINGS_VISIBLE_FIELDS;
         float thumbHeight = (float)SETTINGS_VISIBLE_FIELDS / FIELD_COUNT * scrollbarHeight;
         if (thumbHeight < 10) thumbHeight = 10;
         float thumbY = scrollbarY + ((float)scrollOffset / maxScroll) * (scrollbarHeight - thumbHeight);
-        ui_draw_rect(scrollbarX, thumbY, 4, thumbHeight, C2D_Color32(0x6a, 0x6a, 0x90, 0xFF));
+        ui_draw_rect(scrollbarX, thumbY, 4, thumbHeight, UI_COLOR_SCROLLBAR_THUMB);
     }
     
     // Help text at bottom

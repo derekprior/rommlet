@@ -320,8 +320,6 @@ static void draw_toolbar(void) {
 
 // Scrollbar dimensions
 #define SCROLLBAR_WIDTH 16
-#define SCROLLBAR_TRACK_COLOR C2D_Color32(0x3a, 0x3a, 0x50, 0xFF)
-#define SCROLLBAR_THUMB_COLOR C2D_Color32(0x6a, 0x6a, 0x90, 0xFF)
 
 static void draw_debug_modal(void) {
     // Full background
@@ -354,7 +352,7 @@ static void draw_debug_modal(void) {
     
     // Draw scrollbar track
     float scrollbarX = SCREEN_BOTTOM_WIDTH - SCROLLBAR_WIDTH - UI_PADDING;
-    ui_draw_rect(scrollbarX, logAreaTop, SCROLLBAR_WIDTH, logAreaHeight, SCROLLBAR_TRACK_COLOR);
+    ui_draw_rect(scrollbarX, logAreaTop, SCROLLBAR_WIDTH, logAreaHeight, UI_COLOR_SCROLLBAR_TRACK);
     
     // Draw scrollbar thumb if there's content to scroll
     if (logCount > visibleLines) {
@@ -363,7 +361,7 @@ static void draw_debug_modal(void) {
         if (thumbHeight < 20) thumbHeight = 20; // Minimum thumb size
         
         float thumbY = logAreaTop + ((float)logScrollOffset / maxScroll) * (logAreaHeight - thumbHeight);
-        ui_draw_rect(scrollbarX + 2, thumbY, SCROLLBAR_WIDTH - 4, thumbHeight, SCROLLBAR_THUMB_COLOR);
+        ui_draw_rect(scrollbarX + 2, thumbY, SCROLLBAR_WIDTH - 4, thumbHeight, UI_COLOR_SCROLLBAR_THUMB);
     }
 }
 
