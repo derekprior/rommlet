@@ -83,8 +83,7 @@ static void load_directory(const char *path) {
             continue;
         }
         
-        strncpy(entries[entryCount].name, ent->d_name, MAX_NAME_LEN - 1);
-        entries[entryCount].name[MAX_NAME_LEN - 1] = '\0';
+        snprintf(entries[entryCount].name, MAX_NAME_LEN, "%s", ent->d_name);
         entries[entryCount].isDirectory = true;
         entryCount++;
     }
@@ -183,8 +182,7 @@ bool browser_update(u32 kDown) {
     
     // Select current folder
     if (kDown & KEY_X) {
-        strncpy(selectedPath, currentPath, MAX_PATH_LEN - 1);
-        selectedPath[MAX_PATH_LEN - 1] = '\0';
+        snprintf(selectedPath, MAX_PATH_LEN, "%s", currentPath);
         folderSelected = true;
         return true;
     }
