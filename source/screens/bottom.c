@@ -148,12 +148,42 @@ bool bottom_update(void) {
     return false;
 }
 
+// Draw a simple bug icon at the given position
+static void draw_bug_icon(float x, float y, float size, u32 color) {
+    float cx = x + size / 2;
+    float cy = y + size / 2;
+    float scale = size / 20.0f;  // Designed for 20px, scale accordingly
+    
+    // Body (oval) - draw as two overlapping circles
+    float bodyW = 6 * scale;
+    float bodyH = 8 * scale;
+    C2D_DrawEllipseSolid(cx - bodyW/2, cy - bodyH/2 + 2*scale, 0, bodyW, bodyH, color);
+    
+    // Head (smaller circle)
+    float headR = 3 * scale;
+    C2D_DrawCircleSolid(cx, cy - 4*scale, 0, headR, color);
+    
+    // Antennae (two small lines using thin rectangles)
+    C2D_DrawRectSolid(cx - 3*scale, cy - 7*scale, 0, 1*scale, 3*scale, color);
+    C2D_DrawRectSolid(cx + 2*scale, cy - 7*scale, 0, 1*scale, 3*scale, color);
+    
+    // Legs (three pairs)
+    // Left legs
+    C2D_DrawRectSolid(cx - 6*scale, cy - 1*scale, 0, 4*scale, 1*scale, color);
+    C2D_DrawRectSolid(cx - 6*scale, cy + 2*scale, 0, 4*scale, 1*scale, color);
+    C2D_DrawRectSolid(cx - 5*scale, cy + 5*scale, 0, 3*scale, 1*scale, color);
+    // Right legs
+    C2D_DrawRectSolid(cx + 2*scale, cy - 1*scale, 0, 4*scale, 1*scale, color);
+    C2D_DrawRectSolid(cx + 2*scale, cy + 2*scale, 0, 4*scale, 1*scale, color);
+    C2D_DrawRectSolid(cx + 2*scale, cy + 5*scale, 0, 3*scale, 1*scale, color);
+}
+
 static void draw_toolbar(void) {
     // Header bar
     ui_draw_rect(0, 0, SCREEN_BOTTOM_WIDTH, TOOLBAR_HEIGHT, UI_COLOR_HEADER);
     
-    // Bug icon (simple text representation)
-    ui_draw_text(BUG_ICON_X + 2, BUG_ICON_Y + 2, "[?]", UI_COLOR_TEXT);
+    // Bug icon
+    draw_bug_icon(BUG_ICON_X, BUG_ICON_Y, ICON_SIZE, UI_COLOR_TEXT);
 }
 
 // Scrollbar dimensions
