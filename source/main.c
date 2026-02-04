@@ -175,7 +175,7 @@ int main(int argc, char *argv[]) {
                 } else if (result == SETTINGS_CANCELLED) {
                     if (config_is_valid(&config)) {
                         bottom_set_mode(BOTTOM_MODE_DEFAULT);
-                        currentState = STATE_PLATFORMS;
+                        currentState = previousState;
                     } else {
                         bottom_log("Configuration not valid. Please complete all fields.");
                     }
