@@ -13,6 +13,7 @@
 #include "config.h"
 #include "api.h"
 #include "ui.h"
+#include "browser.h"
 #include "screens/settings.h"
 #include "screens/platforms.h"
 #include "screens/roms.h"
@@ -25,7 +26,8 @@ typedef enum {
     STATE_SETTINGS,
     STATE_PLATFORMS,
     STATE_ROMS,
-    STATE_ROM_DETAIL
+    STATE_ROM_DETAIL,
+    STATE_SELECT_ROM_FOLDER  // Folder browser for ROM download
 } AppState;
 
 static AppState currentState = STATE_LOADING;
@@ -39,6 +41,7 @@ static int platformCount = 0;
 static int selectedPlatformIndex = 0;
 static RomDetail *romDetail = NULL;
 static int selectedRomIndex = 0;
+static char currentPlatformSlug[CONFIG_MAX_SLUG_LEN];  // For folder mapping
 
 // Render target (needed for loading screen)
 static C3D_RenderTarget *topScreen = NULL;
@@ -144,6 +147,29 @@ int main(int argc, char *argv[]) {
             currentState = STATE_SETTINGS;
         }
         
+        // Handle download ROM from detail screen
+        if (bottomAction == BOTTOM_ACTION_DOWNLOAD_ROM && currentState == STATE_ROM_DETAIL && romDetail) {
+            // Check if we have a folder mapping for this platform
+            const char *folderName = config_get_platform_folder(currentPlatformSlug);
+            if (folderName && folderName[0]) {
+                // We have a mapping - download directly
+                char destPath[512];
+                snprintf(destPath, sizeof(destPath), "%s/%s/%s", 
+                        config.romFolder, folderName, romDetail->fileName);
+                show_loading("Downloading ROM...");
+                bottom_log("Downloading to: %s", destPath);
+                if (api_download_rom(romDetail->id, destPath)) {
+                    bottom_log("Download complete!");
+                } else {
+                    bottom_log("Download failed!");
+                }
+            } else {
+                // No mapping - show folder browser
+                browser_init_rooted(config.romFolder, currentPlatformSlug);
+                currentState = STATE_SELECT_ROM_FOLDER;
+            }
+        }
+        
         // Handle state-specific input and updates
         switch (currentState) {
             case STATE_LOADING:
@@ -217,6 +243,10 @@ int main(int argc, char *argv[]) {
                         romDetail = api_get_rom_detail(romId);
                         if (romDetail) {
                             romdetail_set_data(romDetail);
+                            // Track platform slug for folder mapping
+                            snprintf(currentPlatformSlug, sizeof(currentPlatformSlug), "%s", 
+                                    platforms[selectedPlatformIndex].slug);
+                            bottom_set_mode(BOTTOM_MODE_ROM_DETAIL);
                             currentState = STATE_ROM_DETAIL;
                         } else {
                             bottom_log("Failed to fetch ROM details");
@@ -240,7 +270,37 @@ int main(int argc, char *argv[]) {
             case STATE_ROM_DETAIL: {
                 RomDetailResult result = romdetail_update(kDown);
                 if (result == ROMDETAIL_BACK) {
+                    bottom_set_mode(BOTTOM_MODE_DEFAULT);
                     currentState = STATE_ROMS;
+                }
+                break;
+            }
+            
+            case STATE_SELECT_ROM_FOLDER: {
+                bool selected = browser_update(kDown);
+                if (selected) {
+                    // User selected a folder - save mapping and download
+                    const char *folderName = browser_get_selected_folder_name();
+                    config_set_platform_folder(currentPlatformSlug, folderName);
+                    browser_exit();
+                    
+                    // Now download
+                    if (romDetail) {
+                        char destPath[512];
+                        snprintf(destPath, sizeof(destPath), "%s/%s/%s", 
+                                config.romFolder, folderName, romDetail->fileName);
+                        show_loading("Downloading ROM...");
+                        bottom_log("Downloading to: %s", destPath);
+                        if (api_download_rom(romDetail->id, destPath)) {
+                            bottom_log("Download complete!");
+                        } else {
+                            bottom_log("Download failed!");
+                        }
+                    }
+                    currentState = STATE_ROM_DETAIL;
+                } else if (browser_was_cancelled()) {
+                    browser_exit();
+                    currentState = STATE_ROM_DETAIL;
                 }
                 break;
             }
@@ -266,6 +326,9 @@ int main(int argc, char *argv[]) {
                 break;
             case STATE_ROM_DETAIL:
                 romdetail_draw();
+                break;
+            case STATE_SELECT_ROM_FOLDER:
+                browser_draw();
                 break;
         }
         

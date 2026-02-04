@@ -12,7 +12,8 @@
 // Bottom screen modes (matches app states that need custom UI)
 typedef enum {
     BOTTOM_MODE_DEFAULT,
-    BOTTOM_MODE_SETTINGS
+    BOTTOM_MODE_SETTINGS,
+    BOTTOM_MODE_ROM_DETAIL
 } BottomMode;
 
 // Bottom screen action results
@@ -20,7 +21,8 @@ typedef enum {
     BOTTOM_ACTION_NONE,
     BOTTOM_ACTION_SAVE_SETTINGS,
     BOTTOM_ACTION_CANCEL_SETTINGS,
-    BOTTOM_ACTION_OPEN_SETTINGS
+    BOTTOM_ACTION_OPEN_SETTINGS,
+    BOTTOM_ACTION_DOWNLOAD_ROM
 } BottomAction;
 
 // Initialize bottom screen module
@@ -30,7 +32,6 @@ void bottom_init(void);
 void bottom_exit(void);
 
 // Set the current mode (call when app state changes)
-// canCancel: for settings mode, whether cancel button should be shown
 void bottom_set_mode(BottomMode mode);
 void bottom_set_settings_mode(bool canCancel);
 

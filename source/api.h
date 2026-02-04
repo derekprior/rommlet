@@ -79,4 +79,8 @@ RomDetail *api_get_rom_detail(int romId);
 // Free ROM detail
 void api_free_rom_detail(RomDetail *detail);
 
+// Download a ROM file to the specified path
+// Returns true on success, false on failure
+bool api_download_rom(int romId, const char *destPath);
+
 #endif // API_H

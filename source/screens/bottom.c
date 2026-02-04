@@ -37,6 +37,7 @@ static int lastTouchY = -1;
 // Button press state for visual feedback
 static bool saveButtonPressed = false;
 static bool cancelButtonPressed = false;
+static bool downloadButtonPressed = false;
 static bool showCancelButton = false;  // Only show if config was valid before editing
 
 // Circular log buffer
@@ -107,6 +108,7 @@ void bottom_set_mode(BottomMode mode) {
     currentMode = mode;
     saveButtonPressed = false;
     cancelButtonPressed = false;
+    downloadButtonPressed = false;
     if (mode != BOTTOM_MODE_SETTINGS) {
         showCancelButton = false;
     }
@@ -116,6 +118,7 @@ void bottom_set_settings_mode(bool canCancel) {
     currentMode = BOTTOM_MODE_SETTINGS;
     saveButtonPressed = false;
     cancelButtonPressed = false;
+    downloadButtonPressed = false;
     showCancelButton = canCancel;
 }
 
@@ -161,6 +164,26 @@ BottomAction bottom_update(void) {
             }
             saveButtonPressed = false;
             cancelButtonPressed = false;
+        }
+    }
+    
+    // Handle ROM detail mode buttons
+    if (currentMode == BOTTOM_MODE_ROM_DETAIL && !showDebugModal) {
+        if (kDown & KEY_TOUCH) {
+            hidTouchRead(&touch);
+            if (touch_in_rect(touch.px, touch.py, BUTTON_X, SAVE_BUTTON_Y_SINGLE, BUTTON_WIDTH, BUTTON_HEIGHT)) {
+                downloadButtonPressed = true;
+            }
+        }
+        if (kHeld & KEY_TOUCH) {
+            hidTouchRead(&touch);
+            downloadButtonPressed = touch_in_rect(touch.px, touch.py, BUTTON_X, SAVE_BUTTON_Y_SINGLE, BUTTON_WIDTH, BUTTON_HEIGHT);
+        }
+        if (kUp & KEY_TOUCH) {
+            if (downloadButtonPressed) {
+                action = BOTTOM_ACTION_DOWNLOAD_ROM;
+            }
+            downloadButtonPressed = false;
         }
     }
     
@@ -422,6 +445,17 @@ static void draw_settings_screen(void) {
     }
 }
 
+static void draw_rom_detail_screen(void) {
+    // Background
+    ui_draw_rect(0, 0, SCREEN_BOTTOM_WIDTH, SCREEN_BOTTOM_HEIGHT, UI_COLOR_BG);
+    
+    // Toolbar at top with gear and bug icons
+    draw_toolbar();
+    
+    // Download button centered
+    draw_button(BUTTON_X, SAVE_BUTTON_Y_SINGLE, BUTTON_WIDTH, BUTTON_HEIGHT, "Download", downloadButtonPressed, false);
+}
+
 void bottom_draw(void) {
     C2D_SceneBegin(bottomTarget);
     C2D_TargetClear(bottomTarget, UI_COLOR_BG);
@@ -430,6 +464,8 @@ void bottom_draw(void) {
         draw_debug_modal();
     } else if (currentMode == BOTTOM_MODE_SETTINGS) {
         draw_settings_screen();
+    } else if (currentMode == BOTTOM_MODE_ROM_DETAIL) {
+        draw_rom_detail_screen();
     } else {
         draw_toolbar();
     }

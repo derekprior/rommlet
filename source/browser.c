@@ -22,12 +22,15 @@ typedef struct {
 
 static char currentPath[MAX_PATH_LEN];
 static char selectedPath[MAX_PATH_LEN];
+static char rootPath[MAX_PATH_LEN];  // If set, can't navigate above this
+static char defaultNewFolderName[MAX_NAME_LEN];  // Default name for new folder
 static DirEntry entries[MAX_ENTRIES];
 static int entryCount = 0;
 static int selectedIndex = 0;
 static int scrollOffset = 0;
 static bool cancelled = false;
 static bool folderSelected = false;
+static bool isRooted = false;
 
 static int compare_entries(const void *a, const void *b) {
     const DirEntry *ea = (const DirEntry *)a;
@@ -63,8 +66,12 @@ static void load_directory(const char *path) {
     while ((ent = readdir(dir)) != NULL && entryCount < MAX_ENTRIES) {
         // Skip hidden files and . entry
         if (ent->d_name[0] == '.') {
-            // Allow .. for going up
+            // Allow .. for going up (unless rooted and at root)
             if (strcmp(ent->d_name, "..") != 0) {
+                continue;
+            }
+            // Skip .. if we're at the root in rooted mode
+            if (isRooted && strcmp(currentPath, rootPath) == 0) {
                 continue;
             }
         }
@@ -100,12 +107,32 @@ void browser_init(const char *startPath) {
     cancelled = false;
     folderSelected = false;
     selectedPath[0] = '\0';
+    rootPath[0] = '\0';
+    defaultNewFolderName[0] = '\0';
+    isRooted = false;
     
     if (startPath && startPath[0]) {
         load_directory(startPath);
     } else {
         load_directory("sdmc:/");
     }
+}
+
+void browser_init_rooted(const char *root, const char *defaultNewFolder) {
+    cancelled = false;
+    folderSelected = false;
+    selectedPath[0] = '\0';
+    isRooted = true;
+    
+    snprintf(rootPath, sizeof(rootPath), "%s", root);
+    
+    if (defaultNewFolder && defaultNewFolder[0]) {
+        snprintf(defaultNewFolderName, sizeof(defaultNewFolderName), "%s", defaultNewFolder);
+    } else {
+        defaultNewFolderName[0] = '\0';
+    }
+    
+    load_directory(root);
 }
 
 void browser_exit(void) {
@@ -164,13 +191,17 @@ bool browser_update(u32 kDown) {
     // Enter directory
     if ((kDown & KEY_A) && entryCount > 0) {
         if (strcmp(entries[selectedIndex].name, "..") == 0) {
-            // Go up one level
-            char *lastSlash = strrchr(currentPath, '/');
-            if (lastSlash && lastSlash != currentPath) {
-                *lastSlash = '\0';
-                load_directory(currentPath);
-            } else if (strcmp(currentPath, "sdmc:") != 0) {
-                load_directory("sdmc:/");
+            // Go up one level - but respect root if rooted
+            if (isRooted && strcmp(currentPath, rootPath) == 0) {
+                // Already at root, can't go up
+            } else {
+                char *lastSlash = strrchr(currentPath, '/');
+                if (lastSlash && lastSlash != currentPath) {
+                    *lastSlash = '\0';
+                    load_directory(currentPath);
+                } else if (strcmp(currentPath, "sdmc:") != 0) {
+                    load_directory("sdmc:/");
+                }
             }
         } else {
             // Enter subdirectory
@@ -189,7 +220,13 @@ bool browser_update(u32 kDown) {
     
     // Create new folder
     if (kDown & KEY_Y) {
-        char newFolderName[MAX_NAME_LEN] = "";
+        char newFolderName[MAX_NAME_LEN];
+        // Use default folder name if set, otherwise empty
+        if (defaultNewFolderName[0]) {
+            snprintf(newFolderName, sizeof(newFolderName), "%s", defaultNewFolderName);
+        } else {
+            newFolderName[0] = '\0';
+        }
         if (ui_show_keyboard("New Folder Name", newFolderName, sizeof(newFolderName), false)) {
             if (newFolderName[0] != '\0') {
                 char newPath[PATH_BUFFER_LEN];
@@ -215,6 +252,15 @@ bool browser_was_cancelled(void) {
 }
 
 const char *browser_get_selected_path(void) {
+    return selectedPath;
+}
+
+const char *browser_get_selected_folder_name(void) {
+    // Return just the last component of the selected path
+    const char *lastSlash = strrchr(selectedPath, '/');
+    if (lastSlash) {
+        return lastSlash + 1;
+    }
     return selectedPath;
 }
 

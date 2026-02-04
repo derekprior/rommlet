@@ -398,3 +398,118 @@ RomDetail *api_get_rom_detail(int romId) {
 void api_free_rom_detail(RomDetail *detail) {
     if (detail) free(detail);
 }
+
+bool api_download_rom(int romId, const char *destPath) {
+    char url[MAX_URL_LEN];
+    snprintf(url, sizeof(url), "%s/api/roms/%d/content", baseUrl, romId);
+    
+    httpcContext context;
+    Result ret;
+    
+    if (debugLevel >= API_DEBUG_REQUESTS) {
+        printf("[DEBUG] GET %s\n", url);
+        printf("[DEBUG] Saving to: %s\n", destPath);
+    }
+    
+    ret = httpcOpenContext(&context, HTTPC_METHOD_GET, url, 1);
+    if (R_FAILED(ret)) {
+        printf("httpcOpenContext failed: %08lX\n", ret);
+        return false;
+    }
+    
+    // Set headers
+    httpcSetSSLOpt(&context, SSLCOPT_DisableVerify);
+    httpcSetKeepAlive(&context, HTTPC_KEEPALIVE_ENABLED);
+    httpcAddRequestHeaderField(&context, "User-Agent", "Rommlet/1.0");
+    
+    if (authHeader[0] != '\0') {
+        httpcAddRequestHeaderField(&context, "Authorization", authHeader);
+    }
+    
+    ret = httpcBeginRequest(&context);
+    if (R_FAILED(ret)) {
+        printf("httpcBeginRequest failed: %08lX\n", ret);
+        httpcCloseContext(&context);
+        return false;
+    }
+    
+    u32 status;
+    ret = httpcGetResponseStatusCode(&context, &status);
+    if (R_FAILED(ret)) {
+        printf("httpcGetResponseStatusCode failed: %08lX\n", ret);
+        httpcCloseContext(&context);
+        return false;
+    }
+    
+    if (debugLevel >= API_DEBUG_REQUESTS) {
+        printf("[DEBUG] Status: %lu\n", status);
+    }
+    
+    if (status != 200) {
+        printf("HTTP error: %lu\n", status);
+        httpcCloseContext(&context);
+        return false;
+    }
+    
+    // Open destination file
+    FILE *file = fopen(destPath, "wb");
+    if (!file) {
+        printf("Failed to open file for writing: %s\n", destPath);
+        httpcCloseContext(&context);
+        return false;
+    }
+    
+    // Download in chunks and write to file
+    #define DOWNLOAD_CHUNK_SIZE (64 * 1024)
+    u8 *buffer = malloc(DOWNLOAD_CHUNK_SIZE);
+    if (!buffer) {
+        printf("Failed to allocate download buffer\n");
+        fclose(file);
+        httpcCloseContext(&context);
+        return false;
+    }
+    
+    u32 totalDownloaded = 0;
+    bool success = true;
+    
+    while (true) {
+        u32 bytesRead = 0;
+        ret = httpcDownloadData(&context, buffer, DOWNLOAD_CHUNK_SIZE, &bytesRead);
+        
+        if (bytesRead > 0) {
+            size_t written = fwrite(buffer, 1, bytesRead, file);
+            if (written != bytesRead) {
+                printf("Failed to write to file\n");
+                success = false;
+                break;
+            }
+            totalDownloaded += bytesRead;
+        }
+        
+        if (ret == HTTPC_RESULTCODE_DOWNLOADPENDING) {
+            continue;
+        } else if (R_FAILED(ret)) {
+            printf("httpcDownloadData failed: %08lX\n", ret);
+            success = false;
+            break;
+        } else {
+            // Download complete
+            break;
+        }
+    }
+    
+    free(buffer);
+    fclose(file);
+    httpcCloseContext(&context);
+    
+    if (debugLevel >= API_DEBUG_REQUESTS) {
+        printf("[DEBUG] Downloaded %lu bytes\n", totalDownloaded);
+    }
+    
+    // If download failed, remove partial file
+    if (!success) {
+        remove(destPath);
+    }
+    
+    return success;
+}
