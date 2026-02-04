@@ -19,6 +19,7 @@ typedef enum {
 typedef enum {
     BOTTOM_ACTION_NONE,
     BOTTOM_ACTION_SAVE_SETTINGS,
+    BOTTOM_ACTION_CANCEL_SETTINGS,
     BOTTOM_ACTION_OPEN_SETTINGS
 } BottomAction;
 
@@ -29,7 +30,9 @@ void bottom_init(void);
 void bottom_exit(void);
 
 // Set the current mode (call when app state changes)
+// canCancel: for settings mode, whether cancel button should be shown
 void bottom_set_mode(BottomMode mode);
+void bottom_set_settings_mode(bool canCancel);
 
 // Update bottom screen (handle touch input)
 // Returns action if a button was pressed

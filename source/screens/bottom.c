@@ -36,6 +36,8 @@ static int lastTouchY = -1;
 
 // Button press state for visual feedback
 static bool saveButtonPressed = false;
+static bool cancelButtonPressed = false;
+static bool showCancelButton = false;  // Only show if config was valid before editing
 
 // Circular log buffer
 static char logBuffer[LOG_MAX_LINES][LOG_LINE_LENGTH];
@@ -53,16 +55,29 @@ static int visibleLines = 0;
 // Button dimensions for settings screen
 #define BUTTON_WIDTH 200
 #define BUTTON_HEIGHT 50
+#define BUTTON_SPACING 15
+// When cancel is shown, both buttons are vertically centered
+#define SAVE_BUTTON_Y_SINGLE ((SCREEN_BOTTOM_HEIGHT - BUTTON_HEIGHT) / 2)
+#define SAVE_BUTTON_Y_DUAL ((SCREEN_BOTTOM_HEIGHT - BUTTON_HEIGHT * 2 - BUTTON_SPACING) / 2)
+#define CANCEL_BUTTON_Y (SAVE_BUTTON_Y_DUAL + BUTTON_HEIGHT + BUTTON_SPACING)
 #define BUTTON_X ((SCREEN_BOTTOM_WIDTH - BUTTON_WIDTH) / 2)
-#define BUTTON_Y ((SCREEN_BOTTOM_HEIGHT - BUTTON_HEIGHT) / 2)
 
-// Button colors
-#define BUTTON_COLOR_TOP     C2D_Color32(0x5a, 0xa0, 0x5a, 0xFF)  // Green gradient top
-#define BUTTON_COLOR_BOTTOM  C2D_Color32(0x3a, 0x80, 0x3a, 0xFF)  // Green gradient bottom
-#define BUTTON_COLOR_PRESSED C2D_Color32(0x2a, 0x60, 0x2a, 0xFF)  // Darker when pressed
-#define BUTTON_SHADOW_COLOR  C2D_Color32(0x1a, 0x1a, 0x2e, 0x80)  // Semi-transparent shadow
-#define BUTTON_HIGHLIGHT     C2D_Color32(0x7a, 0xc0, 0x7a, 0xFF)  // Top highlight
-#define BUTTON_BORDER        C2D_Color32(0x2a, 0x50, 0x2a, 0xFF)  // Dark border
+// Primary button colors (green)
+#define BUTTON_COLOR_TOP     C2D_Color32(0x5a, 0xa0, 0x5a, 0xFF)
+#define BUTTON_COLOR_BOTTOM  C2D_Color32(0x3a, 0x80, 0x3a, 0xFF)
+#define BUTTON_COLOR_PRESSED C2D_Color32(0x2a, 0x60, 0x2a, 0xFF)
+#define BUTTON_HIGHLIGHT     C2D_Color32(0x7a, 0xc0, 0x7a, 0xFF)
+#define BUTTON_BORDER        C2D_Color32(0x2a, 0x50, 0x2a, 0xFF)
+
+// Secondary button colors (gray)
+#define BUTTON2_COLOR_TOP     C2D_Color32(0x6a, 0x6a, 0x70, 0xFF)
+#define BUTTON2_COLOR_BOTTOM  C2D_Color32(0x50, 0x50, 0x56, 0xFF)
+#define BUTTON2_COLOR_PRESSED C2D_Color32(0x40, 0x40, 0x46, 0xFF)
+#define BUTTON2_HIGHLIGHT     C2D_Color32(0x8a, 0x8a, 0x90, 0xFF)
+#define BUTTON2_BORDER        C2D_Color32(0x3a, 0x3a, 0x40, 0xFF)
+
+// Shared
+#define BUTTON_SHADOW_COLOR  C2D_Color32(0x1a, 0x1a, 0x2e, 0x80)
 
 void bottom_init(void) {
     bottomTarget = C2D_CreateScreenTarget(GFX_BOTTOM, GFX_LEFT);
@@ -71,6 +86,7 @@ void bottom_init(void) {
     logScrollOffset = 0;
     lastTouchY = -1;
     currentMode = BOTTOM_MODE_DEFAULT;
+    showCancelButton = false;
     saveButtonPressed = false;
     logHead = 0;
     logCount = 0;
@@ -90,6 +106,17 @@ void bottom_exit(void) {
 void bottom_set_mode(BottomMode mode) {
     currentMode = mode;
     saveButtonPressed = false;
+    cancelButtonPressed = false;
+    if (mode != BOTTOM_MODE_SETTINGS) {
+        showCancelButton = false;
+    }
+}
+
+void bottom_set_settings_mode(bool canCancel) {
+    currentMode = BOTTOM_MODE_SETTINGS;
+    saveButtonPressed = false;
+    cancelButtonPressed = false;
+    showCancelButton = canCancel;
 }
 
 static bool touch_in_rect(int tx, int ty, int x, int y, int w, int h) {
@@ -105,24 +132,35 @@ BottomAction bottom_update(void) {
     
     BottomAction action = BOTTOM_ACTION_NONE;
     
-    // Handle settings mode button
+    // Handle settings mode buttons
     if (currentMode == BOTTOM_MODE_SETTINGS && !showDebugModal) {
+        float saveButtonY = showCancelButton ? SAVE_BUTTON_Y_DUAL : SAVE_BUTTON_Y_SINGLE;
+        
         if (kDown & KEY_TOUCH) {
             hidTouchRead(&touch);
-            if (touch_in_rect(touch.px, touch.py, BUTTON_X, BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT)) {
+            if (touch_in_rect(touch.px, touch.py, BUTTON_X, saveButtonY, BUTTON_WIDTH, BUTTON_HEIGHT)) {
                 saveButtonPressed = true;
+            }
+            if (showCancelButton && touch_in_rect(touch.px, touch.py, BUTTON_X, CANCEL_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT)) {
+                cancelButtonPressed = true;
             }
         }
         if (kHeld & KEY_TOUCH) {
             hidTouchRead(&touch);
-            saveButtonPressed = touch_in_rect(touch.px, touch.py, BUTTON_X, BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT);
+            saveButtonPressed = touch_in_rect(touch.px, touch.py, BUTTON_X, saveButtonY, BUTTON_WIDTH, BUTTON_HEIGHT);
+            if (showCancelButton) {
+                cancelButtonPressed = touch_in_rect(touch.px, touch.py, BUTTON_X, CANCEL_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT);
+            }
         }
         if (kUp & KEY_TOUCH) {
             if (saveButtonPressed) {
-                // Button was pressed and finger lifted - trigger action
                 action = BOTTOM_ACTION_SAVE_SETTINGS;
             }
+            if (cancelButtonPressed) {
+                action = BOTTOM_ACTION_CANCEL_SETTINGS;
+            }
             saveButtonPressed = false;
+            cancelButtonPressed = false;
         }
     }
     
@@ -334,7 +372,7 @@ static void draw_debug_modal(void) {
 }
 
 // Draw a 3DS-style button with shadow and gradient effect
-static void draw_button(float x, float y, float w, float h, const char *text, bool pressed) {
+static void draw_button(float x, float y, float w, float h, const char *text, bool pressed, bool secondary) {
     // Shadow (offset down and right)
     if (!pressed) {
         ui_draw_rect(x + 3, y + 3, w, h, BUTTON_SHADOW_COLOR);
@@ -344,19 +382,26 @@ static void draw_button(float x, float y, float w, float h, const char *text, bo
     float bx = pressed ? x + 1 : x;
     float by = pressed ? y + 1 : y;
     
+    // Colors based on style
+    u32 colorTop = secondary ? BUTTON2_COLOR_TOP : BUTTON_COLOR_TOP;
+    u32 colorBottom = secondary ? BUTTON2_COLOR_BOTTOM : BUTTON_COLOR_BOTTOM;
+    u32 colorPressed = secondary ? BUTTON2_COLOR_PRESSED : BUTTON_COLOR_PRESSED;
+    u32 colorHighlight = secondary ? BUTTON2_HIGHLIGHT : BUTTON_HIGHLIGHT;
+    u32 colorBorder = secondary ? BUTTON2_BORDER : BUTTON_BORDER;
+    
     // Dark border
-    ui_draw_rect(bx - 2, by - 2, w + 4, h + 4, BUTTON_BORDER);
+    ui_draw_rect(bx - 2, by - 2, w + 4, h + 4, colorBorder);
     
     // Main button body (use pressed color or gradient colors)
     if (pressed) {
-        ui_draw_rect(bx, by, w, h, BUTTON_COLOR_PRESSED);
+        ui_draw_rect(bx, by, w, h, colorPressed);
     } else {
         // Top half (lighter)
-        ui_draw_rect(bx, by, w, h / 2, BUTTON_COLOR_TOP);
+        ui_draw_rect(bx, by, w, h / 2, colorTop);
         // Bottom half (darker)
-        ui_draw_rect(bx, by + h / 2, w, h / 2, BUTTON_COLOR_BOTTOM);
+        ui_draw_rect(bx, by + h / 2, w, h / 2, colorBottom);
         // Top highlight line
-        ui_draw_rect(bx, by, w, 2, BUTTON_HIGHLIGHT);
+        ui_draw_rect(bx, by, w, 2, colorHighlight);
     }
     
     // Center the text
@@ -374,8 +419,13 @@ static void draw_settings_screen(void) {
     ui_draw_rect(0, 0, SCREEN_BOTTOM_WIDTH, TOOLBAR_HEIGHT, UI_COLOR_HEADER);
     draw_bug_icon(BUG_ICON_X, BUG_ICON_Y, ICON_SIZE, UI_COLOR_TEXT);
     
-    // Save button centered
-    draw_button(BUTTON_X, BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT, "Save and Connect", saveButtonPressed);
+    // Buttons - position depends on whether cancel is shown
+    if (showCancelButton) {
+        draw_button(BUTTON_X, SAVE_BUTTON_Y_DUAL, BUTTON_WIDTH, BUTTON_HEIGHT, "Save and Connect", saveButtonPressed, false);
+        draw_button(BUTTON_X, CANCEL_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT, "Cancel", cancelButtonPressed, true);
+    } else {
+        draw_button(BUTTON_X, SAVE_BUTTON_Y_SINGLE, BUTTON_WIDTH, BUTTON_HEIGHT, "Save and Connect", saveButtonPressed, false);
+    }
 }
 
 void bottom_draw(void) {

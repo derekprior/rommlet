@@ -113,9 +113,15 @@ int main(int argc, char *argv[]) {
             }
         }
         
+        // Handle cancel from bottom screen button
+        if (bottomAction == BOTTOM_ACTION_CANCEL_SETTINGS && currentState == STATE_SETTINGS) {
+            bottom_set_mode(BOTTOM_MODE_DEFAULT);
+            currentState = STATE_PLATFORMS;
+        }
+        
         // Handle opening settings from toolbar
         if (bottomAction == BOTTOM_ACTION_OPEN_SETTINGS && currentState != STATE_SETTINGS) {
-            bottom_set_mode(BOTTOM_MODE_SETTINGS);
+            bottom_set_settings_mode(config_is_valid(&config));
             currentState = STATE_SETTINGS;
         }
         
@@ -125,7 +131,7 @@ int main(int argc, char *argv[]) {
                 // Transition to appropriate screen
                 if (needsConfigSetup) {
                     currentState = STATE_SETTINGS;
-                    bottom_set_mode(BOTTOM_MODE_SETTINGS);
+                    bottom_set_settings_mode(false);  // No cancel on first run
                 } else {
                     currentState = STATE_PLATFORMS;
                     bottom_set_mode(BOTTOM_MODE_DEFAULT);
@@ -191,8 +197,7 @@ int main(int argc, char *argv[]) {
                         bottom_log("Failed to fetch ROMs");
                     }
                 } else if (result == PLATFORMS_SETTINGS) {
-                    bottom_set_mode(BOTTOM_MODE_SETTINGS);
-                    currentState = STATE_SETTINGS;
+                    bottom_set_settings_mode(config_is_valid(&config));
                     currentState = STATE_SETTINGS;
                 } else if (result == PLATFORMS_REFRESH) {
                     // Refresh platforms
