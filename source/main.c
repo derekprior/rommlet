@@ -40,8 +40,22 @@ static int selectedPlatformIndex = 0;
 static RomDetail *romDetail = NULL;
 static int selectedRomIndex = 0;
 
+// Render target (needed for loading screen)
+static C3D_RenderTarget *topScreen = NULL;
+
+// Show loading indicator and render a frame
+static void show_loading(const char *message) {
+    C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
+    C2D_TargetClear(topScreen, UI_COLOR_BG);
+    C2D_SceneBegin(topScreen);
+    ui_draw_loading(message);
+    bottom_draw();
+    C3D_FrameEnd(0);
+}
+
 // Helper to fetch platforms from API
 static void fetch_platforms(void) {
+    show_loading("Fetching platforms...");
     bottom_log("Fetching platforms...");
     if (platforms) {
         api_free_platforms(platforms, platformCount);
@@ -64,7 +78,7 @@ int main(int argc, char *argv[]) {
     C2D_Prepare();
     
     // Initialize render targets
-    C3D_RenderTarget *topScreen = C2D_CreateScreenTarget(GFX_TOP, GFX_LEFT);
+    topScreen = C2D_CreateScreenTarget(GFX_TOP, GFX_LEFT);
     
     // Initialize subsystems
     romfsInit();
@@ -168,6 +182,7 @@ int main(int argc, char *argv[]) {
                 PlatformsResult result = platforms_update(kDown, &selectedPlatformIndex);
                 if (result == PLATFORMS_SELECTED && platforms && selectedPlatformIndex < platformCount) {
                     // Fetch ROMs for selected platform
+                    show_loading("Fetching ROMs...");
                     bottom_log("Fetching ROMs for %s...", platforms[selectedPlatformIndex].displayName);
                     roms_clear();
                     int romCount, romTotal;
@@ -193,6 +208,7 @@ int main(int argc, char *argv[]) {
                     // Fetch ROM details
                     int romId = roms_get_id_at(selectedRomIndex);
                     if (romId >= 0) {
+                        show_loading("Loading ROM details...");
                         bottom_log("Fetching ROM details for ID %d...", romId);
                         if (romDetail) {
                             api_free_rom_detail(romDetail);
@@ -208,6 +224,7 @@ int main(int argc, char *argv[]) {
                     }
                 } else if (result == ROMS_LOAD_MORE) {
                     // Fetch next page synchronously
+                    show_loading("Loading more ROMs...");
                     int offset = roms_get_count();
                     int newCount, newTotal;
                     bottom_log("Loading more ROMs (offset %d)...", offset);

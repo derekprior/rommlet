@@ -63,6 +63,18 @@ void ui_draw_header_bottom(const char *title) {
     ui_draw_text_scaled(UI_PADDING, 5, title, UI_COLOR_TEXT, 0.7f);
 }
 
+void ui_draw_loading(const char *message) {
+    // Semi-transparent overlay
+    ui_draw_rect(0, 0, SCREEN_TOP_WIDTH, SCREEN_TOP_HEIGHT, C2D_Color32(0x1a, 0x1a, 0x2e, 0xE0));
+    
+    // Center the message
+    float textWidth = ui_get_text_width(message);
+    float x = (SCREEN_TOP_WIDTH - textWidth) / 2;
+    float y = (SCREEN_TOP_HEIGHT - UI_LINE_HEIGHT) / 2;
+    
+    ui_draw_text(x, y, message, UI_COLOR_TEXT);
+}
+
 float ui_get_text_width(const char *text) {
     C2D_TextBufClear(textBuf);
     
