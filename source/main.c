@@ -148,6 +148,12 @@ int main(int argc, char *argv[]) {
                     } else {
                         printf("Failed to fetch platforms\n");
                     }
+                } else if (result == SETTINGS_CANCELLED) {
+                    if (config_is_valid(&config)) {
+                        currentState = STATE_PLATFORMS;
+                    } else {
+                        printf("Configuration not valid. Please complete all fields.\n");
+                    }
                 }
                 break;
             }
