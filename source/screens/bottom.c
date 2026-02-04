@@ -42,6 +42,11 @@ static int logCount = 0; // Number of lines stored
 // Render target for bottom screen
 static C3D_RenderTarget *bottomTarget = NULL;
 
+// Log content area bounds (used for scrollbar calculations)
+static float logAreaTop = 0;
+static float logAreaHeight = 0;
+static int visibleLines = 0;
+
 // Button dimensions for settings screen
 #define BUTTON_WIDTH 200
 #define BUTTON_HEIGHT 50
@@ -243,11 +248,6 @@ static void draw_toolbar(void) {
 #define SCROLLBAR_TRACK_COLOR C2D_Color32(0x3a, 0x3a, 0x50, 0xFF)
 #define SCROLLBAR_THUMB_COLOR C2D_Color32(0x6a, 0x6a, 0x90, 0xFF)
 
-// Log content area bounds (used for scrollbar calculations)
-static float logAreaTop = 0;
-static float logAreaHeight = 0;
-static int visibleLines = 0;
-
 static void draw_debug_modal(void) {
     // Full background
     ui_draw_rect(0, 0, SCREEN_BOTTOM_WIDTH, SCREEN_BOTTOM_HEIGHT, UI_COLOR_BG);
@@ -268,8 +268,6 @@ static void draw_debug_modal(void) {
     logAreaTop = UI_HEADER_HEIGHT + UI_PADDING + UI_LINE_HEIGHT + UI_PADDING;
     logAreaHeight = SCREEN_BOTTOM_HEIGHT - logAreaTop - UI_PADDING;
     visibleLines = (int)(logAreaHeight / UI_LINE_HEIGHT);
-    
-    float contentWidth = SCREEN_BOTTOM_WIDTH - UI_PADDING - SCROLLBAR_WIDTH - UI_PADDING;
     
     // Draw log lines
     float y = logAreaTop;
