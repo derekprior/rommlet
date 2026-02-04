@@ -313,10 +313,8 @@ static void draw_toolbar(void) {
     // Header bar
     ui_draw_rect(0, 0, SCREEN_BOTTOM_WIDTH, TOOLBAR_HEIGHT, UI_COLOR_HEADER);
     
-    // Gear icon (settings) - don't show if already on settings
-    if (currentMode != BOTTOM_MODE_SETTINGS) {
-        draw_gear_icon(GEAR_ICON_X, GEAR_ICON_Y, ICON_SIZE, UI_COLOR_TEXT);
-    }
+    // Gear icon (settings)
+    draw_gear_icon(GEAR_ICON_X, GEAR_ICON_Y, ICON_SIZE, UI_COLOR_TEXT);
     
     // Bug icon (debug)
     draw_bug_icon(BUG_ICON_X, BUG_ICON_Y, ICON_SIZE, UI_COLOR_TEXT);
