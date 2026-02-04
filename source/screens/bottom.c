@@ -116,11 +116,8 @@ BottomAction bottom_update(void) {
         }
         if (kUp & KEY_TOUCH) {
             if (saveButtonPressed) {
-                // Check if still over button on release
-                hidTouchRead(&touch);
-                if (touch_in_rect(touch.px, touch.py, BUTTON_X, BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT)) {
-                    action = BOTTOM_ACTION_SAVE_SETTINGS;
-                }
+                // Button was pressed and finger lifted - trigger action
+                action = BOTTOM_ACTION_SAVE_SETTINGS;
             }
             saveButtonPressed = false;
         }
