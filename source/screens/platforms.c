@@ -83,7 +83,7 @@ PlatformsResult platforms_update(u32 kDown, int *outSelectedIndex) {
     
     // Select platform
     if (kDown & KEY_A) {
-        *outSelectedIndex = selectedIndex;
+        if (outSelectedIndex) *outSelectedIndex = selectedIndex;
         return PLATFORMS_SELECTED;
     }
     
