@@ -18,7 +18,8 @@ typedef enum {
 // Bottom screen action results
 typedef enum {
     BOTTOM_ACTION_NONE,
-    BOTTOM_ACTION_SAVE_SETTINGS
+    BOTTOM_ACTION_SAVE_SETTINGS,
+    BOTTOM_ACTION_OPEN_SETTINGS
 } BottomAction;
 
 // Initialize bottom screen module

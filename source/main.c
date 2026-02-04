@@ -113,6 +113,12 @@ int main(int argc, char *argv[]) {
             }
         }
         
+        // Handle opening settings from toolbar
+        if (bottomAction == BOTTOM_ACTION_OPEN_SETTINGS && currentState != STATE_SETTINGS) {
+            bottom_set_mode(BOTTOM_MODE_SETTINGS);
+            currentState = STATE_SETTINGS;
+        }
+        
         // Handle state-specific input and updates
         switch (currentState) {
             case STATE_LOADING:

@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
+#include <math.h>
 
 // Log buffer configuration
 #define LOG_MAX_LINES 100
@@ -17,9 +18,11 @@
 #define ICON_SIZE 20
 #define ICON_PADDING 4
 
-// Touch zones
+// Touch zones - bug icon on right, gear icon next to it
 #define BUG_ICON_X (SCREEN_BOTTOM_WIDTH - ICON_SIZE - ICON_PADDING)
 #define BUG_ICON_Y (ICON_PADDING)
+#define GEAR_ICON_X (SCREEN_BOTTOM_WIDTH - (ICON_SIZE + ICON_PADDING) * 2)
+#define GEAR_ICON_Y (ICON_PADDING)
 #define CLOSE_ICON_X (SCREEN_BOTTOM_WIDTH - ICON_SIZE - ICON_PADDING)
 #define CLOSE_ICON_Y (ICON_PADDING)
 
@@ -142,6 +145,11 @@ BottomAction bottom_update(void) {
                 lastTouchY = -1;
                 return action;
             }
+            // Check for gear icon tap (only if not already on settings)
+            if (currentMode != BOTTOM_MODE_SETTINGS &&
+                touch_in_rect(touch.px, touch.py, GEAR_ICON_X, GEAR_ICON_Y, ICON_SIZE, ICON_SIZE)) {
+                return BOTTOM_ACTION_OPEN_SETTINGS;
+            }
         }
     }
     
@@ -232,11 +240,47 @@ static void draw_bug_icon(float x, float y, float size, u32 color) {
     C2D_DrawRectSolid(cx + 2*scale, cy + 5*scale, 0, 3*scale, 1*scale, color);
 }
 
+// Draw a gear/settings icon at the given position
+static void draw_gear_icon(float x, float y, float size, u32 color) {
+    float cx = x + size / 2;
+    float cy = y + size / 2;
+    float scale = size / 20.0f;
+    
+    // Center circle (the hole)
+    float innerR = 3 * scale;
+    float outerR = 6 * scale;
+    
+    // Draw outer gear body
+    C2D_DrawCircleSolid(cx, cy, 0, outerR, color);
+    
+    // Draw teeth (8 teeth around the gear)
+    float toothLen = 3 * scale;
+    float toothWidth = 2.5 * scale;
+    for (int i = 0; i < 8; i++) {
+        float angle = i * 3.14159f / 4.0f;
+        float tx = cx + (outerR - 1) * cosf(angle) - toothWidth/2;
+        float ty = cy + (outerR - 1) * sinf(angle) - toothWidth/2;
+        
+        // Draw tooth as small rectangle rotated (approximate with positioned rect)
+        float toothCx = cx + (outerR + toothLen/2 - 2) * cosf(angle);
+        float toothCy = cy + (outerR + toothLen/2 - 2) * sinf(angle);
+        C2D_DrawRectSolid(toothCx - toothWidth/2, toothCy - toothWidth/2, 0, toothWidth, toothWidth, color);
+    }
+    
+    // Draw inner circle (hole) with background color
+    C2D_DrawCircleSolid(cx, cy, 0, innerR, UI_COLOR_HEADER);
+}
+
 static void draw_toolbar(void) {
     // Header bar
     ui_draw_rect(0, 0, SCREEN_BOTTOM_WIDTH, TOOLBAR_HEIGHT, UI_COLOR_HEADER);
     
-    // Bug icon
+    // Gear icon (settings) - don't show if already on settings
+    if (currentMode != BOTTOM_MODE_SETTINGS) {
+        draw_gear_icon(GEAR_ICON_X, GEAR_ICON_Y, ICON_SIZE, UI_COLOR_TEXT);
+    }
+    
+    // Bug icon (debug)
     draw_bug_icon(BUG_ICON_X, BUG_ICON_Y, ICON_SIZE, UI_COLOR_TEXT);
 }
 
