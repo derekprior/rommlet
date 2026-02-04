@@ -12,7 +12,7 @@
 
 #define MAX_ENTRIES 256
 #define MAX_PATH_LEN 256
-#define MAX_NAME_LEN 128
+#define MAX_NAME_LEN 256
 #define PATH_BUFFER_LEN 512  // Extra space for path concatenation
 
 typedef struct {
