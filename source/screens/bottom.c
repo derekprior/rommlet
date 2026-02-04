@@ -296,10 +296,8 @@ static void draw_gear_icon(float x, float y, float size, u32 color) {
     float toothWidth = 2.5 * scale;
     for (int i = 0; i < 8; i++) {
         float angle = i * 3.14159f / 4.0f;
-        float tx = cx + (outerR - 1) * cosf(angle) - toothWidth/2;
-        float ty = cy + (outerR - 1) * sinf(angle) - toothWidth/2;
         
-        // Draw tooth as small rectangle rotated (approximate with positioned rect)
+        // Draw tooth as small rectangle at gear edge
         float toothCx = cx + (outerR + toothLen/2 - 2) * cosf(angle);
         float toothCy = cy + (outerR + toothLen/2 - 2) * sinf(angle);
         C2D_DrawRectSolid(toothCx - toothWidth/2, toothCy - toothWidth/2, 0, toothWidth, toothWidth, color);
