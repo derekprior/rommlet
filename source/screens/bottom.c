@@ -26,9 +26,13 @@
 static bool showDebugModal = false;
 static int debugLevel = 0;  // 0=off, 1=requests, 2=bodies
 static int logScrollOffset = 0;
+static BottomMode currentMode = BOTTOM_MODE_DEFAULT;
 
 // Touch scroll tracking
 static int lastTouchY = -1;
+
+// Button press state for visual feedback
+static bool saveButtonPressed = false;
 
 // Circular log buffer
 static char logBuffer[LOG_MAX_LINES][LOG_LINE_LENGTH];
@@ -38,12 +42,28 @@ static int logCount = 0; // Number of lines stored
 // Render target for bottom screen
 static C3D_RenderTarget *bottomTarget = NULL;
 
+// Button dimensions for settings screen
+#define BUTTON_WIDTH 200
+#define BUTTON_HEIGHT 50
+#define BUTTON_X ((SCREEN_BOTTOM_WIDTH - BUTTON_WIDTH) / 2)
+#define BUTTON_Y ((SCREEN_BOTTOM_HEIGHT - BUTTON_HEIGHT) / 2)
+
+// Button colors
+#define BUTTON_COLOR_TOP     C2D_Color32(0x5a, 0xa0, 0x5a, 0xFF)  // Green gradient top
+#define BUTTON_COLOR_BOTTOM  C2D_Color32(0x3a, 0x80, 0x3a, 0xFF)  // Green gradient bottom
+#define BUTTON_COLOR_PRESSED C2D_Color32(0x2a, 0x60, 0x2a, 0xFF)  // Darker when pressed
+#define BUTTON_SHADOW_COLOR  C2D_Color32(0x1a, 0x1a, 0x2e, 0x80)  // Semi-transparent shadow
+#define BUTTON_HIGHLIGHT     C2D_Color32(0x7a, 0xc0, 0x7a, 0xFF)  // Top highlight
+#define BUTTON_BORDER        C2D_Color32(0x2a, 0x50, 0x2a, 0xFF)  // Dark border
+
 void bottom_init(void) {
     bottomTarget = C2D_CreateScreenTarget(GFX_BOTTOM, GFX_LEFT);
     showDebugModal = false;
     debugLevel = 0;
     logScrollOffset = 0;
     lastTouchY = -1;
+    currentMode = BOTTOM_MODE_DEFAULT;
+    saveButtonPressed = false;
     logHead = 0;
     logCount = 0;
     
@@ -59,15 +79,47 @@ void bottom_exit(void) {
     // Render target is cleaned up by citro2d
 }
 
+void bottom_set_mode(BottomMode mode) {
+    currentMode = mode;
+    saveButtonPressed = false;
+}
+
 static bool touch_in_rect(int tx, int ty, int x, int y, int w, int h) {
     return tx >= x && tx < x + w && ty >= y && ty < y + h;
 }
 
-bool bottom_update(void) {
+BottomAction bottom_update(void) {
     // Handle touch input
     touchPosition touch;
     u32 kDown = hidKeysDown();
     u32 kHeld = hidKeysHeld();
+    u32 kUp = hidKeysUp();
+    
+    BottomAction action = BOTTOM_ACTION_NONE;
+    
+    // Handle settings mode button
+    if (currentMode == BOTTOM_MODE_SETTINGS && !showDebugModal) {
+        if (kDown & KEY_TOUCH) {
+            hidTouchRead(&touch);
+            if (touch_in_rect(touch.px, touch.py, BUTTON_X, BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT)) {
+                saveButtonPressed = true;
+            }
+        }
+        if (kHeld & KEY_TOUCH) {
+            hidTouchRead(&touch);
+            saveButtonPressed = touch_in_rect(touch.px, touch.py, BUTTON_X, BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT);
+        }
+        if (kUp & KEY_TOUCH) {
+            if (saveButtonPressed) {
+                // Check if still over button on release
+                hidTouchRead(&touch);
+                if (touch_in_rect(touch.px, touch.py, BUTTON_X, BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT)) {
+                    action = BOTTOM_ACTION_SAVE_SETTINGS;
+                }
+            }
+            saveButtonPressed = false;
+        }
+    }
     
     if (kDown & KEY_TOUCH) {
         hidTouchRead(&touch);
@@ -78,7 +130,7 @@ bool bottom_update(void) {
             if (touch_in_rect(touch.px, touch.py, CLOSE_ICON_X, CLOSE_ICON_Y, ICON_SIZE, ICON_SIZE)) {
                 showDebugModal = false;
                 lastTouchY = -1;
-                return true;
+                return action;
             }
         } else {
             // Check for bug icon tap
@@ -86,7 +138,7 @@ bool bottom_update(void) {
                 showDebugModal = true;
                 logScrollOffset = 0;
                 lastTouchY = -1;
-                return true;
+                return action;
             }
         }
     }
@@ -114,7 +166,7 @@ bool bottom_update(void) {
                 lastTouchY = touch.py;
             }
         }
-    } else {
+    } else if (!saveButtonPressed) {
         lastTouchY = -1;
     }
     
@@ -124,13 +176,13 @@ bool bottom_update(void) {
             debugLevel = (debugLevel + 1) % 3;
             bottom_log("Debug level: %s", 
                 debugLevel == 0 ? "OFF" : (debugLevel == 1 ? "REQUESTS" : "BODIES"));
-            return true;
+            return action;
         }
         if (kDown & KEY_ZL) {
             debugLevel = (debugLevel - 1 + 3) % 3;
             bottom_log("Debug level: %s",
                 debugLevel == 0 ? "OFF" : (debugLevel == 1 ? "REQUESTS" : "BODIES"));
-            return true;
+            return action;
         }
         
         // Scroll log with C-stick (New 3DS only)
@@ -145,7 +197,7 @@ bool bottom_update(void) {
         }
     }
     
-    return false;
+    return action;
 }
 
 // Draw a simple bug icon at the given position
@@ -242,12 +294,59 @@ static void draw_debug_modal(void) {
     }
 }
 
+// Draw a 3DS-style button with shadow and gradient effect
+static void draw_button(float x, float y, float w, float h, const char *text, bool pressed) {
+    // Shadow (offset down and right)
+    if (!pressed) {
+        ui_draw_rect(x + 3, y + 3, w, h, BUTTON_SHADOW_COLOR);
+    }
+    
+    // Button position shifts down when pressed
+    float bx = pressed ? x + 1 : x;
+    float by = pressed ? y + 1 : y;
+    
+    // Dark border
+    ui_draw_rect(bx - 2, by - 2, w + 4, h + 4, BUTTON_BORDER);
+    
+    // Main button body (use pressed color or gradient colors)
+    if (pressed) {
+        ui_draw_rect(bx, by, w, h, BUTTON_COLOR_PRESSED);
+    } else {
+        // Top half (lighter)
+        ui_draw_rect(bx, by, w, h / 2, BUTTON_COLOR_TOP);
+        // Bottom half (darker)
+        ui_draw_rect(bx, by + h / 2, w, h / 2, BUTTON_COLOR_BOTTOM);
+        // Top highlight line
+        ui_draw_rect(bx, by, w, 2, BUTTON_HIGHLIGHT);
+    }
+    
+    // Center the text
+    float textWidth = ui_get_text_width(text);
+    float textX = bx + (w - textWidth) / 2;
+    float textY = by + (h - 16) / 2;  // Approximate text height
+    ui_draw_text(textX, textY, text, UI_COLOR_TEXT);
+}
+
+static void draw_settings_screen(void) {
+    // Background
+    ui_draw_rect(0, 0, SCREEN_BOTTOM_WIDTH, SCREEN_BOTTOM_HEIGHT, UI_COLOR_BG);
+    
+    // Toolbar at top with bug icon
+    ui_draw_rect(0, 0, SCREEN_BOTTOM_WIDTH, TOOLBAR_HEIGHT, UI_COLOR_HEADER);
+    draw_bug_icon(BUG_ICON_X, BUG_ICON_Y, ICON_SIZE, UI_COLOR_TEXT);
+    
+    // Save button centered
+    draw_button(BUTTON_X, BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT, "Save and Connect", saveButtonPressed);
+}
+
 void bottom_draw(void) {
     C2D_SceneBegin(bottomTarget);
     C2D_TargetClear(bottomTarget, UI_COLOR_BG);
     
     if (showDebugModal) {
         draw_debug_modal();
+    } else if (currentMode == BOTTOM_MODE_SETTINGS) {
+        draw_settings_screen();
     } else {
         draw_toolbar();
     }

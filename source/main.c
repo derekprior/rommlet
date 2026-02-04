@@ -80,7 +80,7 @@ int main(int argc, char *argv[]) {
         u32 kDown = hidKeysDown();
         
         // Let bottom screen handle touch and ZL/ZR first
-        bool bottomHandled = bottom_update();
+        BottomAction bottomAction = bottom_update();
         
         // Global exit
         if (kDown & KEY_START) {
@@ -90,15 +90,39 @@ int main(int argc, char *argv[]) {
         // Sync debug level from bottom screen to API
         api_set_debug_level(bottom_get_debug_level());
         
-        // Handle state-specific input and updates (skip if bottom handled input)
-        if (!bottomHandled) {
+        // Handle bottom screen actions
+        if (bottomAction == BOTTOM_ACTION_SAVE_SETTINGS && currentState == STATE_SETTINGS) {
+            config_save(&config);
+            api_set_auth(config.username, config.password);
+            api_set_base_url(config.serverUrl);
+            bottom_set_mode(BOTTOM_MODE_DEFAULT);
+            currentState = STATE_PLATFORMS;
+            
+            // Fetch platforms
+            bottom_log("Fetching platforms...");
+            if (platforms) {
+                api_free_platforms(platforms, platformCount);
+                platforms = NULL;
+            }
+            platforms = api_get_platforms(&platformCount);
+            if (platforms) {
+                bottom_log("Found %d platforms", platformCount);
+                platforms_set_data(platforms, platformCount);
+            } else {
+                bottom_log("Failed to fetch platforms");
+            }
+        }
+        
+        // Handle state-specific input and updates
         switch (currentState) {
             case STATE_LOADING:
                 // Transition to appropriate screen
                 if (needsConfigSetup) {
                     currentState = STATE_SETTINGS;
+                    bottom_set_mode(BOTTOM_MODE_SETTINGS);
                 } else {
                     currentState = STATE_PLATFORMS;
+                    bottom_set_mode(BOTTOM_MODE_DEFAULT);
                     
                     // Fetch platforms on startup
                     bottom_log("Fetching platforms...");
@@ -118,10 +142,11 @@ int main(int argc, char *argv[]) {
                     config_save(&config);
                     api_set_auth(config.username, config.password);
                     api_set_base_url(config.serverUrl);
+                    bottom_set_mode(BOTTOM_MODE_DEFAULT);
                     currentState = STATE_PLATFORMS;
                     
                     // Fetch platforms
-                    printf("Fetching platforms...\n");
+                    bottom_log("Fetching platforms...");
                     if (platforms) {
                         api_free_platforms(platforms, platformCount);
                         platforms = NULL;
@@ -135,6 +160,7 @@ int main(int argc, char *argv[]) {
                     }
                 } else if (result == SETTINGS_CANCELLED) {
                     if (config_is_valid(&config)) {
+                        bottom_set_mode(BOTTOM_MODE_DEFAULT);
                         currentState = STATE_PLATFORMS;
                     } else {
                         bottom_log("Configuration not valid. Please complete all fields.");
@@ -159,6 +185,8 @@ int main(int argc, char *argv[]) {
                         bottom_log("Failed to fetch ROMs");
                     }
                 } else if (result == PLATFORMS_SETTINGS) {
+                    bottom_set_mode(BOTTOM_MODE_SETTINGS);
+                    currentState = STATE_SETTINGS;
                     currentState = STATE_SETTINGS;
                 } else if (result == PLATFORMS_REFRESH) {
                     // Refresh platforms
@@ -219,7 +247,6 @@ int main(int argc, char *argv[]) {
                 break;
             }
         }
-        } // end if (!bottomHandled)
         
         // Render
         C3D_FrameBegin(C3D_FRAME_SYNCDRAW);

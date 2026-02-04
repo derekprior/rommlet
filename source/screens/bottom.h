@@ -9,15 +9,30 @@
 #include <citro2d.h>
 #include <stdbool.h>
 
+// Bottom screen modes (matches app states that need custom UI)
+typedef enum {
+    BOTTOM_MODE_DEFAULT,
+    BOTTOM_MODE_SETTINGS
+} BottomMode;
+
+// Bottom screen action results
+typedef enum {
+    BOTTOM_ACTION_NONE,
+    BOTTOM_ACTION_SAVE_SETTINGS
+} BottomAction;
+
 // Initialize bottom screen module
 void bottom_init(void);
 
 // Cleanup bottom screen module
 void bottom_exit(void);
 
+// Set the current mode (call when app state changes)
+void bottom_set_mode(BottomMode mode);
+
 // Update bottom screen (handle touch input)
-// Returns true if touch was handled
-bool bottom_update(void);
+// Returns action if a button was pressed
+BottomAction bottom_update(void);
 
 // Draw bottom screen
 void bottom_draw(void);
