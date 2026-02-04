@@ -28,10 +28,7 @@ void platforms_set_data(Platform *platforms, int count) {
 
 PlatformsResult platforms_update(u32 kDown, int *outSelectedIndex) {
     if (!platformList || platformCount == 0) {
-        // No platforms - allow going to settings or refresh
-        if (kDown & KEY_SELECT) {
-            return PLATFORMS_SETTINGS;
-        }
+        // No platforms - allow refresh
         if (kDown & KEY_X) {
             return PLATFORMS_REFRESH;
         }
@@ -90,11 +87,6 @@ PlatformsResult platforms_update(u32 kDown, int *outSelectedIndex) {
         return PLATFORMS_SELECTED;
     }
     
-    // Settings
-    if (kDown & KEY_SELECT) {
-        return PLATFORMS_SETTINGS;
-    }
-    
     // Refresh
     if (kDown & KEY_X) {
         return PLATFORMS_REFRESH;
@@ -141,5 +133,5 @@ void platforms_draw(void) {
     
     // Help text
     ui_draw_text(UI_PADDING, SCREEN_TOP_HEIGHT - UI_LINE_HEIGHT - UI_PADDING,
-                 "A: Select | X: Refresh | SELECT: Settings", UI_COLOR_TEXT_DIM);
+                 "A: Select | X: Refresh", UI_COLOR_TEXT_DIM);
 }
