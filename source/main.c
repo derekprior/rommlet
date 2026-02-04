@@ -171,7 +171,7 @@ int main(int argc, char *argv[]) {
                     bottom_log("Fetching ROMs for %s...", platforms[selectedPlatformIndex].displayName);
                     roms_clear();
                     int romCount, romTotal;
-                    Rom *roms = api_get_roms(platforms[selectedPlatformIndex].id, 0, 50, &romCount, &romTotal);
+                    Rom *roms = api_get_roms(platforms[selectedPlatformIndex].id, 0, ROM_PAGE_SIZE, &romCount, &romTotal);
                     if (roms) {
                         bottom_log("Found %d/%d ROMs", romCount, romTotal);
                         roms_set_data(roms, romCount, romTotal, platforms[selectedPlatformIndex].displayName);
@@ -211,7 +211,7 @@ int main(int argc, char *argv[]) {
                     int offset = roms_get_count();
                     int newCount, newTotal;
                     bottom_log("Loading more ROMs (offset %d)...", offset);
-                    Rom *moreRoms = api_get_roms(platforms[selectedPlatformIndex].id, offset, 50, &newCount, &newTotal);
+                    Rom *moreRoms = api_get_roms(platforms[selectedPlatformIndex].id, offset, ROM_PAGE_SIZE, &newCount, &newTotal);
                     if (moreRoms) {
                         bottom_log("Loaded %d more ROMs", newCount);
                         roms_append_data(moreRoms, newCount);

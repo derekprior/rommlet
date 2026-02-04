@@ -28,6 +28,9 @@
 #define UI_HEADER_HEIGHT 30
 #define UI_VISIBLE_ITEMS 8
 
+// API/data constants
+#define ROM_PAGE_SIZE 50
+
 // Initialize UI module (load font, etc)
 void ui_init(void);
 
