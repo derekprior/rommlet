@@ -242,14 +242,14 @@ Platform *api_get_platforms(int *count) {
         cJSON *romCount = cJSON_GetObjectItem(item, "rom_count");
         
         if (cJSON_IsNumber(id)) platforms[i].id = id->valueint;
-        if (cJSON_IsString(slug)) strncpy(platforms[i].slug, slug->valuestring, sizeof(platforms[i].slug) - 1);
-        if (cJSON_IsString(name)) strncpy(platforms[i].name, name->valuestring, sizeof(platforms[i].name) - 1);
-        if (cJSON_IsString(displayName)) strncpy(platforms[i].displayName, displayName->valuestring, sizeof(platforms[i].displayName) - 1);
+        if (cJSON_IsString(slug)) snprintf(platforms[i].slug, sizeof(platforms[i].slug), "%s", slug->valuestring);
+        if (cJSON_IsString(name)) snprintf(platforms[i].name, sizeof(platforms[i].name), "%s", name->valuestring);
+        if (cJSON_IsString(displayName)) snprintf(platforms[i].displayName, sizeof(platforms[i].displayName), "%s", displayName->valuestring);
         if (cJSON_IsNumber(romCount)) platforms[i].romCount = romCount->valueint;
         
         // Fallback to name if displayName is empty
         if (platforms[i].displayName[0] == '\0' && platforms[i].name[0] != '\0') {
-            strncpy(platforms[i].displayName, platforms[i].name, sizeof(platforms[i].displayName) - 1);
+            snprintf(platforms[i].displayName, sizeof(platforms[i].displayName), "%s", platforms[i].name);
         }
         
         i++;
@@ -325,9 +325,9 @@ Rom *api_get_roms(int platformId, int offset, int limit, int *count, int *total)
         
         if (cJSON_IsNumber(id)) roms[i].id = id->valueint;
         if (cJSON_IsNumber(platformIdJson)) roms[i].platformId = platformIdJson->valueint;
-        if (cJSON_IsString(name)) strncpy(roms[i].name, name->valuestring, sizeof(roms[i].name) - 1);
-        if (cJSON_IsString(fsName)) strncpy(roms[i].fsName, fsName->valuestring, sizeof(roms[i].fsName) - 1);
-        if (cJSON_IsString(pathCoverSmall)) strncpy(roms[i].pathCoverSmall, pathCoverSmall->valuestring, sizeof(roms[i].pathCoverSmall) - 1);
+        if (cJSON_IsString(name)) snprintf(roms[i].name, sizeof(roms[i].name), "%s", name->valuestring);
+        if (cJSON_IsString(fsName)) snprintf(roms[i].fsName, sizeof(roms[i].fsName), "%s", fsName->valuestring);
+        if (cJSON_IsString(pathCoverSmall)) snprintf(roms[i].pathCoverSmall, sizeof(roms[i].pathCoverSmall), "%s", pathCoverSmall->valuestring);
         
         i++;
     }
@@ -384,12 +384,12 @@ RomDetail *api_get_rom_detail(int romId) {
     
     if (cJSON_IsNumber(id)) detail->id = id->valueint;
     if (cJSON_IsNumber(platformId)) detail->platformId = platformId->valueint;
-    if (cJSON_IsString(name)) strncpy(detail->name, name->valuestring, sizeof(detail->name) - 1);
-    if (cJSON_IsString(summary)) strncpy(detail->summary, summary->valuestring, sizeof(detail->summary) - 1);
-    if (cJSON_IsString(md5Hash)) strncpy(detail->md5Hash, md5Hash->valuestring, sizeof(detail->md5Hash) - 1);
-    if (cJSON_IsString(pathCoverSmall)) strncpy(detail->pathCoverSmall, pathCoverSmall->valuestring, sizeof(detail->pathCoverSmall) - 1);
-    if (cJSON_IsString(platformName)) strncpy(detail->platformName, platformName->valuestring, sizeof(detail->platformName) - 1);
-    if (cJSON_IsString(firstReleaseDate)) strncpy(detail->firstReleaseDate, firstReleaseDate->valuestring, sizeof(detail->firstReleaseDate) - 1);
+    if (cJSON_IsString(name)) snprintf(detail->name, sizeof(detail->name), "%s", name->valuestring);
+    if (cJSON_IsString(summary)) snprintf(detail->summary, sizeof(detail->summary), "%s", summary->valuestring);
+    if (cJSON_IsString(md5Hash)) snprintf(detail->md5Hash, sizeof(detail->md5Hash), "%s", md5Hash->valuestring);
+    if (cJSON_IsString(pathCoverSmall)) snprintf(detail->pathCoverSmall, sizeof(detail->pathCoverSmall), "%s", pathCoverSmall->valuestring);
+    if (cJSON_IsString(platformName)) snprintf(detail->platformName, sizeof(detail->platformName), "%s", platformName->valuestring);
+    if (cJSON_IsString(firstReleaseDate)) snprintf(detail->firstReleaseDate, sizeof(detail->firstReleaseDate), "%s", firstReleaseDate->valuestring);
     
     cJSON_Delete(json);
     return detail;
