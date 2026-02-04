@@ -11,7 +11,6 @@
 typedef enum {
     PLATFORMS_NONE,
     PLATFORMS_SELECTED,
-    PLATFORMS_SETTINGS,
     PLATFORMS_REFRESH
 } PlatformsResult;
 

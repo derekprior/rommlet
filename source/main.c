@@ -198,9 +198,6 @@ int main(int argc, char *argv[]) {
                     } else {
                         bottom_log("Failed to fetch ROMs");
                     }
-                } else if (result == PLATFORMS_SETTINGS) {
-                    bottom_set_settings_mode(config_is_valid(&config));
-                    currentState = STATE_SETTINGS;
                 } else if (result == PLATFORMS_REFRESH) {
                     // Refresh platforms
                     bottom_log("Refreshing platforms...");
