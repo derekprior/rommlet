@@ -12,9 +12,11 @@
 
 #define MAX_ENTRIES 256
 #define MAX_PATH_LEN 256
+#define MAX_NAME_LEN 128
+#define PATH_BUFFER_LEN 512  // Extra space for path concatenation
 
 typedef struct {
-    char name[256];
+    char name[MAX_NAME_LEN];
     bool isDirectory;
 } DirEntry;
 
@@ -68,7 +70,7 @@ static void load_directory(const char *path) {
         }
         
         // Check if it's a directory
-        char fullPath[MAX_PATH_LEN];
+        char fullPath[PATH_BUFFER_LEN];
         snprintf(fullPath, sizeof(fullPath), "%s/%s", currentPath, ent->d_name);
         
         struct stat st;
@@ -81,7 +83,8 @@ static void load_directory(const char *path) {
             continue;
         }
         
-        strncpy(entries[entryCount].name, ent->d_name, sizeof(entries[entryCount].name) - 1);
+        strncpy(entries[entryCount].name, ent->d_name, MAX_NAME_LEN - 1);
+        entries[entryCount].name[MAX_NAME_LEN - 1] = '\0';
         entries[entryCount].isDirectory = true;
         entryCount++;
     }
@@ -172,7 +175,7 @@ bool browser_update(u32 kDown) {
             }
         } else {
             // Enter subdirectory
-            char newPath[MAX_PATH_LEN];
+            char newPath[PATH_BUFFER_LEN];
             snprintf(newPath, sizeof(newPath), "%s/%s", currentPath, entries[selectedIndex].name);
             load_directory(newPath);
         }
@@ -181,16 +184,17 @@ bool browser_update(u32 kDown) {
     // Select current folder
     if (kDown & KEY_X) {
         strncpy(selectedPath, currentPath, MAX_PATH_LEN - 1);
+        selectedPath[MAX_PATH_LEN - 1] = '\0';
         folderSelected = true;
         return true;
     }
     
     // Create new folder
     if (kDown & KEY_Y) {
-        char newFolderName[256] = "";
+        char newFolderName[MAX_NAME_LEN] = "";
         if (ui_show_keyboard("New Folder Name", newFolderName, sizeof(newFolderName), false)) {
             if (newFolderName[0] != '\0') {
-                char newPath[MAX_PATH_LEN];
+                char newPath[PATH_BUFFER_LEN];
                 snprintf(newPath, sizeof(newPath), "%s/%s", currentPath, newFolderName);
                 if (mkdir(newPath, 0755) == 0) {
                     load_directory(currentPath);  // Refresh to show new folder
