@@ -28,7 +28,7 @@ static void load_mappings(void) {
     FILE *f = fopen(CONFIG_MAPPINGS_PATH, "r");
     if (!f) return;
     
-    char line[256];
+    char line[CONFIG_MAX_SLUG_LEN * 2 + 2];  // slug=folder\n
     while (fgets(line, sizeof(line), f) && mappingCount < MAX_MAPPINGS) {
         char *newline = strchr(line, '\n');
         if (newline) *newline = '\0';

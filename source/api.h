@@ -35,6 +35,7 @@ typedef struct {
     int id;
     int platformId;
     char name[256];
+    char fileName[256];
     char summary[1024];
     char platformName[128];
     char firstReleaseDate[32];
