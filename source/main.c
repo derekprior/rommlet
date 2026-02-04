@@ -153,7 +153,7 @@ int main(int argc, char *argv[]) {
             const char *folderName = config_get_platform_folder(currentPlatformSlug);
             if (folderName && folderName[0]) {
                 // We have a mapping - download directly
-                char destPath[512];
+                char destPath[CONFIG_MAX_PATH_LEN + CONFIG_MAX_SLUG_LEN + 256 + 3];
                 snprintf(destPath, sizeof(destPath), "%s/%s/%s", 
                         config.romFolder, folderName, romDetail->fileName);
                 show_loading("Downloading ROM...");
@@ -286,7 +286,7 @@ int main(int argc, char *argv[]) {
                     
                     // Now download
                     if (romDetail) {
-                        char destPath[512];
+                        char destPath[CONFIG_MAX_PATH_LEN + CONFIG_MAX_SLUG_LEN + 256 + 3];
                         snprintf(destPath, sizeof(destPath), "%s/%s/%s", 
                                 config.romFolder, folderName, romDetail->fileName);
                         show_loading("Downloading ROM...");

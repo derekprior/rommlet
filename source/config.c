@@ -39,8 +39,8 @@ static void load_mappings(void) {
         if (!eq) continue;
         
         *eq = '\0';
-        snprintf(mappings[mappingCount].slug, CONFIG_MAX_SLUG_LEN, "%s", line);
-        snprintf(mappings[mappingCount].folder, CONFIG_MAX_SLUG_LEN, "%s", eq + 1);
+        snprintf(mappings[mappingCount].slug, CONFIG_MAX_SLUG_LEN, "%.63s", line);
+        snprintf(mappings[mappingCount].folder, CONFIG_MAX_SLUG_LEN, "%.63s", eq + 1);
         mappingCount++;
     }
     
