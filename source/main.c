@@ -29,6 +29,7 @@ typedef enum {
 } AppState;
 
 static AppState currentState = STATE_LOADING;
+static AppState previousState = STATE_PLATFORMS;  // For returning from settings
 static bool needsConfigSetup = false;
 
 // Shared state
@@ -116,11 +117,12 @@ int main(int argc, char *argv[]) {
         // Handle cancel from bottom screen button
         if (bottomAction == BOTTOM_ACTION_CANCEL_SETTINGS && currentState == STATE_SETTINGS) {
             bottom_set_mode(BOTTOM_MODE_DEFAULT);
-            currentState = STATE_PLATFORMS;
+            currentState = previousState;
         }
         
         // Handle opening settings from toolbar
         if (bottomAction == BOTTOM_ACTION_OPEN_SETTINGS && currentState != STATE_SETTINGS) {
+            previousState = currentState;
             bottom_set_settings_mode(config_is_valid(&config));
             currentState = STATE_SETTINGS;
         }
