@@ -27,6 +27,9 @@ static bool showDebugModal = false;
 static int debugLevel = 0;  // 0=off, 1=requests, 2=bodies
 static int logScrollOffset = 0;
 
+// Touch scroll tracking
+static int lastTouchY = -1;
+
 // Circular log buffer
 static char logBuffer[LOG_MAX_LINES][LOG_LINE_LENGTH];
 static int logHead = 0;  // Next write position
@@ -40,6 +43,7 @@ void bottom_init(void) {
     showDebugModal = false;
     debugLevel = 0;
     logScrollOffset = 0;
+    lastTouchY = -1;
     logHead = 0;
     logCount = 0;
     
@@ -63,14 +67,17 @@ bool bottom_update(void) {
     // Handle touch input
     touchPosition touch;
     u32 kDown = hidKeysDown();
+    u32 kHeld = hidKeysHeld();
     
     if (kDown & KEY_TOUCH) {
         hidTouchRead(&touch);
+        lastTouchY = touch.py;
         
         if (showDebugModal) {
             // Check for X (close) button tap
             if (touch_in_rect(touch.px, touch.py, CLOSE_ICON_X, CLOSE_ICON_Y, ICON_SIZE, ICON_SIZE)) {
                 showDebugModal = false;
+                lastTouchY = -1;
                 return true;
             }
         } else {
@@ -78,9 +85,37 @@ bool bottom_update(void) {
             if (touch_in_rect(touch.px, touch.py, BUG_ICON_X, BUG_ICON_Y, ICON_SIZE, ICON_SIZE)) {
                 showDebugModal = true;
                 logScrollOffset = 0;
+                lastTouchY = -1;
                 return true;
             }
         }
+    }
+    
+    // Handle touch drag scrolling in debug modal
+    if (showDebugModal && (kHeld & KEY_TOUCH)) {
+        hidTouchRead(&touch);
+        
+        // Check if touch is in the log content area
+        if (touch.py >= logAreaTop && touch.py < logAreaTop + logAreaHeight) {
+            if (lastTouchY >= 0) {
+                int deltaY = lastTouchY - touch.py;
+                if (deltaY != 0 && logCount > visibleLines) {
+                    int maxScroll = logCount - visibleLines;
+                    // Scroll by lines based on drag distance
+                    int scrollAmount = deltaY / 10;
+                    if (scrollAmount != 0) {
+                        logScrollOffset += scrollAmount;
+                        if (logScrollOffset < 0) logScrollOffset = 0;
+                        if (logScrollOffset > maxScroll) logScrollOffset = maxScroll;
+                        lastTouchY = touch.py;
+                    }
+                }
+            } else {
+                lastTouchY = touch.py;
+            }
+        }
+    } else {
+        lastTouchY = -1;
     }
     
     // Handle debug level changes when modal is open
@@ -105,7 +140,7 @@ bool bottom_update(void) {
             if (logScrollOffset > 0) logScrollOffset--;
         }
         if (cstick.dy < -40) {
-            int maxScroll = logCount > 10 ? logCount - 10 : 0;
+            int maxScroll = logCount > visibleLines ? logCount - visibleLines : 0;
             if (logScrollOffset < maxScroll) logScrollOffset++;
         }
     }
@@ -120,6 +155,16 @@ static void draw_toolbar(void) {
     // Bug icon (simple text representation)
     ui_draw_text(BUG_ICON_X + 2, BUG_ICON_Y + 2, "[?]", UI_COLOR_TEXT);
 }
+
+// Scrollbar dimensions
+#define SCROLLBAR_WIDTH 16
+#define SCROLLBAR_TRACK_COLOR C2D_Color32(0x3a, 0x3a, 0x50, 0xFF)
+#define SCROLLBAR_THUMB_COLOR C2D_Color32(0x6a, 0x6a, 0x90, 0xFF)
+
+// Log content area bounds (used for scrollbar calculations)
+static float logAreaTop = 0;
+static float logAreaHeight = 0;
+static int visibleLines = 0;
 
 static void draw_debug_modal(void) {
     // Full background
@@ -137,24 +182,33 @@ static void draw_debug_modal(void) {
         debugLevel == 0 ? "OFF" : (debugLevel == 1 ? "REQUESTS" : "BODIES"));
     ui_draw_text(UI_PADDING, UI_HEADER_HEIGHT + UI_PADDING, levelHint, UI_COLOR_TEXT_DIM);
     
-    // Log content area
-    float y = UI_HEADER_HEIGHT + UI_PADDING + UI_LINE_HEIGHT + UI_PADDING;
-    int visibleLines = (SCREEN_BOTTOM_HEIGHT - y - UI_PADDING) / UI_LINE_HEIGHT;
+    // Log content area (leave room for scrollbar)
+    logAreaTop = UI_HEADER_HEIGHT + UI_PADDING + UI_LINE_HEIGHT + UI_PADDING;
+    logAreaHeight = SCREEN_BOTTOM_HEIGHT - logAreaTop - UI_PADDING;
+    visibleLines = (int)(logAreaHeight / UI_LINE_HEIGHT);
+    
+    float contentWidth = SCREEN_BOTTOM_WIDTH - UI_PADDING - SCROLLBAR_WIDTH - UI_PADDING;
     
     // Draw log lines
+    float y = logAreaTop;
     for (int i = 0; i < visibleLines && i + logScrollOffset < logCount; i++) {
         int lineIndex = (logHead - logCount + i + logScrollOffset + LOG_MAX_LINES) % LOG_MAX_LINES;
         ui_draw_text(UI_PADDING, y, logBuffer[lineIndex], UI_COLOR_TEXT);
         y += UI_LINE_HEIGHT;
     }
     
-    // Scroll indicator if needed
+    // Draw scrollbar track
+    float scrollbarX = SCREEN_BOTTOM_WIDTH - SCROLLBAR_WIDTH - UI_PADDING;
+    ui_draw_rect(scrollbarX, logAreaTop, SCROLLBAR_WIDTH, logAreaHeight, SCROLLBAR_TRACK_COLOR);
+    
+    // Draw scrollbar thumb if there's content to scroll
     if (logCount > visibleLines) {
-        char scrollInfo[32];
-        snprintf(scrollInfo, sizeof(scrollInfo), "%d/%d", logScrollOffset + 1, logCount);
-        float textWidth = ui_get_text_width(scrollInfo);
-        ui_draw_text(SCREEN_BOTTOM_WIDTH - textWidth - UI_PADDING,
-                     UI_HEADER_HEIGHT + UI_PADDING, scrollInfo, UI_COLOR_TEXT_DIM);
+        int maxScroll = logCount - visibleLines;
+        float thumbHeight = (float)visibleLines / logCount * logAreaHeight;
+        if (thumbHeight < 20) thumbHeight = 20; // Minimum thumb size
+        
+        float thumbY = logAreaTop + ((float)logScrollOffset / maxScroll) * (logAreaHeight - thumbHeight);
+        ui_draw_rect(scrollbarX + 2, thumbY, SCROLLBAR_WIDTH - 4, thumbHeight, SCROLLBAR_THUMB_COLOR);
     }
 }
 
