@@ -13,7 +13,6 @@ typedef enum {
     FIELD_USERNAME,
     FIELD_PASSWORD,
     FIELD_ROM_FOLDER,
-    FIELD_SAVE,
     FIELD_COUNT
 } SettingsField;
 
@@ -87,8 +86,6 @@ SettingsResult settings_update(u32 kDown) {
                 browser_init(currentConfig->romFolder[0] ? currentConfig->romFolder : "sdmc:/");
                 browsingFolders = true;
                 break;
-            case FIELD_SAVE:
-                return SETTINGS_SAVED;
             default:
                 break;
         }
@@ -114,12 +111,7 @@ void settings_draw(void) {
     ui_draw_header("Settings");
     
     float y = UI_HEADER_HEIGHT + UI_PADDING;
-    float fieldWidth = SCREEN_TOP_WIDTH - (UI_PADDING * 2);
-    
-    // Show scroll up indicator
-    if (scrollOffset > 0) {
-        ui_draw_text(SCREEN_TOP_WIDTH - UI_PADDING - 20, y, "...", UI_COLOR_TEXT_DIM);
-    }
+    float fieldWidth = SCREEN_TOP_WIDTH - (UI_PADDING * 2) - 8;  // Leave room for scrollbar
     
     // Draw visible fields
     int fieldsDrawn = 0;
@@ -164,19 +156,27 @@ void settings_draw(void) {
                                   currentConfig->romFolder[0] ? currentConfig->romFolder : "(not set)",
                                   selectedField == FIELD_ROM_FOLDER);
                 break;
-                
-            case FIELD_SAVE:
-                ui_draw_list_item(UI_PADDING, y, fieldWidth, "[ Save and Connect ]", selectedField == FIELD_SAVE);
-                break;
         }
         
         y += UI_LINE_HEIGHT + UI_PADDING;
         fieldsDrawn++;
     }
     
-    // Show scroll down indicator
-    if (scrollOffset + SETTINGS_VISIBLE_FIELDS < FIELD_COUNT) {
-        ui_draw_text(SCREEN_TOP_WIDTH - UI_PADDING - 20, y - UI_PADDING, "...", UI_COLOR_TEXT_DIM);
+    // Draw thin scrollbar if content exceeds visible area
+    if (FIELD_COUNT > SETTINGS_VISIBLE_FIELDS) {
+        float scrollbarX = SCREEN_TOP_WIDTH - 6;
+        float scrollbarY = UI_HEADER_HEIGHT + UI_PADDING;
+        float scrollbarHeight = SCREEN_TOP_HEIGHT - UI_HEADER_HEIGHT - UI_LINE_HEIGHT - (UI_PADDING * 3);
+        
+        // Track (thin line)
+        ui_draw_rect(scrollbarX, scrollbarY, 4, scrollbarHeight, C2D_Color32(0x3a, 0x3a, 0x50, 0xFF));
+        
+        // Thumb
+        int maxScroll = FIELD_COUNT - SETTINGS_VISIBLE_FIELDS;
+        float thumbHeight = (float)SETTINGS_VISIBLE_FIELDS / FIELD_COUNT * scrollbarHeight;
+        if (thumbHeight < 10) thumbHeight = 10;
+        float thumbY = scrollbarY + ((float)scrollOffset / maxScroll) * (scrollbarHeight - thumbHeight);
+        ui_draw_rect(scrollbarX, thumbY, 4, thumbHeight, C2D_Color32(0x6a, 0x6a, 0x90, 0xFF));
     }
     
     // Help text at bottom
