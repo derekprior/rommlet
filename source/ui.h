@@ -49,6 +49,9 @@ void ui_draw_list_item(float x, float y, float w, const char *text, bool selecte
 // Draw a header bar
 void ui_draw_header(const char *title);
 
+// Draw a header bar for bottom screen (narrower)
+void ui_draw_header_bottom(const char *title);
+
 // Get text width
 float ui_get_text_width(const char *text);
 

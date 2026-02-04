@@ -17,6 +17,7 @@
 #include "screens/platforms.h"
 #include "screens/roms.h"
 #include "screens/romdetail.h"
+#include "screens/bottom.h"
 
 // App states
 typedef enum {
@@ -44,7 +45,6 @@ int main(int argc, char *argv[]) {
     C3D_Init(C3D_DEFAULT_CMDBUF_SIZE);
     C2D_Init(C2D_DEFAULT_MAX_OBJECTS);
     C2D_Prepare();
-    consoleInit(GFX_BOTTOM, NULL);
     
     // Initialize render targets
     C3D_RenderTarget *topScreen = C2D_CreateScreenTarget(GFX_TOP, GFX_LEFT);
@@ -72,41 +72,26 @@ int main(int argc, char *argv[]) {
     platforms_init();
     roms_init();
     romdetail_init();
-    
-    printf("\x1b[1;1H\x1b[2J"); // Clear console
-    printf("Rommlet - RomM Client\n");
-    printf("=====================\n\n");
-    printf("ZL/ZR: Debug level (currently: OFF)\n\n");
+    bottom_init();
     
     // Main loop
     while (aptMainLoop()) {
         hidScanInput();
         u32 kDown = hidKeysDown();
         
+        // Let bottom screen handle touch and ZL/ZR first
+        bool bottomHandled = bottom_update();
+        
         // Global exit
         if (kDown & KEY_START) {
             break;
         }
         
-        // Global debug level controls
-        if (kDown & KEY_ZR) {
-            int level = api_get_debug_level();
-            level = (level + 1) % 3;  // Cycle 0 -> 1 -> 2 -> 0
-            api_set_debug_level(level);
-            printf("\x1b[4;1H\x1b[2K");  // Move to line 4, clear it
-            printf("ZL/ZR: Debug level (currently: %s)\n",
-                   level == 0 ? "OFF" : (level == 1 ? "REQUESTS" : "BODIES"));
-        }
-        if (kDown & KEY_ZL) {
-            int level = api_get_debug_level();
-            level = (level + 2) % 3;  // Cycle 0 -> 2 -> 1 -> 0
-            api_set_debug_level(level);
-            printf("\x1b[4;1H\x1b[2K");  // Move to line 4, clear it
-            printf("ZL/ZR: Debug level (currently: %s)\n",
-                   level == 0 ? "OFF" : (level == 1 ? "REQUESTS" : "BODIES"));
-        }
+        // Sync debug level from bottom screen to API
+        api_set_debug_level(bottom_get_debug_level());
         
-        // Handle state-specific input and updates
+        // Handle state-specific input and updates (skip if bottom handled input)
+        if (!bottomHandled) {
         switch (currentState) {
             case STATE_LOADING:
                 // Transition to appropriate screen
@@ -116,13 +101,13 @@ int main(int argc, char *argv[]) {
                     currentState = STATE_PLATFORMS;
                     
                     // Fetch platforms on startup
-                    printf("Fetching platforms...\n");
+                    bottom_log("Fetching platforms...");
                     platforms = api_get_platforms(&platformCount);
                     if (platforms) {
-                        printf("Found %d platforms\n", platformCount);
+                        bottom_log("Found %d platforms", platformCount);
                         platforms_set_data(platforms, platformCount);
                     } else {
-                        printf("Failed to fetch platforms\n");
+                        bottom_log("Failed to fetch platforms");
                     }
                 }
                 break;
@@ -143,16 +128,16 @@ int main(int argc, char *argv[]) {
                     }
                     platforms = api_get_platforms(&platformCount);
                     if (platforms) {
-                        printf("Found %d platforms\n", platformCount);
+                        bottom_log("Found %d platforms", platformCount);
                         platforms_set_data(platforms, platformCount);
                     } else {
-                        printf("Failed to fetch platforms\n");
+                        bottom_log("Failed to fetch platforms");
                     }
                 } else if (result == SETTINGS_CANCELLED) {
                     if (config_is_valid(&config)) {
                         currentState = STATE_PLATFORMS;
                     } else {
-                        printf("Configuration not valid. Please complete all fields.\n");
+                        bottom_log("Configuration not valid. Please complete all fields.");
                     }
                 }
                 break;
@@ -162,29 +147,29 @@ int main(int argc, char *argv[]) {
                 PlatformsResult result = platforms_update(kDown, &selectedPlatformIndex);
                 if (result == PLATFORMS_SELECTED && platforms && selectedPlatformIndex < platformCount) {
                     // Fetch ROMs for selected platform
-                    printf("Fetching ROMs for %s...\n", platforms[selectedPlatformIndex].displayName);
+                    bottom_log("Fetching ROMs for %s...", platforms[selectedPlatformIndex].displayName);
                     roms_clear();
                     int romCount, romTotal;
                     Rom *roms = api_get_roms(platforms[selectedPlatformIndex].id, 0, 50, &romCount, &romTotal);
                     if (roms) {
-                        printf("Found %d/%d ROMs\n", romCount, romTotal);
+                        bottom_log("Found %d/%d ROMs", romCount, romTotal);
                         roms_set_data(roms, romCount, romTotal, platforms[selectedPlatformIndex].displayName);
                         currentState = STATE_ROMS;
                     } else {
-                        printf("Failed to fetch ROMs\n");
+                        bottom_log("Failed to fetch ROMs");
                     }
                 } else if (result == PLATFORMS_SETTINGS) {
                     currentState = STATE_SETTINGS;
                 } else if (result == PLATFORMS_REFRESH) {
                     // Refresh platforms
-                    printf("Refreshing platforms...\n");
+                    bottom_log("Refreshing platforms...");
                     if (platforms) {
                         api_free_platforms(platforms, platformCount);
                         platforms = NULL;
                     }
                     platforms = api_get_platforms(&platformCount);
                     if (platforms) {
-                        printf("Found %d platforms\n", platformCount);
+                        bottom_log("Found %d platforms", platformCount);
                         platforms_set_data(platforms, platformCount);
                     }
                 }
@@ -199,7 +184,7 @@ int main(int argc, char *argv[]) {
                     // Fetch ROM details
                     int romId = roms_get_id_at(selectedRomIndex);
                     if (romId >= 0) {
-                        printf("Fetching ROM details for ID %d...\n", romId);
+                        bottom_log("Fetching ROM details for ID %d...", romId);
                         if (romDetail) {
                             api_free_rom_detail(romDetail);
                             romDetail = NULL;
@@ -209,17 +194,17 @@ int main(int argc, char *argv[]) {
                             romdetail_set_data(romDetail);
                             currentState = STATE_ROM_DETAIL;
                         } else {
-                            printf("Failed to fetch ROM details\n");
+                            bottom_log("Failed to fetch ROM details");
                         }
                     }
                 } else if (result == ROMS_LOAD_MORE) {
                     // Fetch next page synchronously
                     int offset = roms_get_count();
                     int newCount, newTotal;
-                    printf("Loading more ROMs (offset %d)...\n", offset);
+                    bottom_log("Loading more ROMs (offset %d)...", offset);
                     Rom *moreRoms = api_get_roms(platforms[selectedPlatformIndex].id, offset, 50, &newCount, &newTotal);
                     if (moreRoms) {
-                        printf("Loaded %d more ROMs\n", newCount);
+                        bottom_log("Loaded %d more ROMs", newCount);
                         roms_append_data(moreRoms, newCount);
                     }
                 }
@@ -234,6 +219,7 @@ int main(int argc, char *argv[]) {
                 break;
             }
         }
+        } // end if (!bottomHandled)
         
         // Render
         C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
@@ -258,10 +244,10 @@ int main(int argc, char *argv[]) {
                 break;
         }
         
-        C3D_FrameEnd(0);
+        // Draw bottom screen
+        bottom_draw();
         
-        // Bottom screen controls help (via console)
-        // Already handled by printf in each state
+        C3D_FrameEnd(0);
     }
     
     // Cleanup
@@ -269,6 +255,7 @@ int main(int argc, char *argv[]) {
     roms_clear();
     if (romDetail) api_free_rom_detail(romDetail);
     
+    bottom_exit();
     ui_exit();
     api_exit();
     

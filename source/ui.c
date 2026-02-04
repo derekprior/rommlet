@@ -58,6 +58,11 @@ void ui_draw_header(const char *title) {
     ui_draw_text_scaled(UI_PADDING, 5, title, UI_COLOR_TEXT, 0.7f);
 }
 
+void ui_draw_header_bottom(const char *title) {
+    ui_draw_rect(0, 0, SCREEN_BOTTOM_WIDTH, UI_HEADER_HEIGHT, UI_COLOR_HEADER);
+    ui_draw_text_scaled(UI_PADDING, 5, title, UI_COLOR_TEXT, 0.7f);
+}
+
 float ui_get_text_width(const char *text) {
     C2D_TextBufClear(textBuf);
     
