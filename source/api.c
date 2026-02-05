@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 #include <3ds.h>
 
 #define MAX_URL_LEN 512
@@ -423,6 +424,7 @@ bool api_download_rom(int romId, const char *destPath) {
     httpcSetSSLOpt(&context, SSLCOPT_DisableVerify);
     httpcSetKeepAlive(&context, HTTPC_KEEPALIVE_ENABLED);
     httpcAddRequestHeaderField(&context, "User-Agent", "Rommlet/1.0");
+    httpcAddRequestHeaderField(&context, "Accept", "*/*");
     
     if (authHeader[0] != '\0') {
         httpcAddRequestHeaderField(&context, "Authorization", authHeader);
@@ -435,12 +437,53 @@ bool api_download_rom(int romId, const char *destPath) {
         return false;
     }
     
+    // Handle redirects
     u32 status;
     ret = httpcGetResponseStatusCode(&context, &status);
     if (R_FAILED(ret)) {
         printf("httpcGetResponseStatusCode failed: %08lX\n", ret);
         httpcCloseContext(&context);
         return false;
+    }
+    
+    while (status >= 300 && status < 400) {
+        char newUrl[MAX_URL_LEN];
+        ret = httpcGetResponseHeader(&context, "Location", newUrl, sizeof(newUrl));
+        if (R_FAILED(ret)) {
+            printf("Failed to get redirect location\n");
+            httpcCloseContext(&context);
+            return false;
+        }
+        
+        if (debugLevel >= API_DEBUG_REQUESTS) {
+            printf("[DEBUG] Redirect %lu -> %s\n", status, newUrl);
+        }
+        
+        httpcCloseContext(&context);
+        
+        ret = httpcOpenContext(&context, HTTPC_METHOD_GET, newUrl, 1);
+        if (R_FAILED(ret)) {
+            printf("httpcOpenContext failed on redirect: %08lX\n", ret);
+            return false;
+        }
+        
+        httpcSetSSLOpt(&context, SSLCOPT_DisableVerify);
+        httpcSetKeepAlive(&context, HTTPC_KEEPALIVE_ENABLED);
+        httpcAddRequestHeaderField(&context, "User-Agent", "Rommlet/1.0");
+        
+        ret = httpcBeginRequest(&context);
+        if (R_FAILED(ret)) {
+            printf("httpcBeginRequest failed on redirect: %08lX\n", ret);
+            httpcCloseContext(&context);
+            return false;
+        }
+        
+        ret = httpcGetResponseStatusCode(&context, &status);
+        if (R_FAILED(ret)) {
+            printf("httpcGetResponseStatusCode failed: %08lX\n", ret);
+            httpcCloseContext(&context);
+            return false;
+        }
     }
     
     if (debugLevel >= API_DEBUG_REQUESTS) {
@@ -456,7 +499,7 @@ bool api_download_rom(int romId, const char *destPath) {
     // Open destination file
     FILE *file = fopen(destPath, "wb");
     if (!file) {
-        printf("Failed to open file for writing: %s\n", destPath);
+        printf("Failed to open file: %s (errno: %d)\n", destPath, errno);
         httpcCloseContext(&context);
         return false;
     }
