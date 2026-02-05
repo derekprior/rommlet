@@ -9,11 +9,14 @@
 #include <string.h>
 #include <dirent.h>
 #include <sys/stat.h>
+#include <citro2d.h>
 
 #define MAX_ENTRIES 256
 #define MAX_PATH_LEN 256
 #define MAX_NAME_LEN 256
 #define PATH_BUFFER_LEN 512  // Extra space for path concatenation
+#define FOLDER_ICON_SIZE 16
+#define FOLDER_ICON_COLOR 0xFFE0A040  // Amber/orange folder color
 
 typedef struct {
     char name[MAX_NAME_LEN];
@@ -264,6 +267,23 @@ const char *browser_get_selected_folder_name(void) {
     return selectedPath;
 }
 
+// Draw a folder icon at the given position
+static void draw_folder_icon(float x, float y, float size, u32 color) {
+    float scale = size / 16.0f;
+    
+    // Main folder body (rectangle)
+    float bodyX = x;
+    float bodyY = y + 3 * scale;
+    float bodyW = 14 * scale;
+    float bodyH = 10 * scale;
+    C2D_DrawRectSolid(bodyX, bodyY, 0, bodyW, bodyH, color);
+    
+    // Tab on top left
+    float tabW = 5 * scale;
+    float tabH = 3 * scale;
+    C2D_DrawRectSolid(x, y, 0, tabW, tabH, color);
+}
+
 void browser_draw(void) {
     ui_draw_header("Select ROM Folder");
     
@@ -273,6 +293,7 @@ void browser_draw(void) {
     y += UI_LINE_HEIGHT + UI_PADDING;
     
     float itemWidth = SCREEN_TOP_WIDTH - (UI_PADDING * 2);
+    float iconOffset = FOLDER_ICON_SIZE + 4;  // Icon width plus spacing
     
     if (entryCount == 0) {
         ui_draw_text(UI_PADDING, y, "(empty folder)", UI_COLOR_TEXT_DIM);
@@ -283,9 +304,18 @@ void browser_draw(void) {
         if (visibleEnd > entryCount) visibleEnd = entryCount;
         
         for (int i = scrollOffset; i < visibleEnd; i++) {
-            char displayName[260];
-            snprintf(displayName, sizeof(displayName), "[%s]", entries[i].name);
-            ui_draw_list_item(UI_PADDING, y, itemWidth, displayName, i == selectedIndex);
+            // Draw selection background if selected
+            if (i == selectedIndex) {
+                ui_draw_rect(UI_PADDING, y, itemWidth, UI_LINE_HEIGHT, UI_COLOR_HIGHLIGHT);
+            }
+            
+            // Draw folder icon
+            draw_folder_icon(UI_PADDING + 2, y + 1, FOLDER_ICON_SIZE, FOLDER_ICON_COLOR);
+            
+            // Draw folder name
+            ui_draw_text(UI_PADDING + iconOffset, y + 2, entries[i].name,
+                        i == selectedIndex ? UI_COLOR_TEXT_SELECTED : UI_COLOR_TEXT);
+            
             y += UI_LINE_HEIGHT;
         }
     }
