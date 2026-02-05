@@ -8,6 +8,7 @@
 #include <3ds.h>
 #include <citro2d.h>
 #include <stdbool.h>
+#include "../log.h"
 
 // Bottom screen modes (matches app states that need custom UI)
 typedef enum {
@@ -42,11 +43,8 @@ BottomAction bottom_update(void);
 // Draw bottom screen
 void bottom_draw(void);
 
-// Log a message (replaces printf for app messages)
-void bottom_log(const char *fmt, ...);
-
-// Get/set debug level (0=off, 1=requests, 2=bodies)
-int bottom_get_debug_level(void);
-void bottom_set_debug_level(int level);
+// Log subscriber for the debug UI
+// Register with log_subscribe(&bottom_log_subscriber)
+void bottom_log_subscriber(LogLevel level, const char *message);
 
 #endif // BOTTOM_H

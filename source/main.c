@@ -13,6 +13,7 @@
 #include <citro2d.h>
 #include "config.h"
 #include "api.h"
+#include "log.h"
 #include "ui.h"
 #include "browser.h"
 #include "screens/settings.h"
@@ -60,17 +61,17 @@ static void show_loading(const char *message) {
 // Helper to fetch platforms from API
 static void fetch_platforms(void) {
     show_loading("Fetching platforms...");
-    bottom_log("Fetching platforms...");
+    log_info("Fetching platforms...");
     if (platforms) {
         api_free_platforms(platforms, platformCount);
         platforms = NULL;
     }
     platforms = api_get_platforms(&platformCount);
     if (platforms) {
-        bottom_log("Found %d platforms", platformCount);
+        log_info("Found %d platforms", platformCount);
         platforms_set_data(platforms, platformCount);
     } else {
-        bottom_log("Failed to fetch platforms");
+        log_error("Failed to fetch platforms");
     }
 }
 
@@ -90,6 +91,7 @@ int main(int argc, char *argv[]) {
     
     // Initialize modules
     ui_init();
+    log_init();
     config_init(&config);
     api_init();
     
@@ -109,6 +111,10 @@ int main(int argc, char *argv[]) {
     romdetail_init();
     bottom_init();
     
+    // Register bottom screen as log subscriber
+    log_subscribe(bottom_log_subscriber);
+    log_info("Rommlet - RomM Client");
+    
     // Main loop
     while (aptMainLoop()) {
         hidScanInput();
@@ -121,9 +127,6 @@ int main(int argc, char *argv[]) {
         if (kDown & KEY_START) {
             break;
         }
-        
-        // Sync debug level from bottom screen to API
-        api_set_debug_level(bottom_get_debug_level());
         
         // Handle bottom screen actions
         if (bottomAction == BOTTOM_ACTION_SAVE_SETTINGS && currentState == STATE_SETTINGS) {
@@ -168,11 +171,11 @@ int main(int argc, char *argv[]) {
                 snprintf(destPath, sizeof(destPath), "%s/%s/%s", 
                         config.romFolder, folderName, romDetail->fileName);
                 show_loading("Downloading ROM...");
-                bottom_log("Downloading to: %s", destPath);
+                log_info("Downloading to: %s", destPath);
                 if (api_download_rom(romDetail->id, romDetail->fileName, destPath)) {
-                    bottom_log("Download complete!");
+                    log_info("Download complete!");
                 } else {
-                    bottom_log("Download failed!");
+                    log_error("Download failed!");
                 }
             } else {
                 // No mapping or folder doesn't exist - show folder browser
@@ -210,7 +213,7 @@ int main(int argc, char *argv[]) {
                         bottom_set_mode(BOTTOM_MODE_DEFAULT);
                         currentState = previousState;
                     } else {
-                        bottom_log("Configuration not valid. Please complete all fields.");
+                        log_warn("Configuration not valid. Please complete all fields.");
                     }
                 }
                 break;
@@ -221,16 +224,16 @@ int main(int argc, char *argv[]) {
                 if (result == PLATFORMS_SELECTED && platforms && selectedPlatformIndex < platformCount) {
                     // Fetch ROMs for selected platform
                     show_loading("Fetching ROMs...");
-                    bottom_log("Fetching ROMs for %s...", platforms[selectedPlatformIndex].displayName);
+                    log_info("Fetching ROMs for %s...", platforms[selectedPlatformIndex].displayName);
                     roms_clear();
                     int romCount, romTotal;
                     Rom *roms = api_get_roms(platforms[selectedPlatformIndex].id, 0, ROM_PAGE_SIZE, &romCount, &romTotal);
                     if (roms) {
-                        bottom_log("Found %d/%d ROMs", romCount, romTotal);
+                        log_info("Found %d/%d ROMs", romCount, romTotal);
                         roms_set_data(roms, romCount, romTotal, platforms[selectedPlatformIndex].displayName);
                         currentState = STATE_ROMS;
                     } else {
-                        bottom_log("Failed to fetch ROMs");
+                        log_error("Failed to fetch ROMs");
                     }
                 } else if (result == PLATFORMS_REFRESH) {
                     fetch_platforms();
@@ -247,7 +250,7 @@ int main(int argc, char *argv[]) {
                     int romId = roms_get_id_at(selectedRomIndex);
                     if (romId >= 0) {
                         show_loading("Loading ROM details...");
-                        bottom_log("Fetching ROM details for ID %d...", romId);
+                        log_info("Fetching ROM details for ID %d...", romId);
                         if (romDetail) {
                             api_free_rom_detail(romDetail);
                             romDetail = NULL;
@@ -261,7 +264,7 @@ int main(int argc, char *argv[]) {
                             bottom_set_mode(BOTTOM_MODE_ROM_DETAIL);
                             currentState = STATE_ROM_DETAIL;
                         } else {
-                            bottom_log("Failed to fetch ROM details");
+                            log_error("Failed to fetch ROM details");
                         }
                     }
                 } else if (result == ROMS_LOAD_MORE) {
@@ -269,10 +272,10 @@ int main(int argc, char *argv[]) {
                     show_loading("Loading more ROMs...");
                     int offset = roms_get_count();
                     int newCount, newTotal;
-                    bottom_log("Loading more ROMs (offset %d)...", offset);
+                    log_info("Loading more ROMs (offset %d)...", offset);
                     Rom *moreRoms = api_get_roms(platforms[selectedPlatformIndex].id, offset, ROM_PAGE_SIZE, &newCount, &newTotal);
                     if (moreRoms) {
-                        bottom_log("Loaded %d more ROMs", newCount);
+                        log_info("Loaded %d more ROMs", newCount);
                         roms_append_data(moreRoms, newCount);
                     }
                 }
@@ -302,11 +305,11 @@ int main(int argc, char *argv[]) {
                         snprintf(destPath, sizeof(destPath), "%s/%s/%s", 
                                 config.romFolder, folderName, romDetail->fileName);
                         show_loading("Downloading ROM...");
-                        bottom_log("Downloading to: %s", destPath);
+                        log_info("Downloading to: %s", destPath);
                         if (api_download_rom(romDetail->id, romDetail->fileName, destPath)) {
-                            bottom_log("Download complete!");
+                            log_info("Download complete!");
                         } else {
-                            bottom_log("Download failed!");
+                            log_error("Download failed!");
                         }
                     }
                     bottom_set_mode(BOTTOM_MODE_ROM_DETAIL);

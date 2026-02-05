@@ -27,7 +27,6 @@
 #define CLOSE_ICON_Y (ICON_PADDING)
 
 static bool showDebugModal = false;
-static int debugLevel = 0;  // 0=off, 1=requests, 2=bodies
 static int logScrollOffset = 0;
 static BottomMode currentMode = BOTTOM_MODE_DEFAULT;
 
@@ -83,7 +82,6 @@ static int visibleLines = 0;
 void bottom_init(void) {
     bottomTarget = C2D_CreateScreenTarget(GFX_BOTTOM, GFX_LEFT);
     showDebugModal = false;
-    debugLevel = 0;
     logScrollOffset = 0;
     lastTouchY = -1;
     currentMode = BOTTOM_MODE_DEFAULT;
@@ -94,10 +92,6 @@ void bottom_init(void) {
     
     // Clear log buffer
     memset(logBuffer, 0, sizeof(logBuffer));
-    
-    // Initial log message
-    bottom_log("Rommlet - RomM Client");
-    bottom_log("=====================");
 }
 
 void bottom_exit(void) {
@@ -241,18 +235,32 @@ BottomAction bottom_update(void) {
         lastTouchY = -1;
     }
     
-    // Handle debug level changes when modal is open
+    // Handle log level changes when modal is open
     if (showDebugModal) {
         if (kDown & KEY_ZR) {
-            debugLevel = (debugLevel + 1) % 3;
-            bottom_log("Debug level: %s", 
-                debugLevel == 0 ? "OFF" : (debugLevel == 1 ? "REQUESTS" : "BODIES"));
+            // Cycle through: INFO -> DEBUG -> TRACE -> INFO
+            LogLevel current = log_get_level();
+            if (current == LOG_INFO) {
+                log_set_level(LOG_DEBUG);
+            } else if (current == LOG_DEBUG) {
+                log_set_level(LOG_TRACE);
+            } else {
+                log_set_level(LOG_INFO);
+            }
+            log_info("Log level: %s", log_level_name(log_get_level()));
             return action;
         }
         if (kDown & KEY_ZL) {
-            debugLevel = (debugLevel - 1 + 3) % 3;
-            bottom_log("Debug level: %s",
-                debugLevel == 0 ? "OFF" : (debugLevel == 1 ? "REQUESTS" : "BODIES"));
+            // Cycle backwards: INFO -> TRACE -> DEBUG -> INFO
+            LogLevel current = log_get_level();
+            if (current == LOG_INFO) {
+                log_set_level(LOG_TRACE);
+            } else if (current == LOG_TRACE) {
+                log_set_level(LOG_DEBUG);
+            } else {
+                log_set_level(LOG_INFO);
+            }
+            log_info("Log level: %s", log_level_name(log_get_level()));
             return action;
         }
         
@@ -354,10 +362,9 @@ static void draw_debug_modal(void) {
     // Close button (X)
     ui_draw_text(CLOSE_ICON_X + 4, CLOSE_ICON_Y + 2, "X", UI_COLOR_TEXT);
     
-    // Debug level hint
+    // Log level hint
     char levelHint[64];
-    snprintf(levelHint, sizeof(levelHint), "ZL/ZR: Level (%s)",
-        debugLevel == 0 ? "OFF" : (debugLevel == 1 ? "REQUESTS" : "BODIES"));
+    snprintf(levelHint, sizeof(levelHint), "ZL/ZR: Level (%s)", log_level_name(log_get_level()));
     ui_draw_text(UI_PADDING, UI_HEADER_HEIGHT + UI_PADDING, levelHint, UI_COLOR_TEXT_DIM);
     
     // Log content area (leave room for scrollbar)
@@ -471,12 +478,15 @@ void bottom_draw(void) {
     }
 }
 
-void bottom_log(const char *fmt, ...) {
-    va_list args;
-    va_start(args, fmt);
+void bottom_log_subscriber(LogLevel level, const char *message) {
+    // Format with level prefix
+    const char *levelName = log_level_name(level);
+    char formatted[LOG_LINE_LENGTH];
+    snprintf(formatted, sizeof(formatted), "[%s] %s", levelName, message);
+    formatted[LOG_LINE_LENGTH - 1] = '\0';
     
-    // Format the message
-    vsnprintf(logBuffer[logHead], LOG_LINE_LENGTH, fmt, args);
+    // Store in circular buffer
+    snprintf(logBuffer[logHead], LOG_LINE_LENGTH, "%s", formatted);
     logBuffer[logHead][LOG_LINE_LENGTH - 1] = '\0';
     
     // Advance head
@@ -484,14 +494,4 @@ void bottom_log(const char *fmt, ...) {
     if (logCount < LOG_MAX_LINES) {
         logCount++;
     }
-    
-    va_end(args);
-}
-
-int bottom_get_debug_level(void) {
-    return debugLevel;
-}
-
-void bottom_set_debug_level(int level) {
-    debugLevel = level;
 }

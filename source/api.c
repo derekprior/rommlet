@@ -3,6 +3,7 @@
  */
 
 #include "api.h"
+#include "log.h"
 #include "cJSON/cJSON.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,11 +13,10 @@
 
 #define MAX_URL_LEN 512
 #define MAX_RESPONSE_SIZE (512 * 1024)  // 512KB max response
-#define DEBUG_BODY_PREVIEW_LEN 500      // Max chars to show for response body
+#define TRACE_BODY_PREVIEW_LEN 500      // Max chars to show for response body
 
 static char baseUrl[256] = "";
 static char authHeader[512] = "";
-static int debugLevel = API_DEBUG_OFF;
 
 // Base64 encoding table
 static const char base64_table[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -49,21 +49,11 @@ static void base64_encode(const char *input, char *output, size_t outlen) {
 }
 
 void api_init(void) {
-    debugLevel = API_DEBUG_OFF;
+    // Nothing to initialize
 }
 
 void api_exit(void) {
-    // Nothing to cleanup yet
-}
-
-void api_set_debug_level(int level) {
-    if (level < API_DEBUG_OFF) level = API_DEBUG_OFF;
-    if (level > API_DEBUG_BODIES) level = API_DEBUG_BODIES;
-    debugLevel = level;
-}
-
-int api_get_debug_level(void) {
-    return debugLevel;
+    // Nothing to cleanup
 }
 
 void api_set_base_url(const char *url) {
@@ -96,14 +86,11 @@ static char *http_get(const char *url, int *statusCode) {
     
     *statusCode = 0;
     
-    // Debug: log outgoing request
-    if (debugLevel >= API_DEBUG_REQUESTS) {
-        printf("[DEBUG] GET %s\n", url);
-    }
+    log_debug("GET %s", url);
     
     ret = httpcOpenContext(&context, HTTPC_METHOD_GET, url, 1);
     if (R_FAILED(ret)) {
-        printf("httpcOpenContext failed: %08lX\n", ret);
+        log_error("httpcOpenContext failed: %08lX", ret);
         return NULL;
     }
     
@@ -115,14 +102,12 @@ static char *http_get(const char *url, int *statusCode) {
     
     if (authHeader[0] != '\0') {
         ret = httpcAddRequestHeaderField(&context, "Authorization", authHeader);
-        if (debugLevel >= API_DEBUG_REQUESTS) {
-            printf("[DEBUG] Auth: %s\n", authHeader);
-        }
+        log_trace("Auth: %s", authHeader);
     }
     
     ret = httpcBeginRequest(&context);
     if (R_FAILED(ret)) {
-        printf("httpcBeginRequest failed: %08lX\n", ret);
+        log_error("httpcBeginRequest failed: %08lX", ret);
         httpcCloseContext(&context);
         return NULL;
     }
@@ -130,19 +115,16 @@ static char *http_get(const char *url, int *statusCode) {
     u32 status;
     ret = httpcGetResponseStatusCode(&context, &status);
     if (R_FAILED(ret)) {
-        printf("httpcGetResponseStatusCode failed: %08lX\n", ret);
+        log_error("httpcGetResponseStatusCode failed: %08lX", ret);
         httpcCloseContext(&context);
         return NULL;
     }
     *statusCode = (int)status;
     
-    // Debug: log response status
-    if (debugLevel >= API_DEBUG_REQUESTS) {
-        printf("[DEBUG] Status: %lu\n", status);
-    }
+    log_debug("Status: %lu", status);
     
     if (status != 200) {
-        printf("HTTP error: %lu\n", status);
+        log_error("HTTP error: %lu", status);
         httpcCloseContext(&context);
         return NULL;
     }
@@ -157,7 +139,7 @@ static char *http_get(const char *url, int *statusCode) {
     // Allocate buffer
     char *buffer = malloc(contentSize + 1);
     if (!buffer) {
-        printf("Failed to allocate response buffer\n");
+        log_error("Failed to allocate response buffer");
         httpcCloseContext(&context);
         return NULL;
     }
@@ -166,7 +148,7 @@ static char *http_get(const char *url, int *statusCode) {
     u32 downloadedSize = 0;
     ret = httpcDownloadData(&context, (u8*)buffer, contentSize, &downloadedSize);
     if (R_FAILED(ret) && ret != HTTPC_RESULTCODE_DOWNLOADPENDING) {
-        printf("httpcDownloadData failed: %08lX\n", ret);
+        log_error("httpcDownloadData failed: %08lX", ret);
         free(buffer);
         httpcCloseContext(&context);
         return NULL;
@@ -175,20 +157,13 @@ static char *http_get(const char *url, int *statusCode) {
     buffer[downloadedSize] = '\0';
     httpcCloseContext(&context);
     
-    // Debug: log response size and body
-    if (debugLevel >= API_DEBUG_REQUESTS) {
-        printf("[DEBUG] Size: %lu bytes\n", downloadedSize);
-    }
-    if (debugLevel >= API_DEBUG_BODIES) {
-        printf("[DEBUG] Body:\n");
-        if (downloadedSize <= DEBUG_BODY_PREVIEW_LEN) {
-            printf("%s\n", buffer);
-        } else {
-            // Print truncated body
-            printf("%.*s...\n[truncated, %lu more bytes]\n", 
-                   DEBUG_BODY_PREVIEW_LEN, buffer, 
-                   downloadedSize - DEBUG_BODY_PREVIEW_LEN);
-        }
+    log_debug("Size: %lu bytes", downloadedSize);
+    if (downloadedSize <= TRACE_BODY_PREVIEW_LEN) {
+        log_trace("Body:\n%s", buffer);
+    } else {
+        log_trace("Body (truncated):\n%.*s...\n[%lu more bytes]", 
+               TRACE_BODY_PREVIEW_LEN, buffer, 
+               downloadedSize - TRACE_BODY_PREVIEW_LEN);
     }
     
     return buffer;
@@ -211,12 +186,12 @@ Platform *api_get_platforms(int *count) {
     free(response);
     
     if (!json) {
-        printf("JSON parse error\n");
+        log_error("JSON parse error");
         return NULL;
     }
     
     if (!cJSON_IsArray(json)) {
-        printf("Expected array response\n");
+        log_error("Expected array response");
         cJSON_Delete(json);
         return NULL;
     }
@@ -285,7 +260,7 @@ Rom *api_get_roms(int platformId, int offset, int limit, int *count, int *total)
     free(response);
     
     if (!json) {
-        printf("JSON parse error\n");
+        log_error("JSON parse error");
         return NULL;
     }
     
@@ -298,7 +273,7 @@ Rom *api_get_roms(int platformId, int offset, int limit, int *count, int *total)
     // Get items array
     cJSON *items = cJSON_GetObjectItem(json, "items");
     if (!items || !cJSON_IsArray(items)) {
-        printf("Expected items array\n");
+        log_error("Expected items array");
         cJSON_Delete(json);
         return NULL;
     }
@@ -357,7 +332,7 @@ RomDetail *api_get_rom_detail(int romId) {
     free(response);
     
     if (!json) {
-        printf("JSON parse error\n");
+        log_error("JSON parse error");
         return NULL;
     }
     
@@ -409,14 +384,12 @@ bool api_download_rom(int romId, const char *fileName, const char *destPath) {
     httpcContext context;
     Result ret;
     
-    if (debugLevel >= API_DEBUG_REQUESTS) {
-        printf("[DEBUG] GET %s\n", url);
-        printf("[DEBUG] Saving to: %s\n", destPath);
-    }
+    log_debug("GET %s", url);
+    log_debug("Saving to: %s", destPath);
     
     ret = httpcOpenContext(&context, HTTPC_METHOD_GET, url, 1);
     if (R_FAILED(ret)) {
-        printf("httpcOpenContext failed: %08lX\n", ret);
+        log_error("httpcOpenContext failed: %08lX", ret);
         return false;
     }
     
@@ -432,7 +405,7 @@ bool api_download_rom(int romId, const char *fileName, const char *destPath) {
     
     ret = httpcBeginRequest(&context);
     if (R_FAILED(ret)) {
-        printf("httpcBeginRequest failed: %08lX\n", ret);
+        log_error("httpcBeginRequest failed: %08lX", ret);
         httpcCloseContext(&context);
         return false;
     }
@@ -441,7 +414,7 @@ bool api_download_rom(int romId, const char *fileName, const char *destPath) {
     u32 status;
     ret = httpcGetResponseStatusCode(&context, &status);
     if (R_FAILED(ret)) {
-        printf("httpcGetResponseStatusCode failed: %08lX\n", ret);
+        log_error("httpcGetResponseStatusCode failed: %08lX", ret);
         httpcCloseContext(&context);
         return false;
     }
@@ -450,20 +423,18 @@ bool api_download_rom(int romId, const char *fileName, const char *destPath) {
         char newUrl[MAX_URL_LEN];
         ret = httpcGetResponseHeader(&context, "Location", newUrl, sizeof(newUrl));
         if (R_FAILED(ret)) {
-            printf("Failed to get redirect location\n");
+            log_error("Failed to get redirect location");
             httpcCloseContext(&context);
             return false;
         }
         
-        if (debugLevel >= API_DEBUG_REQUESTS) {
-            printf("[DEBUG] Redirect %lu -> %s\n", status, newUrl);
-        }
+        log_debug("Redirect %lu -> %s", status, newUrl);
         
         httpcCloseContext(&context);
         
         ret = httpcOpenContext(&context, HTTPC_METHOD_GET, newUrl, 1);
         if (R_FAILED(ret)) {
-            printf("httpcOpenContext failed on redirect: %08lX\n", ret);
+            log_error("httpcOpenContext failed on redirect: %08lX", ret);
             return false;
         }
         
@@ -473,25 +444,23 @@ bool api_download_rom(int romId, const char *fileName, const char *destPath) {
         
         ret = httpcBeginRequest(&context);
         if (R_FAILED(ret)) {
-            printf("httpcBeginRequest failed on redirect: %08lX\n", ret);
+            log_error("httpcBeginRequest failed on redirect: %08lX", ret);
             httpcCloseContext(&context);
             return false;
         }
         
         ret = httpcGetResponseStatusCode(&context, &status);
         if (R_FAILED(ret)) {
-            printf("httpcGetResponseStatusCode failed: %08lX\n", ret);
+            log_error("httpcGetResponseStatusCode failed: %08lX", ret);
             httpcCloseContext(&context);
             return false;
         }
     }
     
-    if (debugLevel >= API_DEBUG_REQUESTS) {
-        printf("[DEBUG] Status: %lu\n", status);
-    }
+    log_debug("Status: %lu", status);
     
     if (status != 200) {
-        printf("HTTP error: %lu\n", status);
+        log_error("HTTP error: %lu", status);
         httpcCloseContext(&context);
         return false;
     }
@@ -499,7 +468,7 @@ bool api_download_rom(int romId, const char *fileName, const char *destPath) {
     // Open destination file
     FILE *file = fopen(destPath, "wb");
     if (!file) {
-        printf("Failed to open file: %s (errno: %d)\n", destPath, errno);
+        log_error("Failed to open file: %s (errno: %d)", destPath, errno);
         httpcCloseContext(&context);
         return false;
     }
@@ -508,7 +477,7 @@ bool api_download_rom(int romId, const char *fileName, const char *destPath) {
     #define DOWNLOAD_CHUNK_SIZE (64 * 1024)
     u8 *buffer = malloc(DOWNLOAD_CHUNK_SIZE);
     if (!buffer) {
-        printf("Failed to allocate download buffer\n");
+        log_error("Failed to allocate download buffer");
         fclose(file);
         httpcCloseContext(&context);
         return false;
@@ -524,7 +493,7 @@ bool api_download_rom(int romId, const char *fileName, const char *destPath) {
         if (bytesRead > 0) {
             size_t written = fwrite(buffer, 1, bytesRead, file);
             if (written != bytesRead) {
-                printf("Failed to write to file\n");
+                log_error("Failed to write to file");
                 success = false;
                 break;
             }
@@ -534,7 +503,7 @@ bool api_download_rom(int romId, const char *fileName, const char *destPath) {
         if (ret == HTTPC_RESULTCODE_DOWNLOADPENDING) {
             continue;
         } else if (R_FAILED(ret)) {
-            printf("httpcDownloadData failed: %08lX\n", ret);
+            log_error("httpcDownloadData failed: %08lX", ret);
             success = false;
             break;
         } else {
@@ -547,9 +516,7 @@ bool api_download_rom(int romId, const char *fileName, const char *destPath) {
     fclose(file);
     httpcCloseContext(&context);
     
-    if (debugLevel >= API_DEBUG_REQUESTS) {
-        printf("[DEBUG] Downloaded %lu bytes\n", totalDownloaded);
-    }
+    log_debug("Downloaded %lu bytes", totalDownloaded);
     
     // If download failed, remove partial file
     if (!success) {
