@@ -166,6 +166,7 @@ int main(int argc, char *argv[]) {
             } else {
                 // No mapping - show folder browser
                 browser_init_rooted(config.romFolder, currentPlatformSlug);
+                bottom_set_mode(BOTTOM_MODE_DEFAULT);
                 currentState = STATE_SELECT_ROM_FOLDER;
             }
         }
@@ -297,9 +298,11 @@ int main(int argc, char *argv[]) {
                             bottom_log("Download failed!");
                         }
                     }
+                    bottom_set_mode(BOTTOM_MODE_ROM_DETAIL);
                     currentState = STATE_ROM_DETAIL;
                 } else if (browser_was_cancelled()) {
                     browser_exit();
+                    bottom_set_mode(BOTTOM_MODE_ROM_DETAIL);
                     currentState = STATE_ROM_DETAIL;
                 }
                 break;
