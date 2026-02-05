@@ -37,4 +37,5 @@ jobs:
           name: rommlet
           path: |
             build/output/rommlet.3dsx
+            build/output/rommlet.smdh
             build/output/rommlet.cia
