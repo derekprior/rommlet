@@ -20,47 +20,6 @@ static PlatformMapping mappings[MAX_MAPPINGS];
 static int mappingCount = 0;
 static bool mappingsLoaded = false;
 
-static void load_mappings(void) {
-    if (mappingsLoaded) return;
-    mappingsLoaded = true;
-    mappingCount = 0;
-    
-    FILE *f = fopen(CONFIG_MAPPINGS_PATH, "r");
-    if (!f) return;
-    
-    char line[CONFIG_MAX_SLUG_LEN * 2 + 2];  // slug=folder\n
-    while (fgets(line, sizeof(line), f) && mappingCount < MAX_MAPPINGS) {
-        char *newline = strchr(line, '\n');
-        if (newline) *newline = '\0';
-        newline = strchr(line, '\r');
-        if (newline) *newline = '\0';
-        
-        char *eq = strchr(line, '=');
-        if (!eq) continue;
-        
-        *eq = '\0';
-        snprintf(mappings[mappingCount].slug, CONFIG_MAX_SLUG_LEN, "%.63s", line);
-        snprintf(mappings[mappingCount].folder, CONFIG_MAX_SLUG_LEN, "%.63s", eq + 1);
-        mappingCount++;
-    }
-    
-    fclose(f);
-}
-
-static bool save_mappings(void) {
-    mkdir(CONFIG_DIR, 0755);
-    
-    FILE *f = fopen(CONFIG_MAPPINGS_PATH, "w");
-    if (!f) return false;
-    
-    for (int i = 0; i < mappingCount; i++) {
-        fprintf(f, "%s=%s\n", mappings[i].slug, mappings[i].folder);
-    }
-    
-    fclose(f);
-    return true;
-}
-
 void config_init(Config *config) {
     memset(config, 0, sizeof(Config));
     snprintf(config->serverUrl, CONFIG_MAX_URL_LEN, "http://pinbox.local");
@@ -73,13 +32,28 @@ bool config_load(Config *config) {
         return false;
     }
     
+    // Reset mappings when loading config
+    mappingCount = 0;
+    mappingsLoaded = true;
+    
     char line[512];
+    bool inMappingsSection = false;
+    
     while (fgets(line, sizeof(line), f)) {
         // Remove newline
         char *newline = strchr(line, '\n');
         if (newline) *newline = '\0';
         newline = strchr(line, '\r');
         if (newline) *newline = '\0';
+        
+        // Skip empty lines
+        if (line[0] == '\0') continue;
+        
+        // Check for section headers
+        if (line[0] == '[') {
+            inMappingsSection = (strcmp(line, "[platform_mappings]") == 0);
+            continue;
+        }
         
         // Parse key=value
         char *eq = strchr(line, '=');
@@ -89,14 +63,24 @@ bool config_load(Config *config) {
         char *key = line;
         char *value = eq + 1;
         
-        if (strcmp(key, "serverUrl") == 0) {
-            snprintf(config->serverUrl, CONFIG_MAX_URL_LEN, "%s", value);
-        } else if (strcmp(key, "username") == 0) {
-            snprintf(config->username, CONFIG_MAX_USER_LEN, "%s", value);
-        } else if (strcmp(key, "password") == 0) {
-            snprintf(config->password, CONFIG_MAX_PASS_LEN, "%s", value);
-        } else if (strcmp(key, "romFolder") == 0) {
-            snprintf(config->romFolder, CONFIG_MAX_PATH_LEN, "%s", value);
+        if (inMappingsSection) {
+            // Platform mapping entry
+            if (mappingCount < MAX_MAPPINGS) {
+                snprintf(mappings[mappingCount].slug, CONFIG_MAX_SLUG_LEN, "%.63s", key);
+                snprintf(mappings[mappingCount].folder, CONFIG_MAX_SLUG_LEN, "%.63s", value);
+                mappingCount++;
+            }
+        } else {
+            // Main config entries
+            if (strcmp(key, "serverUrl") == 0) {
+                snprintf(config->serverUrl, CONFIG_MAX_URL_LEN, "%s", value);
+            } else if (strcmp(key, "username") == 0) {
+                snprintf(config->username, CONFIG_MAX_USER_LEN, "%s", value);
+            } else if (strcmp(key, "password") == 0) {
+                snprintf(config->password, CONFIG_MAX_PASS_LEN, "%s", value);
+            } else if (strcmp(key, "romFolder") == 0) {
+                snprintf(config->romFolder, CONFIG_MAX_PATH_LEN, "%s", value);
+            }
         }
     }
     
@@ -104,7 +88,7 @@ bool config_load(Config *config) {
     return config_is_valid(config);
 }
 
-bool config_save(const Config *config) {
+static bool save_config_file(const Config *config) {
     // Ensure directory exists
     mkdir(CONFIG_DIR, 0755);
     
@@ -113,13 +97,26 @@ bool config_save(const Config *config) {
         return false;
     }
     
+    // Write main config
     fprintf(f, "serverUrl=%s\n", config->serverUrl);
     fprintf(f, "username=%s\n", config->username);
     fprintf(f, "password=%s\n", config->password);
     fprintf(f, "romFolder=%s\n", config->romFolder);
     
+    // Write platform mappings section
+    if (mappingCount > 0) {
+        fprintf(f, "\n[platform_mappings]\n");
+        for (int i = 0; i < mappingCount; i++) {
+            fprintf(f, "%s=%s\n", mappings[i].slug, mappings[i].folder);
+        }
+    }
+    
     fclose(f);
     return true;
+}
+
+bool config_save(const Config *config) {
+    return save_config_file(config);
 }
 
 bool config_is_valid(const Config *config) {
@@ -130,8 +127,6 @@ bool config_is_valid(const Config *config) {
 }
 
 const char *config_get_platform_folder(const char *platformSlug) {
-    load_mappings();
-    
     for (int i = 0; i < mappingCount; i++) {
         if (strcmp(mappings[i].slug, platformSlug) == 0) {
             return mappings[i].folder;
@@ -140,23 +135,21 @@ const char *config_get_platform_folder(const char *platformSlug) {
     return NULL;
 }
 
-bool config_set_platform_folder(const char *platformSlug, const char *folderName) {
-    load_mappings();
-    
+bool config_set_platform_folder(const Config *config, const char *platformSlug, const char *folderName) {
     // Check if mapping already exists
     for (int i = 0; i < mappingCount; i++) {
         if (strcmp(mappings[i].slug, platformSlug) == 0) {
-            snprintf(mappings[i].folder, CONFIG_MAX_SLUG_LEN, "%s", folderName);
-            return save_mappings();
+            snprintf(mappings[i].folder, CONFIG_MAX_SLUG_LEN, "%.63s", folderName);
+            return save_config_file(config);
         }
     }
     
     // Add new mapping
     if (mappingCount >= MAX_MAPPINGS) return false;
     
-    snprintf(mappings[mappingCount].slug, CONFIG_MAX_SLUG_LEN, "%s", platformSlug);
-    snprintf(mappings[mappingCount].folder, CONFIG_MAX_SLUG_LEN, "%s", folderName);
+    snprintf(mappings[mappingCount].slug, CONFIG_MAX_SLUG_LEN, "%.63s", platformSlug);
+    snprintf(mappings[mappingCount].folder, CONFIG_MAX_SLUG_LEN, "%.63s", folderName);
     mappingCount++;
     
-    return save_mappings();
+    return save_config_file(config);
 }

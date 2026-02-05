@@ -282,7 +282,7 @@ int main(int argc, char *argv[]) {
                 if (selected) {
                     // User selected a folder - save mapping and download
                     const char *folderName = browser_get_selected_folder_name();
-                    config_set_platform_folder(currentPlatformSlug, folderName);
+                    config_set_platform_folder(&config, currentPlatformSlug, folderName);
                     browser_exit();
                     
                     // Now download
