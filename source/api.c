@@ -370,7 +370,7 @@ RomDetail *api_get_rom_detail(int romId) {
     cJSON *id = cJSON_GetObjectItem(json, "id");
     cJSON *platformId = cJSON_GetObjectItem(json, "platform_id");
     cJSON *name = cJSON_GetObjectItem(json, "name");
-    cJSON *fileName = cJSON_GetObjectItem(json, "file_name");
+    cJSON *fsName = cJSON_GetObjectItem(json, "fs_name");
     cJSON *summary = cJSON_GetObjectItem(json, "summary");
     cJSON *md5Hash = cJSON_GetObjectItem(json, "md5_hash");
     cJSON *pathCoverSmall = cJSON_GetObjectItem(json, "path_cover_small");
@@ -386,7 +386,7 @@ RomDetail *api_get_rom_detail(int romId) {
     if (cJSON_IsNumber(id)) detail->id = id->valueint;
     if (cJSON_IsNumber(platformId)) detail->platformId = platformId->valueint;
     if (cJSON_IsString(name)) snprintf(detail->name, sizeof(detail->name), "%s", name->valuestring);
-    if (cJSON_IsString(fileName)) snprintf(detail->fileName, sizeof(detail->fileName), "%s", fileName->valuestring);
+    if (cJSON_IsString(fsName)) snprintf(detail->fileName, sizeof(detail->fileName), "%s", fsName->valuestring);
     if (cJSON_IsString(summary)) snprintf(detail->summary, sizeof(detail->summary), "%s", summary->valuestring);
     if (cJSON_IsString(md5Hash)) snprintf(detail->md5Hash, sizeof(detail->md5Hash), "%s", md5Hash->valuestring);
     if (cJSON_IsString(pathCoverSmall)) snprintf(detail->pathCoverSmall, sizeof(detail->pathCoverSmall), "%s", pathCoverSmall->valuestring);
