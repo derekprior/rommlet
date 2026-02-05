@@ -214,11 +214,16 @@ bool browser_update(u32 kDown) {
         }
     }
     
-    // Select current folder
-    if (kDown & KEY_X) {
-        snprintf(selectedPath, MAX_PATH_LEN, "%s", currentPath);
-        folderSelected = true;
-        return true;
+    // Select highlighted folder
+    if ((kDown & KEY_X) && entryCount > 0) {
+        // Don't allow selecting ".." - that would be confusing
+        if (strcmp(entries[selectedIndex].name, "..") == 0) {
+            // Go up instead of selecting parent
+        } else {
+            snprintf(selectedPath, MAX_PATH_LEN, "%s/%s", currentPath, entries[selectedIndex].name);
+            folderSelected = true;
+            return true;
+        }
     }
     
     // Create new folder
