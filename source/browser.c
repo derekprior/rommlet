@@ -311,7 +311,7 @@ void browser_draw(void) {
         for (int i = scrollOffset; i < visibleEnd; i++) {
             // Draw selection background if selected
             if (i == selectedIndex) {
-                ui_draw_rect(UI_PADDING, y, itemWidth, UI_LINE_HEIGHT, UI_COLOR_HIGHLIGHT);
+                ui_draw_rect(UI_PADDING, y, itemWidth, UI_LINE_HEIGHT, UI_COLOR_SELECTED);
             }
             
             // Draw folder icon
@@ -319,7 +319,7 @@ void browser_draw(void) {
             
             // Draw folder name
             ui_draw_text(UI_PADDING + iconOffset, y + 2, entries[i].name,
-                        i == selectedIndex ? UI_COLOR_TEXT_SELECTED : UI_COLOR_TEXT);
+                        i == selectedIndex ? UI_COLOR_TEXT : UI_COLOR_TEXT);
             
             y += UI_LINE_HEIGHT;
         }
