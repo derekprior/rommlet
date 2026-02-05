@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <3ds.h>
 #include <citro2d.h>
 #include "config.h"
@@ -149,10 +150,20 @@ int main(int argc, char *argv[]) {
         
         // Handle download ROM from detail screen
         if (bottomAction == BOTTOM_ACTION_DOWNLOAD_ROM && currentState == STATE_ROM_DETAIL && romDetail) {
-            // Check if we have a folder mapping for this platform
+            // Check if we have a valid folder mapping for this platform
             const char *folderName = config_get_platform_folder(currentPlatformSlug);
+            bool folderValid = false;
+            
             if (folderName && folderName[0]) {
-                // We have a mapping - download directly
+                // Check if the folder still exists
+                char folderPath[CONFIG_MAX_PATH_LEN + CONFIG_MAX_SLUG_LEN + 2];
+                snprintf(folderPath, sizeof(folderPath), "%s/%s", config.romFolder, folderName);
+                struct stat st;
+                folderValid = (stat(folderPath, &st) == 0 && S_ISDIR(st.st_mode));
+            }
+            
+            if (folderValid) {
+                // Folder exists - download directly
                 char destPath[CONFIG_MAX_PATH_LEN + CONFIG_MAX_SLUG_LEN + 256 + 3];
                 snprintf(destPath, sizeof(destPath), "%s/%s/%s", 
                         config.romFolder, folderName, romDetail->fileName);
@@ -164,7 +175,7 @@ int main(int argc, char *argv[]) {
                     bottom_log("Download failed!");
                 }
             } else {
-                // No mapping - show folder browser
+                // No mapping or folder doesn't exist - show folder browser
                 browser_init_rooted(config.romFolder, currentPlatformSlug);
                 bottom_set_mode(BOTTOM_MODE_DEFAULT);
                 currentState = STATE_SELECT_ROM_FOLDER;
