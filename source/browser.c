@@ -24,7 +24,7 @@ typedef struct {
 } DirEntry;
 
 static char currentPath[MAX_PATH_LEN];
-static char selectedPath[MAX_PATH_LEN];
+static char selectedPath[PATH_BUFFER_LEN];  // Needs room for path + "/" + name
 static char rootPath[MAX_PATH_LEN];  // If set, can't navigate above this
 static char defaultNewFolderName[MAX_NAME_LEN];  // Default name for new folder
 static DirEntry entries[MAX_ENTRIES];
@@ -220,7 +220,7 @@ bool browser_update(u32 kDown) {
         if (strcmp(entries[selectedIndex].name, "..") == 0) {
             // Go up instead of selecting parent
         } else {
-            snprintf(selectedPath, MAX_PATH_LEN, "%s/%s", currentPath, entries[selectedIndex].name);
+            snprintf(selectedPath, sizeof(selectedPath), "%s/%s", currentPath, entries[selectedIndex].name);
             folderSelected = true;
             return true;
         }
