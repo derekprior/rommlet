@@ -65,18 +65,20 @@ static void load_directory(const char *path) {
         return;
     }
     
+    // Add ".." entry explicitly if not at root (some filesystems don't return it)
+    bool atRoot = (isRooted && strcmp(currentPath, rootPath) == 0) ||
+                  (!isRooted && (strcmp(currentPath, "sdmc:") == 0 || strcmp(currentPath, "sdmc:/") == 0));
+    if (!atRoot) {
+        snprintf(entries[entryCount].name, MAX_NAME_LEN, "..");
+        entries[entryCount].isDirectory = true;
+        entryCount++;
+    }
+    
     struct dirent *ent;
     while ((ent = readdir(dir)) != NULL && entryCount < MAX_ENTRIES) {
-        // Skip hidden files and . entry
+        // Skip hidden files including . and .. (we added .. manually above)
         if (ent->d_name[0] == '.') {
-            // Allow .. for going up (unless rooted and at root)
-            if (strcmp(ent->d_name, "..") != 0) {
-                continue;
-            }
-            // Skip .. if we're at the root in rooted mode
-            if (isRooted && strcmp(currentPath, rootPath) == 0) {
-                continue;
-            }
+            continue;
         }
         
         // Check if it's a directory
@@ -298,7 +300,7 @@ void browser_draw(void) {
     y += UI_LINE_HEIGHT + UI_PADDING;
     
     float itemWidth = SCREEN_TOP_WIDTH - (UI_PADDING * 2);
-    float iconOffset = FOLDER_ICON_SIZE + 4;  // Icon width plus spacing
+    float iconOffset = FOLDER_ICON_SIZE + 8;  // Icon width plus spacing
     
     if (entryCount == 0) {
         ui_draw_text(UI_PADDING, y, "(empty folder)", UI_COLOR_TEXT_DIM);
