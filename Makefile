@@ -74,6 +74,8 @@ MAKEROM       := makerom
 BANNERTOOL    := bannertool
 RSVG_CONVERT  := rsvg-convert
 
+export BANNERTOOL
+
 #---------------------------------------------------------------------------------
 # No changes needed below this line
 #---------------------------------------------------------------------------------
