@@ -402,9 +402,9 @@ void api_free_rom_detail(RomDetail *detail) {
     if (detail) free(detail);
 }
 
-bool api_download_rom(int romId, const char *destPath) {
+bool api_download_rom(int romId, const char *fileName, const char *destPath) {
     char url[MAX_URL_LEN];
-    snprintf(url, sizeof(url), "%s/api/roms/%d/content", baseUrl, romId);
+    snprintf(url, sizeof(url), "%s/api/roms/%d/content/%s", baseUrl, romId, fileName);
     
     httpcContext context;
     Result ret;

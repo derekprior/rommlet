@@ -169,7 +169,7 @@ int main(int argc, char *argv[]) {
                         config.romFolder, folderName, romDetail->fileName);
                 show_loading("Downloading ROM...");
                 bottom_log("Downloading to: %s", destPath);
-                if (api_download_rom(romDetail->id, destPath)) {
+                if (api_download_rom(romDetail->id, romDetail->fileName, destPath)) {
                     bottom_log("Download complete!");
                 } else {
                     bottom_log("Download failed!");
@@ -303,7 +303,7 @@ int main(int argc, char *argv[]) {
                                 config.romFolder, folderName, romDetail->fileName);
                         show_loading("Downloading ROM...");
                         bottom_log("Downloading to: %s", destPath);
-                        if (api_download_rom(romDetail->id, destPath)) {
+                        if (api_download_rom(romDetail->id, romDetail->fileName, destPath)) {
                             bottom_log("Download complete!");
                         } else {
                             bottom_log("Download failed!");
