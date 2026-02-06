@@ -11,6 +11,7 @@ void listnav_reset(ListNav *nav) {
     nav->scrollOffset = 0;
     nav->count = 0;
     nav->total = 0;
+    nav->visibleItems = 0;
 }
 
 // Display count includes "Load more" row when count < total
@@ -18,11 +19,16 @@ static int display_count(const ListNav *nav) {
     return nav->count + (nav->count < nav->total ? 1 : 0);
 }
 
+static int visible_items(const ListNav *nav) {
+    return nav->visibleItems > 0 ? nav->visibleItems : UI_VISIBLE_ITEMS;
+}
+
 bool listnav_update(ListNav *nav, u32 kDown) {
     int dc = display_count(nav);
     if (dc == 0) return false;
 
     int prev = nav->selectedIndex;
+    int vis = visible_items(nav);
 
     if (kDown & KEY_DOWN) {
         nav->selectedIndex++;
@@ -30,8 +36,8 @@ bool listnav_update(ListNav *nav, u32 kDown) {
             nav->selectedIndex = 0;
             nav->scrollOffset = 0;
         }
-        if (nav->selectedIndex >= nav->scrollOffset + UI_VISIBLE_ITEMS) {
-            nav->scrollOffset = nav->selectedIndex - UI_VISIBLE_ITEMS + 1;
+        if (nav->selectedIndex >= nav->scrollOffset + vis) {
+            nav->scrollOffset = nav->selectedIndex - vis + 1;
         }
     }
 
@@ -39,7 +45,7 @@ bool listnav_update(ListNav *nav, u32 kDown) {
         nav->selectedIndex--;
         if (nav->selectedIndex < 0) {
             nav->selectedIndex = dc - 1;
-            nav->scrollOffset = dc > UI_VISIBLE_ITEMS ? dc - UI_VISIBLE_ITEMS : 0;
+            nav->scrollOffset = dc > vis ? dc - vis : 0;
         }
         if (nav->selectedIndex < nav->scrollOffset) {
             nav->scrollOffset = nav->selectedIndex;
@@ -47,17 +53,17 @@ bool listnav_update(ListNav *nav, u32 kDown) {
     }
 
     if (kDown & KEY_R) {
-        nav->selectedIndex += UI_VISIBLE_ITEMS;
+        nav->selectedIndex += vis;
         if (nav->selectedIndex >= dc) {
             nav->selectedIndex = dc - 1;
         }
-        if (nav->selectedIndex >= nav->scrollOffset + UI_VISIBLE_ITEMS) {
-            nav->scrollOffset = nav->selectedIndex - UI_VISIBLE_ITEMS + 1;
+        if (nav->selectedIndex >= nav->scrollOffset + vis) {
+            nav->scrollOffset = nav->selectedIndex - vis + 1;
         }
     }
 
     if (kDown & KEY_L) {
-        nav->selectedIndex -= UI_VISIBLE_ITEMS;
+        nav->selectedIndex -= vis;
         if (nav->selectedIndex < 0) {
             nav->selectedIndex = 0;
         }
@@ -71,8 +77,9 @@ bool listnav_update(ListNav *nav, u32 kDown) {
 
 void listnav_visible_range(const ListNav *nav, int *start, int *end) {
     int dc = display_count(nav);
+    int vis = visible_items(nav);
     *start = nav->scrollOffset;
-    *end = nav->scrollOffset + UI_VISIBLE_ITEMS;
+    *end = nav->scrollOffset + vis;
     if (*end > dc) *end = dc;
 }
 

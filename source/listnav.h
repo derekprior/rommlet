@@ -12,8 +12,9 @@
 typedef struct {
     int selectedIndex;
     int scrollOffset;
-    int count; // actual items
-    int total; // total available (count < total means "load more" row exists)
+    int count;        // actual items
+    int total;        // total available (count < total means "load more" row exists)
+    int visibleItems; // items visible on screen (0 = use UI_VISIBLE_ITEMS default)
 } ListNav;
 
 // Reset navigation state to defaults

@@ -4,6 +4,7 @@
 
 #include "browser.h"
 #include "ui.h"
+#include "listnav.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -28,9 +29,7 @@ static char selectedPath[PATH_BUFFER_LEN];      // Needs room for path + "/" + n
 static char rootPath[MAX_PATH_LEN];             // If set, can't navigate above this
 static char defaultNewFolderName[MAX_NAME_LEN]; // Default name for new folder
 static DirEntry entries[MAX_ENTRIES];
-static int entryCount = 0;
-static int selectedIndex = 0;
-static int scrollOffset = 0;
+static ListNav nav;
 static bool cancelled = false;
 static bool folderSelected = false;
 static bool isRooted = false;
@@ -48,9 +47,11 @@ static int compare_entries(const void *a, const void *b) {
 }
 
 static void load_directory(const char *path) {
-    entryCount = 0;
-    selectedIndex = 0;
-    scrollOffset = 0;
+    nav.count = 0;
+    nav.total = 0;
+    nav.selectedIndex = 0;
+    nav.scrollOffset = 0;
+    nav.visibleItems = UI_VISIBLE_ITEMS - 1; // path display takes one line
 
     snprintf(currentPath, sizeof(currentPath), "%s", path);
 
@@ -69,13 +70,13 @@ static void load_directory(const char *path) {
     bool atRoot = (isRooted && strcmp(currentPath, rootPath) == 0) ||
                   (!isRooted && (strcmp(currentPath, "sdmc:") == 0 || strcmp(currentPath, "sdmc:/") == 0));
     if (!atRoot) {
-        snprintf(entries[entryCount].name, MAX_NAME_LEN, "..");
-        entries[entryCount].isDirectory = true;
-        entryCount++;
+        snprintf(entries[nav.count].name, MAX_NAME_LEN, "..");
+        entries[nav.count].isDirectory = true;
+        nav.count++;
     }
 
     struct dirent *ent;
-    while ((ent = readdir(dir)) != NULL && entryCount < MAX_ENTRIES) {
+    while ((ent = readdir(dir)) != NULL && nav.count < MAX_ENTRIES) {
         // Skip hidden files including . and .. (we added .. manually above)
         if (ent->d_name[0] == '.') {
             continue;
@@ -95,17 +96,18 @@ static void load_directory(const char *path) {
             continue;
         }
 
-        snprintf(entries[entryCount].name, MAX_NAME_LEN, "%s", ent->d_name);
-        entries[entryCount].isDirectory = true;
-        entryCount++;
+        snprintf(entries[nav.count].name, MAX_NAME_LEN, "%s", ent->d_name);
+        entries[nav.count].isDirectory = true;
+        nav.count++;
     }
 
     closedir(dir);
 
     // Sort entries
-    if (entryCount > 0) {
-        qsort(entries, entryCount, sizeof(DirEntry), compare_entries);
+    if (nav.count > 0) {
+        qsort(entries, nav.count, sizeof(DirEntry), compare_entries);
     }
+    nav.total = nav.count;
 }
 
 void browser_init(const char *startPath) {
@@ -141,7 +143,8 @@ void browser_init_rooted(const char *root, const char *defaultNewFolder) {
 }
 
 void browser_exit(void) {
-    entryCount = 0;
+    nav.count = 0;
+    nav.total = 0;
 }
 
 bool browser_update(u32 kDown) {
@@ -149,53 +152,12 @@ bool browser_update(u32 kDown) {
         return folderSelected;
     }
 
-    // Navigation
-    if (kDown & KEY_DOWN) {
-        selectedIndex++;
-        if (selectedIndex >= entryCount) {
-            selectedIndex = 0;
-            scrollOffset = 0;
-        }
-        if (selectedIndex >= scrollOffset + UI_VISIBLE_ITEMS) {
-            scrollOffset = selectedIndex - UI_VISIBLE_ITEMS + 1;
-        }
-    }
-
-    if (kDown & KEY_UP) {
-        selectedIndex--;
-        if (selectedIndex < 0) {
-            selectedIndex = entryCount > 0 ? entryCount - 1 : 0;
-            scrollOffset = entryCount > UI_VISIBLE_ITEMS ? entryCount - UI_VISIBLE_ITEMS : 0;
-        }
-        if (selectedIndex < scrollOffset) {
-            scrollOffset = selectedIndex;
-        }
-    }
-
-    // Page navigation
-    if (kDown & KEY_R) {
-        selectedIndex += UI_VISIBLE_ITEMS;
-        if (selectedIndex >= entryCount) {
-            selectedIndex = entryCount > 0 ? entryCount - 1 : 0;
-        }
-        if (selectedIndex >= scrollOffset + UI_VISIBLE_ITEMS) {
-            scrollOffset = selectedIndex - UI_VISIBLE_ITEMS + 1;
-        }
-    }
-
-    if (kDown & KEY_L) {
-        selectedIndex -= UI_VISIBLE_ITEMS;
-        if (selectedIndex < 0) {
-            selectedIndex = 0;
-        }
-        if (selectedIndex < scrollOffset) {
-            scrollOffset = selectedIndex;
-        }
-    }
+    // Navigation (D-pad and L/R paging)
+    listnav_update(&nav, kDown);
 
     // Enter directory
-    if ((kDown & KEY_A) && entryCount > 0) {
-        if (strcmp(entries[selectedIndex].name, "..") == 0) {
+    if ((kDown & KEY_A) && nav.count > 0) {
+        if (strcmp(entries[nav.selectedIndex].name, "..") == 0) {
             // Go up one level - but respect root if rooted
             if (isRooted && strcmp(currentPath, rootPath) == 0) {
                 // Already at root, can't go up
@@ -211,7 +173,7 @@ bool browser_update(u32 kDown) {
         } else {
             // Enter subdirectory
             char newPath[PATH_BUFFER_LEN];
-            snprintf(newPath, sizeof(newPath), "%s/%s", currentPath, entries[selectedIndex].name);
+            snprintf(newPath, sizeof(newPath), "%s/%s", currentPath, entries[nav.selectedIndex].name);
             load_directory(newPath);
         }
     }
@@ -230,9 +192,9 @@ bool browser_was_cancelled(void) {
 }
 
 bool browser_select_current(void) {
-    if (entryCount == 0) return false;
-    if (strcmp(entries[selectedIndex].name, "..") == 0) return false;
-    snprintf(selectedPath, sizeof(selectedPath), "%s/%s", currentPath, entries[selectedIndex].name);
+    if (nav.count == 0) return false;
+    if (strcmp(entries[nav.selectedIndex].name, "..") == 0) return false;
+    snprintf(selectedPath, sizeof(selectedPath), "%s/%s", currentPath, entries[nav.selectedIndex].name);
     folderSelected = true;
     return true;
 }
@@ -251,11 +213,12 @@ bool browser_create_folder(void) {
             if (mkdir(newPath, 0755) == 0) {
                 load_directory(currentPath);
                 // Find and select the newly created folder
-                for (int i = 0; i < entryCount; i++) {
+                for (int i = 0; i < nav.count; i++) {
                     if (strcmp(entries[i].name, newFolderName) == 0) {
-                        selectedIndex = i;
-                        if (selectedIndex >= scrollOffset + UI_VISIBLE_ITEMS) {
-                            scrollOffset = selectedIndex - UI_VISIBLE_ITEMS + 1;
+                        nav.selectedIndex = i;
+                        int vis = nav.visibleItems > 0 ? nav.visibleItems : UI_VISIBLE_ITEMS;
+                        if (nav.selectedIndex >= nav.scrollOffset + vis) {
+                            nav.scrollOffset = nav.selectedIndex - vis + 1;
                         }
                         break;
                     }
@@ -268,9 +231,9 @@ bool browser_create_folder(void) {
 }
 
 const char *browser_get_current_name(void) {
-    if (entryCount == 0) return "";
-    if (strcmp(entries[selectedIndex].name, "..") == 0) return "";
-    return entries[selectedIndex].name;
+    if (nav.count == 0) return "";
+    if (strcmp(entries[nav.selectedIndex].name, "..") == 0) return "";
+    return entries[nav.selectedIndex].name;
 }
 
 const char *browser_get_selected_path(void) {
@@ -314,26 +277,19 @@ void browser_draw(void) {
     float itemWidth = SCREEN_TOP_WIDTH - (UI_PADDING * 2);
     float iconOffset = FOLDER_ICON_SIZE + 8; // Icon width plus spacing
 
-    if (entryCount == 0) {
+    if (nav.count == 0) {
         ui_draw_text(UI_PADDING, y, "(empty folder)", UI_COLOR_TEXT_DIM);
     } else {
-        // Draw visible items (fewer items due to path display)
-        int visibleItems = UI_VISIBLE_ITEMS - 1;
-        int visibleEnd = scrollOffset + visibleItems;
-        if (visibleEnd > entryCount) visibleEnd = entryCount;
+        int start, end;
+        listnav_visible_range(&nav, &start, &end);
 
-        for (int i = scrollOffset; i < visibleEnd; i++) {
-            // Draw selection background if selected
-            if (i == selectedIndex) {
+        for (int i = start; i < end; i++) {
+            if (i == nav.selectedIndex) {
                 ui_draw_rect(UI_PADDING, y, itemWidth, UI_LINE_HEIGHT, UI_COLOR_SELECTED);
             }
 
-            // Draw folder icon
             draw_folder_icon(UI_PADDING + 2, y + 1, FOLDER_ICON_SIZE, FOLDER_ICON_COLOR);
-
-            // Draw folder name
-            ui_draw_text(UI_PADDING + iconOffset, y + 2, entries[i].name,
-                         i == selectedIndex ? UI_COLOR_TEXT : UI_COLOR_TEXT);
+            ui_draw_text(UI_PADDING + iconOffset, y + 2, entries[i].name, UI_COLOR_TEXT);
 
             y += UI_LINE_HEIGHT;
         }
