@@ -157,9 +157,6 @@ cia: all meta/banner.bin meta/icon.bin
 meta/banner.bin: meta/banner.png meta/audio.wav
 	$(BANNERTOOL) makebanner -i meta/banner.png -a meta/audio.wav -o meta/banner.bin
 
-meta/audio.wav:
-	@echo "Generating silent audio file..."
-	@python3 -c "import struct; f=open('$@','wb'); f.write(b'RIFF'+struct.pack('<I',36)+b'WAVEfmt '+struct.pack('<IHHIIHH',16,1,1,44100,88200,2,16)+b'data'+struct.pack('<I',0)); f.close()"
 
 meta/icon.bin: meta/icon.png
 	$(BANNERTOOL) makesmdh -s "$(APP_TITLE)" -l "$(APP_DESC)" -p "$(APP_AUTHOR)" \
