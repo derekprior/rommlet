@@ -4,16 +4,16 @@
 
 #include "queuescreen.h"
 #include "../ui.h"
+#include "../listnav.h"
 #include "../queue.h"
 #include <stdio.h>
 #include <string.h>
 
-static int selectedIndex = 0;
-static int scrollOffset = 0;
+static ListNav nav;
 
 void queue_screen_init(void) {
-    selectedIndex = 0;
-    scrollOffset = 0;
+    nav.selectedIndex = 0;
+    nav.scrollOffset = 0;
 }
 
 QueueResult queue_screen_update(u32 kDown, int *outSelectedIndex) {
@@ -21,58 +21,20 @@ QueueResult queue_screen_update(u32 kDown, int *outSelectedIndex) {
         return QUEUE_BACK;
     }
 
-    int count = queue_count();
-    if (count == 0) return QUEUE_NONE;
+    nav.count = queue_count();
+    nav.total = nav.count;
+    if (nav.count == 0) return QUEUE_NONE;
 
     // Clamp selection if queue shrank
-    if (selectedIndex >= count) {
-        selectedIndex = count - 1;
-        if (selectedIndex < 0) selectedIndex = 0;
+    if (nav.selectedIndex >= nav.count) {
+        nav.selectedIndex = nav.count - 1;
+        if (nav.selectedIndex < 0) nav.selectedIndex = 0;
     }
 
-    // Navigation
-    if (kDown & KEY_DOWN) {
-        selectedIndex++;
-        if (selectedIndex >= count) {
-            selectedIndex = 0;
-            scrollOffset = 0;
-        }
-        if (selectedIndex >= scrollOffset + UI_VISIBLE_ITEMS) {
-            scrollOffset = selectedIndex - UI_VISIBLE_ITEMS + 1;
-        }
-    }
+    listnav_update(&nav, kDown);
 
-    if (kDown & KEY_UP) {
-        selectedIndex--;
-        if (selectedIndex < 0) {
-            selectedIndex = count - 1;
-            scrollOffset = count > UI_VISIBLE_ITEMS ? count - UI_VISIBLE_ITEMS : 0;
-        }
-        if (selectedIndex < scrollOffset) {
-            scrollOffset = selectedIndex;
-        }
-    }
-
-    // Page up/down
-    if (kDown & KEY_R) {
-        selectedIndex += UI_VISIBLE_ITEMS;
-        if (selectedIndex >= count) selectedIndex = count - 1;
-        if (selectedIndex >= scrollOffset + UI_VISIBLE_ITEMS) {
-            scrollOffset = selectedIndex - UI_VISIBLE_ITEMS + 1;
-        }
-    }
-
-    if (kDown & KEY_L) {
-        selectedIndex -= UI_VISIBLE_ITEMS;
-        if (selectedIndex < 0) selectedIndex = 0;
-        if (selectedIndex < scrollOffset) {
-            scrollOffset = selectedIndex;
-        }
-    }
-
-    // Select item
     if (kDown & KEY_A) {
-        if (outSelectedIndex) *outSelectedIndex = selectedIndex;
+        if (outSelectedIndex) *outSelectedIndex = nav.selectedIndex;
         return QUEUE_SELECTED;
     }
 
@@ -83,6 +45,8 @@ void queue_screen_draw(void) {
     ui_draw_header("Download Queue");
 
     int count = queue_count();
+    nav.count = count;
+    nav.total = count;
 
     if (count == 0) {
         const char *emptyMsg = "No ROMs queued";
@@ -97,22 +61,20 @@ void queue_screen_draw(void) {
     float y = UI_HEADER_HEIGHT + UI_PADDING;
     float itemWidth = SCREEN_TOP_WIDTH - (UI_PADDING * 2);
 
-    int visibleEnd = scrollOffset + UI_VISIBLE_ITEMS;
-    if (visibleEnd > count) visibleEnd = count;
+    int start, end;
+    listnav_visible_range(&nav, &start, &end);
 
-    for (int i = scrollOffset; i < visibleEnd; i++) {
+    for (int i = start; i < end; i++) {
         QueueEntry *entry = queue_get(i);
         if (!entry) continue;
 
-        // Build display text: "[slug] name"
         char displayText[384];
         snprintf(displayText, sizeof(displayText), "[%s] %s", 
                  entry->platformSlug, entry->name);
 
-        bool selected = (i == selectedIndex);
+        bool selected = (i == nav.selectedIndex);
 
         if (entry->failed) {
-            // Failed items: red X prefix
             if (selected) {
                 ui_draw_rect(UI_PADDING, y, itemWidth, UI_LINE_HEIGHT, UI_COLOR_SELECTED);
             }
@@ -126,14 +88,8 @@ void queue_screen_draw(void) {
         y += UI_LINE_HEIGHT;
     }
 
-    // Scroll indicator
-    char scrollText[32];
-    snprintf(scrollText, sizeof(scrollText), "%d/%d", selectedIndex + 1, count);
-    float textWidth = ui_get_text_width(scrollText);
-    ui_draw_text(SCREEN_TOP_WIDTH - textWidth - UI_PADDING,
-                 UI_HEADER_HEIGHT + UI_PADDING, scrollText, UI_COLOR_TEXT_DIM);
+    listnav_draw_scroll_indicator(&nav);
 
-    // Help text
     ui_draw_text(UI_PADDING, SCREEN_TOP_HEIGHT - UI_LINE_HEIGHT - UI_PADDING,
                  "A: Details | B: Back | L/R: Page", UI_COLOR_TEXT_DIM);
 }

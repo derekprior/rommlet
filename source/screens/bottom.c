@@ -221,8 +221,8 @@ BottomAction bottom_update(void) {
         }
     }
     
-    // Handle ROM detail mode buttons (download + queue)
-    if ((currentMode == BOTTOM_MODE_ROM_DETAIL || currentMode == BOTTOM_MODE_ROMS || currentMode == BOTTOM_MODE_SEARCH_RESULTS) && !showDebugModal) {
+    // Handle ROM actions mode buttons (download + queue)
+    if (currentMode == BOTTOM_MODE_ROM_ACTIONS && !showDebugModal) {
         if (kDown & KEY_TOUCH) {
             hidTouchRead(&touch);
             if (touch_in_rect(touch.px, touch.py, BUTTON_X, SAVE_BUTTON_Y_DUAL, BUTTON_WIDTH, BUTTON_HEIGHT)) {
@@ -885,7 +885,7 @@ void bottom_draw(void) {
         draw_debug_modal();
     } else if (currentMode == BOTTOM_MODE_SETTINGS) {
         draw_settings_screen();
-    } else if (currentMode == BOTTOM_MODE_ROMS || currentMode == BOTTOM_MODE_ROM_DETAIL) {
+    } else if (currentMode == BOTTOM_MODE_ROM_ACTIONS) {
         draw_rom_detail_screen();
     } else if (currentMode == BOTTOM_MODE_DOWNLOADING) {
         draw_downloading_screen();
@@ -898,8 +898,6 @@ void bottom_draw(void) {
         ui_draw_rect(0, 0, SCREEN_BOTTOM_WIDTH, SCREEN_BOTTOM_HEIGHT, UI_COLOR_BG);
         draw_toolbar();
         search_form_draw();
-    } else if (currentMode == BOTTOM_MODE_SEARCH_RESULTS) {
-        draw_rom_detail_screen();
     } else if (currentMode == BOTTOM_MODE_FOLDER_BROWSER) {
         // Background
         ui_draw_rect(0, 0, SCREEN_BOTTOM_WIDTH, SCREEN_BOTTOM_HEIGHT, UI_COLOR_BG);

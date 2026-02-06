@@ -4,6 +4,7 @@
 
 #include "search.h"
 #include "../ui.h"
+#include "../listnav.h"
 #include "../log.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,10 +20,7 @@ static int platformCursorIndex = 0;
 
 // Search results state
 static Rom *resultList = NULL;
-static int resultCount = 0;
-static int resultTotal = 0;
-static int selectedIndex = 0;
-static int scrollOffset = 0;
+static ListNav nav;
 
 // Platform list layout
 #define TOOLBAR_HEIGHT 24
@@ -53,10 +51,7 @@ void search_init(Platform *platforms, int count) {
         free(resultList);
         resultList = NULL;
     }
-    resultCount = 0;
-    resultTotal = 0;
-    selectedIndex = 0;
-    scrollOffset = 0;
+    listnav_reset(&nav);
 }
 
 const char *search_get_term(void) {
@@ -88,44 +83,44 @@ void search_set_results(Rom *roms, int count, int total) {
         free(resultList);
     }
     resultList = roms;
-    resultCount = count;
-    resultTotal = total;
-    selectedIndex = 0;
-    scrollOffset = 0;
+    nav.count = count;
+    nav.total = total;
+    nav.selectedIndex = 0;
+    nav.scrollOffset = 0;
 }
 
 void search_append_results(Rom *roms, int count) {
     if (!roms || count == 0) return;
     
-    Rom *newList = realloc(resultList, (resultCount + count) * sizeof(Rom));
+    Rom *newList = realloc(resultList, (nav.count + count) * sizeof(Rom));
     if (!newList) {
         free(roms);
         return;
     }
     
     resultList = newList;
-    memcpy(&resultList[resultCount], roms, count * sizeof(Rom));
-    resultCount += count;
+    memcpy(&resultList[nav.count], roms, count * sizeof(Rom));
+    nav.count += count;
     free(roms);
 }
 
 int search_get_result_count(void) {
-    return resultCount;
+    return nav.count;
 }
 
 const Rom *search_get_result_at(int index) {
-    if (!resultList || index < 0 || index >= resultCount) {
+    if (!resultList || index < 0 || index >= nav.count) {
         return NULL;
     }
     return &resultList[index];
 }
 
 int search_get_selected_index(void) {
-    return selectedIndex;
+    return nav.selectedIndex;
 }
 
 int search_get_result_id_at(int index) {
-    if (!resultList || index < 0 || index >= resultCount) {
+    if (!resultList || index < 0 || index >= nav.count) {
         return -1;
     }
     return resultList[index].id;
@@ -278,76 +273,25 @@ void search_form_draw(void) {
 
 // Search results - top screen
 
-static bool has_more_results(void) {
-    return resultCount < resultTotal;
-}
-
-static int get_display_count(void) {
-    return resultCount + (has_more_results() ? 1 : 0);
-}
-
 SearchResultsResult search_results_update(u32 kDown, int *outSelectedIndex) {
     if (kDown & KEY_B) {
         return SEARCH_RESULTS_BACK;
     }
     
-    if (!resultList || resultCount == 0) {
+    if (!resultList || nav.count == 0) {
         return SEARCH_RESULTS_NONE;
     }
     
-    int displayCount = get_display_count();
-    
-    if (kDown & KEY_DOWN) {
-        selectedIndex++;
-        if (selectedIndex >= displayCount) {
-            selectedIndex = 0;
-            scrollOffset = 0;
-        }
-        if (selectedIndex >= scrollOffset + UI_VISIBLE_ITEMS) {
-            scrollOffset = selectedIndex - UI_VISIBLE_ITEMS + 1;
-        }
-    }
-    
-    if (kDown & KEY_UP) {
-        selectedIndex--;
-        if (selectedIndex < 0) {
-            selectedIndex = displayCount - 1;
-            scrollOffset = displayCount > UI_VISIBLE_ITEMS ? displayCount - UI_VISIBLE_ITEMS : 0;
-        }
-        if (selectedIndex < scrollOffset) {
-            scrollOffset = selectedIndex;
-        }
-    }
-    
-    if (kDown & KEY_R) {
-        selectedIndex += UI_VISIBLE_ITEMS;
-        if (selectedIndex >= displayCount) {
-            selectedIndex = displayCount - 1;
-        }
-        if (selectedIndex >= scrollOffset + UI_VISIBLE_ITEMS) {
-            scrollOffset = selectedIndex - UI_VISIBLE_ITEMS + 1;
-        }
-    }
-    
-    if (kDown & KEY_L) {
-        selectedIndex -= UI_VISIBLE_ITEMS;
-        if (selectedIndex < 0) {
-            selectedIndex = 0;
-        }
-        if (selectedIndex < scrollOffset) {
-            scrollOffset = selectedIndex;
-        }
-    }
+    listnav_update(&nav, kDown);
     
     if (kDown & KEY_A) {
-        if (selectedIndex < resultCount) {
-            if (outSelectedIndex) *outSelectedIndex = selectedIndex;
+        if (nav.selectedIndex < nav.count) {
+            if (outSelectedIndex) *outSelectedIndex = nav.selectedIndex;
             return SEARCH_RESULTS_SELECTED;
         }
     }
     
-    // Check if we're on "Load more..." row
-    if (has_more_results() && selectedIndex == resultCount) {
+    if (listnav_on_load_more(&nav)) {
         return SEARCH_RESULTS_LOAD_MORE;
     }
     
@@ -355,12 +299,11 @@ SearchResultsResult search_results_update(u32 kDown, int *outSelectedIndex) {
 }
 
 void search_results_draw(void) {
-    // Header
     char headerText[320];
     snprintf(headerText, sizeof(headerText), "Search: \"%s\"", searchTerm);
     ui_draw_header(headerText);
     
-    if (!resultList || resultCount == 0) {
+    if (!resultList || nav.count == 0) {
         ui_draw_text(UI_PADDING, SCREEN_TOP_HEIGHT / 2,
                      "No results found.", UI_COLOR_TEXT_DIM);
         ui_draw_text(UI_PADDING, SCREEN_TOP_HEIGHT - UI_LINE_HEIGHT - UI_PADDING,
@@ -371,39 +314,28 @@ void search_results_draw(void) {
     float y = UI_HEADER_HEIGHT + UI_PADDING;
     float itemWidth = SCREEN_TOP_WIDTH - (UI_PADDING * 2);
     
-    int displayCount = get_display_count();
+    int start, end;
+    listnav_visible_range(&nav, &start, &end);
     
-    int visibleEnd = scrollOffset + UI_VISIBLE_ITEMS;
-    if (visibleEnd > displayCount) visibleEnd = displayCount;
-    
-    for (int i = scrollOffset; i < visibleEnd; i++) {
-        if (i < resultCount) {
-            // Format as "[slug] ROM Name"
+    for (int i = start; i < end; i++) {
+        if (i < nav.count) {
             char displayText[512];
             const char *slug = search_get_platform_slug(resultList[i].platformId);
             snprintf(displayText, sizeof(displayText), "[%s] %s", slug, resultList[i].name);
-            ui_draw_list_item(UI_PADDING, y, itemWidth, displayText, i == selectedIndex);
+            ui_draw_list_item(UI_PADDING, y, itemWidth, displayText, i == nav.selectedIndex);
         } else {
-            // "Load more..." row
-            if (i == selectedIndex) {
+            bool selected = (i == nav.selectedIndex);
+            if (selected) {
                 ui_draw_rect(UI_PADDING, y, itemWidth, UI_LINE_HEIGHT, UI_COLOR_SELECTED);
-                ui_draw_text(UI_PADDING + UI_PADDING, y + 2, "Load more...", UI_COLOR_TEXT);
-            } else {
-                ui_draw_text(UI_PADDING + UI_PADDING, y + 2, "Load more...", UI_COLOR_TEXT_DIM);
             }
+            ui_draw_text(UI_PADDING + UI_PADDING, y + 2, "Load more...",
+                         selected ? UI_COLOR_TEXT : UI_COLOR_TEXT_DIM);
         }
         y += UI_LINE_HEIGHT;
     }
     
-    // Scroll/count indicator
-    char scrollText[64];
-    int displayIndex = selectedIndex < resultCount ? selectedIndex + 1 : resultCount;
-    snprintf(scrollText, sizeof(scrollText), "%d/%d", displayIndex, resultTotal);
-    float textWidth = ui_get_text_width(scrollText);
-    ui_draw_text(SCREEN_TOP_WIDTH - textWidth - UI_PADDING,
-                 UI_HEADER_HEIGHT + UI_PADDING, scrollText, UI_COLOR_TEXT_DIM);
+    listnav_draw_scroll_indicator(&nav);
     
-    // Help text
     ui_draw_text(UI_PADDING, SCREEN_TOP_HEIGHT - UI_LINE_HEIGHT - UI_PADDING,
                  "A: Details | B: Back | L/R: Page", UI_COLOR_TEXT_DIM);
 }
