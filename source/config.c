@@ -3,6 +3,7 @@
  */
 
 #include "config.h"
+#include "log.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -140,6 +141,7 @@ bool config_set_platform_folder(const Config *config, const char *platformSlug, 
     for (int i = 0; i < mappingCount; i++) {
         if (strcmp(mappings[i].slug, platformSlug) == 0) {
             snprintf(mappings[i].folder, CONFIG_MAX_SLUG_LEN, "%.63s", folderName);
+            log_info("Platform '%s' folder set to '%s'", platformSlug, folderName);
             return save_config_file(config);
         }
     }
@@ -151,5 +153,6 @@ bool config_set_platform_folder(const Config *config, const char *platformSlug, 
     snprintf(mappings[mappingCount].folder, CONFIG_MAX_SLUG_LEN, "%.63s", folderName);
     mappingCount++;
     
+    log_info("Platform '%s' folder set to '%s'", platformSlug, folderName);
     return save_config_file(config);
 }
