@@ -694,6 +694,12 @@ static void handle_state_search_form(u32 kDown) {
 static void handle_state_search_results(u32 kDown) {
     SearchResultsResult srResult = search_results_update(kDown);
 
+    if (srResult == SEARCH_RESULTS_BACK) {
+        bottom_set_mode(BOTTOM_MODE_SEARCH_FORM);
+        currentState = nav_pop();
+        return;
+    }
+
     int curSearchIdx = search_get_selected_index();
     if (curSearchIdx != lastSearchListIndex) {
         const Rom *curSearchRom = search_get_result_at(curSearchIdx);
@@ -705,14 +711,10 @@ static void handle_state_search_results(u32 kDown) {
         lastSearchListIndex = curSearchIdx;
     }
 
-    if (srResult == SEARCH_RESULTS_BACK) {
-        bottom_set_mode(BOTTOM_MODE_SEARCH_FORM);
-        currentState = nav_pop();
-    } else if (srResult == SEARCH_RESULTS_SELECTED) {
-        int selIdx = search_get_selected_index();
-        int romId = search_get_result_id_at(selIdx);
+    if (srResult == SEARCH_RESULTS_SELECTED) {
+        int romId = search_get_result_id_at(curSearchIdx);
         if (romId >= 0) {
-            const Rom *selRom = search_get_result_at(selIdx);
+            const Rom *selRom = search_get_result_at(curSearchIdx);
             open_rom_detail(romId, selRom ? search_get_platform_slug(selRom->platformId) : "");
         }
     } else if (srResult == SEARCH_RESULTS_LOAD_MORE) {

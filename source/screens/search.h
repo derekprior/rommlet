@@ -64,9 +64,6 @@ void search_results_draw(void);
 // Open keyboard for search term (call on entry)
 void search_open_keyboard(void);
 
-// Look up platform display name by ID
-const char *search_get_platform_name(int platformId);
-
 // Look up platform slug by ID
 const char *search_get_platform_slug(int platformId);
 

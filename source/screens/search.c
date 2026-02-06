@@ -123,15 +123,6 @@ int search_get_result_id_at(int index) {
     return resultList[index].id;
 }
 
-const char *search_get_platform_name(int platformId) {
-    for (int i = 0; i < platformCount; i++) {
-        if (platformList[i].id == platformId) {
-            return platformList[i].displayName;
-        }
-    }
-    return "Unknown";
-}
-
 const char *search_get_platform_slug(int platformId) {
     for (int i = 0; i < platformCount; i++) {
         if (platformList[i].id == platformId) {
