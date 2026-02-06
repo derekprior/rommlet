@@ -36,6 +36,7 @@ static void queue_load(void) {
     FILE *f = fopen(QUEUE_PATH, "r");
     if (!f) return;
 
+    int skipped = 0;
     char line[1024];
     while (fgets(line, sizeof(line), f) && entryCount < QUEUE_MAX_ENTRIES) {
         char *nl = strchr(line, '\n');
@@ -54,7 +55,10 @@ static void queue_load(void) {
             if (p) *p++ = '\0';
         }
         if (p) fields[fieldCount++] = p;
-        if (fieldCount < 5) continue;
+        if (fieldCount < 5) {
+            skipped++;
+            continue;
+        }
 
         QueueEntry *e = &entries[entryCount];
         e->romId = atoi(fields[0]);
@@ -67,7 +71,11 @@ static void queue_load(void) {
     }
 
     fclose(f);
-    if (entryCount > 0) {
+
+    if (skipped > 0 && entryCount == 0) {
+        log_error("Queue file corrupt, removing: %s", QUEUE_PATH);
+        remove(QUEUE_PATH);
+    } else if (entryCount > 0) {
         log_info("Loaded %d queued ROM(s) from disk", entryCount);
     }
 }
