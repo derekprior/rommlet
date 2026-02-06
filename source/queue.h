@@ -1,5 +1,5 @@
 /*
- * Download queue - In-memory queue for batch ROM downloads
+ * Download queue - Persistent queue for batch ROM downloads
  */
 
 #ifndef QUEUE_H
