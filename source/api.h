@@ -6,6 +6,7 @@
 #define API_H
 
 #include <stdbool.h>
+#include <stdint.h>
 
 // Platform data from /api/platforms
 typedef struct {
@@ -71,9 +72,13 @@ RomDetail *api_get_rom_detail(int romId);
 // Free ROM detail
 void api_free_rom_detail(RomDetail *detail);
 
+// Progress callback for downloads (bytesDownloaded, totalBytes; total may be 0 if unknown)
+typedef void (*DownloadProgressCb)(uint32_t bytesDownloaded, uint32_t totalBytes);
+
 // Download a ROM file to the specified path
 // fileName is the fs_name from the ROM detail (used in URL path)
+// progressCb is called periodically with download progress (may be NULL)
 // Returns true on success, false on failure
-bool api_download_rom(int romId, const char *fileName, const char *destPath);
+bool api_download_rom(int romId, const char *fileName, const char *destPath, DownloadProgressCb progressCb);
 
 #endif // API_H

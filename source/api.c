@@ -393,7 +393,7 @@ void api_free_rom_detail(RomDetail *detail) {
     if (detail) free(detail);
 }
 
-bool api_download_rom(int romId, const char *fileName, const char *destPath) {
+bool api_download_rom(int romId, const char *fileName, const char *destPath, DownloadProgressCb progressCb) {
     char encodedName[256];
     url_encode(fileName, encodedName, sizeof(encodedName));
     char url[MAX_URL_LEN];
@@ -483,6 +483,10 @@ bool api_download_rom(int romId, const char *fileName, const char *destPath) {
         return false;
     }
     
+    // Get content length for progress reporting
+    u32 contentLength = 0;
+    httpcGetDownloadSizeState(&context, NULL, &contentLength);
+    
     // Open destination file
     FILE *file = fopen(destPath, "wb");
     if (!file) {
@@ -516,6 +520,9 @@ bool api_download_rom(int romId, const char *fileName, const char *destPath) {
                 break;
             }
             totalDownloaded += bytesRead;
+            if (progressCb) {
+                progressCb(totalDownloaded, contentLength);
+            }
         }
         
         if (ret == HTTPC_RESULTCODE_DOWNLOADPENDING) {

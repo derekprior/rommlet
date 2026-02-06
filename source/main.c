@@ -58,6 +58,27 @@ static void show_loading(const char *message) {
     C3D_FrameEnd(0);
 }
 
+// Download progress callback - renders progress bar each chunk
+static void download_progress(u32 downloaded, u32 total) {
+    float progress = total > 0 ? (float)downloaded / total : -1.0f;
+    
+    char sizeText[64];
+    if (total > 0) {
+        snprintf(sizeText, sizeof(sizeText), "%.1f / %.1f MB",
+                 downloaded / (1024.0f * 1024.0f), total / (1024.0f * 1024.0f));
+    } else {
+        snprintf(sizeText, sizeof(sizeText), "%.1f MB downloaded",
+                 downloaded / (1024.0f * 1024.0f));
+    }
+    
+    C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
+    C2D_TargetClear(topScreen, UI_COLOR_BG);
+    C2D_SceneBegin(topScreen);
+    ui_draw_download_progress(progress, sizeText);
+    bottom_draw();
+    C3D_FrameEnd(0);
+}
+
 // Helper to fetch platforms from API
 static void fetch_platforms(void) {
     show_loading("Fetching platforms...");
@@ -178,7 +199,7 @@ int main(int argc, char *argv[]) {
                         config.romFolder, folderName, romDetail->fileName);
                 show_loading("Downloading ROM...");
                 log_info("Downloading to: %s", destPath);
-                if (api_download_rom(romDetail->id, romDetail->fileName, destPath)) {
+                if (api_download_rom(romDetail->id, romDetail->fileName, destPath, download_progress)) {
                     log_info("Download complete!");
                 } else {
                     log_error("Download failed!");
@@ -312,7 +333,7 @@ int main(int argc, char *argv[]) {
                                 config.romFolder, folderName, romDetail->fileName);
                         show_loading("Downloading ROM...");
                         log_info("Downloading to: %s", destPath);
-                        if (api_download_rom(romDetail->id, romDetail->fileName, destPath)) {
+                        if (api_download_rom(romDetail->id, romDetail->fileName, destPath, download_progress)) {
                             log_info("Download complete!");
                         } else {
                             log_error("Download failed!");

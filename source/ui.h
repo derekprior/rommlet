@@ -63,6 +63,9 @@ float ui_get_text_width(const char *text);
 // Draw a centered loading message on top screen
 void ui_draw_loading(const char *message);
 
+// Draw download progress on top screen (progress 0.0 to 1.0, negative if unknown)
+void ui_draw_download_progress(float progress, const char *sizeText);
+
 // Show software keyboard and get input
 // Returns true if user confirmed, false if cancelled
 bool ui_show_keyboard(const char *hint, char *buffer, size_t bufferSize, bool password);

@@ -75,6 +75,39 @@ void ui_draw_loading(const char *message) {
     ui_draw_text(x, y, message, UI_COLOR_TEXT);
 }
 
+void ui_draw_download_progress(float progress, const char *sizeText) {
+    ui_draw_rect(0, 0, SCREEN_TOP_WIDTH, SCREEN_TOP_HEIGHT, C2D_Color32(0x1a, 0x1a, 0x2e, 0xE0));
+    
+    // "Downloading..." label
+    const char *label = "Downloading...";
+    float labelWidth = ui_get_text_width(label);
+    float centerY = SCREEN_TOP_HEIGHT / 2;
+    ui_draw_text((SCREEN_TOP_WIDTH - labelWidth) / 2, centerY - UI_LINE_HEIGHT - UI_PADDING, label, UI_COLOR_TEXT);
+    
+    // Progress bar
+    float barWidth = 300;
+    float barHeight = 16;
+    float barX = (SCREEN_TOP_WIDTH - barWidth) / 2;
+    float barY = centerY;
+    
+    // Track
+    ui_draw_rect(barX, barY, barWidth, barHeight, UI_COLOR_SCROLLBAR_TRACK);
+    
+    // Fill
+    if (progress >= 0) {
+        float fillWidth = barWidth * progress;
+        if (fillWidth > 0) {
+            ui_draw_rect(barX, barY, fillWidth, barHeight, UI_COLOR_ACCENT);
+        }
+    }
+    
+    // Size text below bar
+    if (sizeText) {
+        float sizeWidth = ui_get_text_width(sizeText);
+        ui_draw_text((SCREEN_TOP_WIDTH - sizeWidth) / 2, barY + barHeight + UI_PADDING, sizeText, UI_COLOR_TEXT_DIM);
+    }
+}
+
 float ui_get_text_width(const char *text) {
     C2D_TextBufClear(textBuf);
     
