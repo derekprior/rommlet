@@ -621,9 +621,7 @@ static void draw_downloading_screen(void) {
     // Cancel button centered
     draw_button(BUTTON_X, SAVE_BUTTON_Y_SINGLE, BUTTON_WIDTH, BUTTON_HEIGHT, "Cancel Download", false, BUTTON_STYLE_DANGER);
     
-    // Hint text
-    ui_draw_text(UI_PADDING, SCREEN_BOTTOM_HEIGHT - UI_LINE_HEIGHT - UI_PADDING,
-                 "B: Cancel", UI_COLOR_TEXT_DIM);
+
 }
 
 static void draw_queue_screen(void) {
@@ -702,8 +700,6 @@ void bottom_log_subscriber(LogLevel level, const char *message) {
 bool bottom_check_cancel(void) {
     hidScanInput();
     u32 kDown = hidKeysDown();
-    
-    if (kDown & KEY_B) return true;
     
     if (kDown & KEY_TOUCH) {
         touchPosition touch;
