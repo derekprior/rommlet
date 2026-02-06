@@ -173,40 +173,37 @@ static bool check_platform_folder_valid(const char *platformSlug) {
 
 // Get the currently focused ROM across any rom-list state, setting platform slug.
 // For STATE_ROM_DETAIL uses romDetail fields; for list states uses the selected list item.
-// Returns NULL if no ROM is focused. Sets *slug and *platName for the focused ROM.
-static const Rom *get_focused_rom(const char **slug, const char **platName) {
+// Returns false if no ROM is focused. Copies data into *out, sets *slug and *platName.
+static bool get_focused_rom(Rom *out, const char **slug, const char **platName) {
     if (currentState == STATE_ROM_DETAIL && romDetail) {
-        // ROM detail uses a separate struct; build a static Rom for uniform access
-        static Rom detailAsRom;
-        detailAsRom.id = romDetail->id;
-        detailAsRom.platformId = romDetail->platformId;
-        snprintf(detailAsRom.name, sizeof(detailAsRom.name), "%s", romDetail->name);
-        snprintf(detailAsRom.fsName, sizeof(detailAsRom.fsName), "%s", romDetail->fsName);
+        out->id = romDetail->id;
+        out->platformId = romDetail->platformId;
+        snprintf(out->name, sizeof(out->name), "%s", romDetail->name);
+        snprintf(out->fsName, sizeof(out->fsName), "%s", romDetail->fsName);
         *slug = currentPlatformSlug;
         *platName = romDetail->platformName;
-        return &detailAsRom;
+        return true;
     } else if (currentState == STATE_ROMS) {
         const Rom *rom = roms_get_at(roms_get_selected_index());
+        if (!rom) return false;
+        *out = *rom;
         *slug = currentPlatformSlug;
         *platName =
             (platforms && selectedPlatformIndex < platformCount) ? platforms[selectedPlatformIndex].displayName : "";
-        return rom;
+        return true;
     } else if (currentState == STATE_SEARCH_RESULTS) {
         const Rom *rom = search_get_result_at(search_get_selected_index());
-        if (rom) {
-            const char *searchSlug = search_get_platform_slug(rom->platformId);
-            snprintf(currentPlatformSlug, sizeof(currentPlatformSlug), "%s", searchSlug);
-            *slug = currentPlatformSlug;
-            *platName = search_get_platform_name(rom->platformId);
-        } else {
-            *slug = currentPlatformSlug;
-            *platName = "";
-        }
-        return rom;
+        if (!rom) return false;
+        *out = *rom;
+        const char *searchSlug = search_get_platform_slug(rom->platformId);
+        snprintf(currentPlatformSlug, sizeof(currentPlatformSlug), "%s", searchSlug);
+        *slug = currentPlatformSlug;
+        *platName = search_get_platform_name(rom->platformId);
+        return true;
     }
     *slug = currentPlatformSlug;
     *platName = "";
-    return NULL;
+    return false;
 }
 
 // Transition to targetState and sync the bottom screen for ROM actions
@@ -389,18 +386,18 @@ static void handle_bottom_action(BottomAction action) {
 
     if (action == BOTTOM_ACTION_DOWNLOAD_ROM && romFocused) {
         const char *slug, *platName;
-        const Rom *rom = get_focused_rom(&slug, &platName);
-        if (rom) {
+        Rom rom;
+        if (get_focused_rom(&rom, &slug, &platName)) {
             queueAddPending = false;
             if (check_platform_folder_valid(slug)) {
                 const char *folderName = config_get_platform_folder(slug);
                 char destPath[CONFIG_MAX_PATH_LEN + CONFIG_MAX_SLUG_LEN + 256 + 3];
-                snprintf(destPath, sizeof(destPath), "%s/%s/%s", config.romFolder, folderName, rom->fsName);
+                snprintf(destPath, sizeof(destPath), "%s/%s/%s", config.romFolder, folderName, rom.fsName);
                 bottom_set_mode(BOTTOM_MODE_DOWNLOADING);
-                set_download_name(slug, rom->name);
+                set_download_name(slug, rom.name);
                 downloadQueueText = NULL;
                 log_info("Downloading to: %s", destPath);
-                if (api_download_rom(rom->id, rom->fsName, destPath, download_progress)) {
+                if (api_download_rom(rom.id, rom.fsName, destPath, download_progress)) {
                     log_info("Download complete!");
                 } else {
                     log_error("Download failed!");
@@ -417,19 +414,19 @@ static void handle_bottom_action(BottomAction action) {
     }
     if (action == BOTTOM_ACTION_QUEUE_ROM && romFocused) {
         const char *slug, *platName;
-        const Rom *rom = get_focused_rom(&slug, &platName);
-        if (rom) {
-            if (queue_contains(rom->id)) {
-                queue_remove(rom->id);
-                log_info("Removed '%s' from download queue", rom->name);
+        Rom rom;
+        if (get_focused_rom(&rom, &slug, &platName)) {
+            if (queue_contains(rom.id)) {
+                queue_remove(rom.id);
+                log_info("Removed '%s' from download queue", rom.name);
                 bottom_set_rom_queued(false);
                 bottom_set_queue_count(queue_count());
             } else {
                 if (check_platform_folder_valid(slug)) {
-                    if (queue_add(rom->id, rom->platformId, rom->name, rom->fsName, slug, platName)) {
-                        log_info("Added '%s' to download queue", rom->name);
+                    if (queue_add(rom.id, rom.platformId, rom.name, rom.fsName, slug, platName)) {
+                        log_info("Added '%s' to download queue", rom.name);
                     }
-                    bottom_set_rom_queued(queue_contains(rom->id));
+                    bottom_set_rom_queued(queue_contains(rom.id));
                     bottom_set_queue_count(queue_count());
                 } else {
                     queueAddPending = true;
@@ -641,24 +638,24 @@ static void handle_state_select_folder(u32 kDown, BottomAction bottomAction) {
             if (queueAddPending) {
                 queueAddPending = false;
                 const char *slug, *platName;
-                const Rom *rom = get_focused_rom(&slug, &platName);
-                if (rom) {
-                    if (queue_add(rom->id, rom->platformId, rom->name, rom->fsName, slug, platName)) {
-                        log_info("Added '%s' to download queue", rom->name);
+                Rom rom;
+                if (get_focused_rom(&rom, &slug, &platName)) {
+                    if (queue_add(rom.id, rom.platformId, rom.name, rom.fsName, slug, platName)) {
+                        log_info("Added '%s' to download queue", rom.name);
                     }
                 }
                 sync_bottom_after_action(folderBrowserReturnState);
             } else {
                 const char *slug, *platName;
-                const Rom *rom = get_focused_rom(&slug, &platName);
-                if (rom) {
+                Rom rom;
+                if (get_focused_rom(&rom, &slug, &platName)) {
                     char destPath[CONFIG_MAX_PATH_LEN + CONFIG_MAX_SLUG_LEN + 256 + 3];
-                    snprintf(destPath, sizeof(destPath), "%s/%s/%s", config.romFolder, folderName, rom->fsName);
+                    snprintf(destPath, sizeof(destPath), "%s/%s/%s", config.romFolder, folderName, rom.fsName);
                     bottom_set_mode(BOTTOM_MODE_DOWNLOADING);
-                    set_download_name(slug, rom->name);
+                    set_download_name(slug, rom.name);
                     downloadQueueText = NULL;
                     log_info("Downloading to: %s", destPath);
-                    if (api_download_rom(rom->id, rom->fsName, destPath, download_progress)) {
+                    if (api_download_rom(rom.id, rom.fsName, destPath, download_progress)) {
                         log_info("Download complete!");
                     } else {
                         log_error("Download failed!");
