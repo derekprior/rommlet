@@ -259,6 +259,21 @@ static void sync_roms_bottom(int index) {
     lastRomListIndex = index;
 }
 
+// Download the currently focused ROM to the given platform folder
+static void download_focused_rom(const Rom *rom, const char *slug, const char *folderName) {
+    char destPath[CONFIG_MAX_PATH_LEN + CONFIG_MAX_SLUG_LEN + 256 + 3];
+    snprintf(destPath, sizeof(destPath), "%s/%s/%s", config.romFolder, folderName, rom->fsName);
+    bottom_set_mode(BOTTOM_MODE_DOWNLOADING);
+    set_download_name(slug, rom->name);
+    downloadQueueText = NULL;
+    log_info("Downloading to: %s", destPath);
+    if (api_download_rom(rom->id, rom->fsName, destPath, download_progress)) {
+        log_info("Download complete!");
+    } else {
+        log_error("Download failed!");
+    }
+}
+
 // Download a single queue entry. Returns true on success.
 static bool download_queue_entry(QueueEntry *entry) {
     const char *folderName = config_get_platform_folder(entry->platformSlug);
@@ -410,18 +425,7 @@ static void handle_bottom_action(BottomAction action) {
         if (get_focused_rom(&rom, &slug, &platName)) {
             queueAddPending = false;
             if (check_platform_folder_valid(slug)) {
-                const char *folderName = config_get_platform_folder(slug);
-                char destPath[CONFIG_MAX_PATH_LEN + CONFIG_MAX_SLUG_LEN + 256 + 3];
-                snprintf(destPath, sizeof(destPath), "%s/%s/%s", config.romFolder, folderName, rom.fsName);
-                bottom_set_mode(BOTTOM_MODE_DOWNLOADING);
-                set_download_name(slug, rom.name);
-                downloadQueueText = NULL;
-                log_info("Downloading to: %s", destPath);
-                if (api_download_rom(rom.id, rom.fsName, destPath, download_progress)) {
-                    log_info("Download complete!");
-                } else {
-                    log_error("Download failed!");
-                }
+                download_focused_rom(&rom, slug, config_get_platform_folder(slug));
                 sync_bottom_after_action(currentState);
             } else {
                 browser_init_rooted(config.romFolder, slug);
@@ -669,17 +673,7 @@ static void handle_state_select_folder(u32 kDown, BottomAction bottomAction) {
                 const char *slug, *platName;
                 Rom rom;
                 if (get_focused_rom(&rom, &slug, &platName)) {
-                    char destPath[CONFIG_MAX_PATH_LEN + CONFIG_MAX_SLUG_LEN + 256 + 3];
-                    snprintf(destPath, sizeof(destPath), "%s/%s/%s", config.romFolder, folderName, rom.fsName);
-                    bottom_set_mode(BOTTOM_MODE_DOWNLOADING);
-                    set_download_name(slug, rom.name);
-                    downloadQueueText = NULL;
-                    log_info("Downloading to: %s", destPath);
-                    if (api_download_rom(rom.id, rom.fsName, destPath, download_progress)) {
-                        log_info("Download complete!");
-                    } else {
-                        log_error("Download failed!");
-                    }
+                    download_focused_rom(&rom, slug, folderName);
                 }
                 sync_bottom_after_action(returnState);
             }
