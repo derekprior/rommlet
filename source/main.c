@@ -24,6 +24,7 @@
 #include "queue.h"
 #include "screens/queuescreen.h"
 #include "screens/search.h"
+#include "debuglog.h"
 
 // App states
 typedef enum {
@@ -839,8 +840,9 @@ int main(int argc, char *argv[]) {
     bottom_init();
     queue_init();
     queue_screen_init();
+    debuglog_init();
 
-    log_subscribe(bottom_log_subscriber);
+    log_subscribe(debuglog_subscriber);
     log_info("Rommlet - RomM Client");
 
     while (aptMainLoop()) {

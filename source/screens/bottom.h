@@ -1,5 +1,5 @@
 /*
- * Bottom screen - Toolbar and debug log modal
+ * Bottom screen - Toolbar, mode-specific button panels, and touch dispatch
  */
 
 #ifndef BOTTOM_H
@@ -8,7 +8,6 @@
 #include <3ds.h>
 #include <citro2d.h>
 #include <stdbool.h>
-#include "../log.h"
 
 // Bottom screen modes (matches app states that need custom UI)
 typedef enum {
@@ -76,9 +75,5 @@ void bottom_draw(void);
 // Check if user wants to cancel a download (polls input, no full update)
 // Returns true if cancel was requested
 bool bottom_check_cancel(void);
-
-// Log subscriber for the debug UI
-// Register with log_subscribe(&bottom_log_subscriber)
-void bottom_log_subscriber(LogLevel level, const char *message);
 
 #endif // BOTTOM_H

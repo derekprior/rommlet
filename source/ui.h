@@ -73,4 +73,24 @@ void ui_draw_download_progress(float progress, const char *sizeText, const char 
 // Returns true if user confirmed, false if cancelled
 bool ui_show_keyboard(const char *hint, char *buffer, size_t bufferSize, bool password);
 
+// Touch utility - check if a point is inside a rectangle
+bool ui_touch_in_rect(int tx, int ty, int x, int y, int w, int h);
+
+// Button widget styles
+typedef enum { UI_BUTTON_PRIMARY, UI_BUTTON_SECONDARY, UI_BUTTON_DANGER } UIButtonStyle;
+
+// Draw a styled button with shadow and gradient
+void ui_draw_button(float x, float y, float w, float h, const char *text, bool pressed, UIButtonStyle style);
+
+// Icon drawing functions (designed for 20px, scales to any size)
+void ui_draw_icon_bug(float x, float y, float size, u32 color);
+void ui_draw_icon_gear(float x, float y, float size, u32 color);
+void ui_draw_icon_queue(float x, float y, float size, u32 color);
+void ui_draw_icon_search(float x, float y, float size, u32 color);
+void ui_draw_icon_home(float x, float y, float size, u32 color);
+void ui_draw_icon_info(float x, float y, float size, u32 color);
+
+// Draw QR code for sponsor link
+void ui_draw_qr_code(float x, float y, float size);
+
 #endif // UI_H
