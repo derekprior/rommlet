@@ -27,7 +27,8 @@ void search_init(Platform *platforms, int platformCount);
 // Get the current search term
 const char *search_get_term(void);
 
-// Get selected platform IDs and count
+// Get selected platform IDs and count.
+// Returns pointer to a static buffer — valid only until the next call.
 const int *search_get_platform_ids(int *count);
 
 // Set search result data (takes ownership of roms pointer)
