@@ -1,59 +1,22 @@
 # Rommlet
 
-A Nintendo 3DS homebrew app for browsing ROMs on a [RomM](https://github.com/rommapp/romm) server.
+A Nintendo 3DS homebrew client for [RomM](https://github.com/rommapp/romm). Browse, search, and download ROMs from your RomM server directly to your 3DS.
 
 ## Features
 
-- Browse platforms available on your RomM server
-- Browse ROMs within each platform
-- Paginated ROM lists for large collections
-- In-app settings with on-screen keyboard
-- HTTP Basic Auth support
+- **Browse** platforms and ROMs on your RomM server with paginated lists
+- **Search** for ROMs across all platforms or filter by specific ones
+- **Download** ROMs directly to your SD card with a progress indicator
+- **Download queue** to batch multiple ROMs for download
+- **Folder management** — choose or create destination folders per platform
+- **Touchscreen UI** with toolbar icons for quick navigation between home, search, queue, and settings
+- **D-Pad + button controls** for navigating lists and selecting ROMs
 
 ## Requirements
 
-### For Building
-
-- [devkitPro](https://devkitpro.org/wiki/Getting_Started) with devkitARM
-- 3ds-dev packages: `(dkp-)pacman -S 3ds-dev`
-- [bannertool](https://github.com/Steveice10/bannertool) and [makerom](https://github.com/3DSGuy/Project_CTR) (for CIA builds)
-- [librsvg](https://wiki.gnome.org/Projects/LibRsvg) for icon conversion: `brew install librsvg`
-
-Or use the included devcontainer for GitHub Codespaces.
-
-### For Running
-
 - Nintendo 3DS with custom firmware (Luma3DS recommended)
 - Homebrew Launcher (for .3dsx) or FBI (for .cia)
-- WiFi connection to your RomM server
-
-## Building
-
-### Option 1: GitHub Codespaces (Recommended)
-
-No local setup required! Build in the cloud with a pre-configured environment.
-
-1. Click the green **Code** button on GitHub
-2. Select **Codespaces** → **Create codespace on main**
-3. Wait for the container to build (~2-3 minutes first time)
-4. In the terminal, run:
-   ```bash
-   make
-   ```
-5. Download `rommlet.3dsx` from the file explorer
-
-### Option 2: Build Locally
-
-```bash
-# Build .3dsx (for Homebrew Launcher)
-make
-
-# Build .cia (installable title)
-make cia
-
-# Clean build files
-make clean
-```
+- WiFi connection to your RomM server (v4.6.0 or newer)
 
 ## Installation
 
@@ -70,56 +33,35 @@ make clean
 
 ## Usage
 
-1. On first launch, you'll be prompted to configure the server
-2. Enter your RomM server URL (e.g., `http://192.168.1.100:8080`)
-3. Optionally enter username/password if your server requires authentication
-4. Browse platforms and ROMs!
+On first launch, you'll be prompted to configure your server connection:
 
-### Controls
+1. Enter your RomM server URL (e.g., `http://192.168.1.100:8080`)
+2. Optionally enter username and password if your server requires authentication
+3. Choose a root folder on your SD card for ROM storage
 
-| Button | Action |
-|--------|--------|
-| D-Pad | Navigate |
-| A | Select / Edit |
-| B | Back |
-| L/R | Page up/down |
-| X | Refresh |
-| SELECT | Settings |
-| START | Exit |
+Once connected, browse platforms and ROMs using the D-Pad and A button. Use the touchscreen toolbar to access search, the download queue, and settings.
 
-## Configuration
+### Configuration
 
 Settings are stored at `/3ds/rommlet/config.ini` on your SD card.
 
-## Development
+## Building from Source
 
-The app is written in C using:
+### GitHub Codespaces (Recommended)
 
-- **libctru** - Core 3DS library for HTTP, input, filesystem
-- **citro2d** - 2D graphics library
-- **cJSON** - JSON parsing (MIT license, vendored)
+1. Click **Code** → **Codespaces** → **Create codespace on main**
+2. Run `make` for .3dsx or `make cia` for .cia
+3. Download the built file from the file explorer
 
-### Project Structure
+### Local Build
 
+Requires [devkitPro](https://devkitpro.org/wiki/Getting_Started) with devkitARM and 3ds-dev packages. For CIA builds, also requires [bannertool](https://github.com/Steveice10/bannertool) and [makerom](https://github.com/3DSGuy/Project_CTR).
+
+```bash
+make          # Build .3dsx
+make cia      # Build .cia
+make clean    # Clean build files
 ```
-source/
-├── main.c              # Entry point, state machine
-├── config.c/h          # Settings load/save
-├── api.c/h             # RomM API wrapper
-├── ui.c/h              # UI drawing helpers
-├── cJSON/              # JSON parser (vendored)
-└── screens/
-    ├── settings.c/h    # Settings screen
-    ├── platforms.c/h   # Platform list
-    └── roms.c/h        # ROM list
-```
-
-## RomM API Compatibility
-
-Requires RomM 4.6.0 or newer. Key API differences from earlier versions:
-
-- Uses `platform_ids` parameter (not `platform_id`)
-- Paginated ROM responses with `items`, `offset`, `limit`, `total`
 
 ## License
 
