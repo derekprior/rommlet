@@ -23,7 +23,6 @@ typedef struct {
     int platformId;
     char name[256];
     char fsName[256];
-    char pathCoverSmall[512];
 } Rom;
 
 // Detailed ROM data from /api/roms/{id}
@@ -36,7 +35,6 @@ typedef struct {
     char platformName[128];
     char firstReleaseDate[32];
     char md5Hash[64];
-    char pathCoverSmall[512];
 } RomDetail;
 
 // Initialize API module

@@ -298,13 +298,11 @@ static Rom *parse_paginated_roms(const char *response, int *count, int *total) {
         cJSON *platformIdJson = cJSON_GetObjectItem(item, "platform_id");
         cJSON *name = cJSON_GetObjectItem(item, "name");
         cJSON *fsName = cJSON_GetObjectItem(item, "fs_name");
-        cJSON *pathCoverSmall = cJSON_GetObjectItem(item, "path_cover_small");
 
         if (cJSON_IsNumber(id)) roms[i].id = id->valueint;
         if (cJSON_IsNumber(platformIdJson)) roms[i].platformId = platformIdJson->valueint;
         if (cJSON_IsString(name)) snprintf(roms[i].name, sizeof(roms[i].name), "%s", name->valuestring);
         if (cJSON_IsString(fsName)) snprintf(roms[i].fsName, sizeof(roms[i].fsName), "%s", fsName->valuestring);
-        if (cJSON_IsString(pathCoverSmall)) snprintf(roms[i].pathCoverSmall, sizeof(roms[i].pathCoverSmall), "%s", pathCoverSmall->valuestring);
 
         i++;
     }
@@ -394,7 +392,6 @@ RomDetail *api_get_rom_detail(int romId) {
     cJSON *fsName = cJSON_GetObjectItem(json, "fs_name");
     cJSON *summary = cJSON_GetObjectItem(json, "summary");
     cJSON *md5Hash = cJSON_GetObjectItem(json, "md5_hash");
-    cJSON *pathCoverSmall = cJSON_GetObjectItem(json, "path_cover_small");
     cJSON *firstReleaseDate = cJSON_GetObjectItem(json, "first_release_date");
     
     // Platform name from nested platform object
@@ -410,7 +407,6 @@ RomDetail *api_get_rom_detail(int romId) {
     if (cJSON_IsString(fsName)) snprintf(detail->fsName, sizeof(detail->fsName), "%s", fsName->valuestring);
     if (cJSON_IsString(summary)) snprintf(detail->summary, sizeof(detail->summary), "%s", summary->valuestring);
     if (cJSON_IsString(md5Hash)) snprintf(detail->md5Hash, sizeof(detail->md5Hash), "%s", md5Hash->valuestring);
-    if (cJSON_IsString(pathCoverSmall)) snprintf(detail->pathCoverSmall, sizeof(detail->pathCoverSmall), "%s", pathCoverSmall->valuestring);
     if (cJSON_IsString(platformName)) snprintf(detail->platformName, sizeof(detail->platformName), "%s", platformName->valuestring);
     if (cJSON_IsString(firstReleaseDate)) snprintf(detail->firstReleaseDate, sizeof(detail->firstReleaseDate), "%s", firstReleaseDate->valuestring);
     
