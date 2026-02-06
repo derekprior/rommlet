@@ -64,6 +64,10 @@ static void show_loading(const char *message) {
     C3D_FrameEnd(0);
 }
 
+// Download context for progress callback
+static const char *downloadName = NULL;
+static const char *downloadQueueText = NULL;
+
 // Download progress callback - renders progress bar each chunk
 // Returns true to continue, false to cancel
 static bool download_progress(u32 downloaded, u32 total) {
@@ -81,7 +85,7 @@ static bool download_progress(u32 downloaded, u32 total) {
     C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
     C2D_TargetClear(topScreen, UI_COLOR_BG);
     C2D_SceneBegin(topScreen);
-    ui_draw_download_progress(progress, sizeText);
+    ui_draw_download_progress(progress, sizeText, downloadName, downloadQueueText);
     bottom_draw();
     C3D_FrameEnd(0);
     
@@ -245,7 +249,8 @@ int main(int argc, char *argv[]) {
                 snprintf(destPath, sizeof(destPath), "%s/%s/%s", 
                         config.romFolder, folderName, romDetail->fileName);
                 bottom_set_mode(BOTTOM_MODE_DOWNLOADING);
-                show_loading("Downloading ROM...");
+                downloadName = romDetail->name;
+                downloadQueueText = NULL;
                 log_info("Downloading to: %s", destPath);
                 if (api_download_rom(romDetail->id, romDetail->fileName, destPath, download_progress)) {
                     log_info("Download complete!");
@@ -298,18 +303,21 @@ int main(int argc, char *argv[]) {
             int count = queue_count();
             if (count > 0) {
                 bottom_set_mode(BOTTOM_MODE_DOWNLOADING);
+                int completed = 0;
                 int i = 0;
                 while (i < queue_count()) {
                     QueueEntry *entry = queue_get(i);
                     if (!entry) { i++; continue; }
                     
-                    char msg[300];
-                    snprintf(msg, sizeof(msg), "Downloading %d/%d: %s", i + 1, count, entry->name);
-                    show_loading(msg);
+                    char queueText[64];
+                    snprintf(queueText, sizeof(queueText), "ROM %d of %d in your queue", completed + 1, count);
+                    downloadName = entry->name;
+                    downloadQueueText = queueText;
                     
                     if (download_queue_entry(entry)) {
                         log_info("Queue download complete: %s", entry->name);
                         queue_remove(entry->romId);
+                        completed++;
                         // Don't increment i — array shifted
                     } else {
                         log_error("Queue download failed: %s", entry->name);
@@ -318,6 +326,8 @@ int main(int argc, char *argv[]) {
                     }
                 }
                 // Return to queue view
+                downloadName = NULL;
+                downloadQueueText = NULL;
                 bottom_set_mode(BOTTOM_MODE_QUEUE);
                 bottom_set_queue_count(queue_count());
                 queue_screen_init();
@@ -487,7 +497,8 @@ int main(int argc, char *argv[]) {
                             snprintf(destPath, sizeof(destPath), "%s/%s/%s", 
                                     config.romFolder, folderName, romDetail->fileName);
                             bottom_set_mode(BOTTOM_MODE_DOWNLOADING);
-                            show_loading("Downloading ROM...");
+                            downloadName = romDetail->name;
+                            downloadQueueText = NULL;
                             log_info("Downloading to: %s", destPath);
                             if (api_download_rom(romDetail->id, romDetail->fileName, destPath, download_progress)) {
                                 log_info("Download complete!");

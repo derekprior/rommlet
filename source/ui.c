@@ -75,14 +75,21 @@ void ui_draw_loading(const char *message) {
     ui_draw_text(x, y, message, UI_COLOR_TEXT);
 }
 
-void ui_draw_download_progress(float progress, const char *sizeText) {
+void ui_draw_download_progress(float progress, const char *sizeText, const char *name, const char *queueText) {
     ui_draw_rect(0, 0, SCREEN_TOP_WIDTH, SCREEN_TOP_HEIGHT, C2D_Color32(0x1a, 0x1a, 0x2e, 0xE0));
+    
+    float centerY = SCREEN_TOP_HEIGHT / 2;
+    
+    // ROM name above progress bar
+    if (name) {
+        float nameWidth = ui_get_text_width(name);
+        ui_draw_text((SCREEN_TOP_WIDTH - nameWidth) / 2, centerY - 2 * UI_LINE_HEIGHT - UI_PADDING, name, UI_COLOR_TEXT);
+    }
     
     // "Downloading..." label
     const char *label = "Downloading...";
     float labelWidth = ui_get_text_width(label);
-    float centerY = SCREEN_TOP_HEIGHT / 2;
-    ui_draw_text((SCREEN_TOP_WIDTH - labelWidth) / 2, centerY - UI_LINE_HEIGHT - UI_PADDING, label, UI_COLOR_TEXT);
+    ui_draw_text((SCREEN_TOP_WIDTH - labelWidth) / 2, centerY - UI_LINE_HEIGHT - UI_PADDING, label, UI_COLOR_TEXT_DIM);
     
     // Progress bar
     float barWidth = 300;
@@ -105,6 +112,12 @@ void ui_draw_download_progress(float progress, const char *sizeText) {
     if (sizeText) {
         float sizeWidth = ui_get_text_width(sizeText);
         ui_draw_text((SCREEN_TOP_WIDTH - sizeWidth) / 2, barY + barHeight + UI_PADDING, sizeText, UI_COLOR_TEXT_DIM);
+    }
+    
+    // Queue context below size text
+    if (queueText) {
+        float queueWidth = ui_get_text_width(queueText);
+        ui_draw_text((SCREEN_TOP_WIDTH - queueWidth) / 2, barY + barHeight + UI_PADDING + UI_LINE_HEIGHT, queueText, UI_COLOR_TEXT_DIM);
     }
 }
 
