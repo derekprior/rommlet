@@ -78,7 +78,7 @@ int roms_get_selected_index(void) {
     return nav.selectedIndex;
 }
 
-RomsResult roms_update(u32 kDown, int *outSelectedIndex) {
+RomsResult roms_update(u32 kDown) {
     if (kDown & KEY_B) {
         return ROMS_BACK;
     }
@@ -91,7 +91,6 @@ RomsResult roms_update(u32 kDown, int *outSelectedIndex) {
 
     if (kDown & KEY_A) {
         if (nav.selectedIndex < nav.count) {
-            if (outSelectedIndex) *outSelectedIndex = nav.selectedIndex;
             return ROMS_SELECTED;
         }
     }

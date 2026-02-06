@@ -73,7 +73,6 @@ static Platform *platforms = NULL;
 static int platformCount = 0;
 static int selectedPlatformIndex = 0;
 static RomDetail *romDetail = NULL;
-static int selectedRomIndex = 0;
 static int lastRomListIndex = -1;                     // Track selection changes in ROM list
 static int lastSearchListIndex = -1;                  // Track selection changes in search results
 static char currentPlatformSlug[CONFIG_MAX_SLUG_LEN]; // For folder mapping
@@ -583,7 +582,7 @@ static void handle_state_platforms(u32 kDown) {
 }
 
 static void handle_state_roms(u32 kDown) {
-    RomsResult result = roms_update(kDown, &selectedRomIndex);
+    RomsResult result = roms_update(kDown);
 
     int curIdx = roms_get_selected_index();
     if (curIdx != lastRomListIndex && curIdx < roms_get_count()) {
@@ -595,7 +594,7 @@ static void handle_state_roms(u32 kDown) {
         lastRomListIndex = -1;
         currentState = nav_pop();
     } else if (result == ROMS_SELECTED) {
-        int romId = roms_get_id_at(selectedRomIndex);
+        int romId = roms_get_id_at(roms_get_selected_index());
         if (romId >= 0) {
             open_rom_detail(romId, platforms[selectedPlatformIndex].slug);
         }

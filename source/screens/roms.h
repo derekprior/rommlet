@@ -39,8 +39,7 @@ const Rom *roms_get_at(int index);
 int roms_get_selected_index(void);
 
 // Update ROMs screen, returns result
-// selectedIndex is set when ROMS_SELECTED is returned
-RomsResult roms_update(u32 kDown, int *selectedIndex);
+RomsResult roms_update(u32 kDown);
 
 // Draw ROMs screen
 void roms_draw(void);
