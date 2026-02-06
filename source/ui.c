@@ -138,18 +138,16 @@ float ui_get_text_width(const char *text) {
 
 bool ui_show_keyboard(const char *hint, char *buffer, size_t bufferSize, bool password) {
     (void)password;  // No longer used - show all input as plaintext
-    SwkbdState swkbd;
+    static SwkbdState swkbd;
+    static char tempBuf[256];
     
-    // Initialize keyboard - use NORMAL type for longer input support
     swkbdInit(&swkbd, SWKBD_TYPE_NORMAL, 2, bufferSize - 1);
     swkbdSetHintText(&swkbd, hint);
     swkbdSetInitialText(&swkbd, buffer);
     
-    // Allow empty input
     swkbdSetFeatures(&swkbd, SWKBD_DEFAULT_QWERTY);
     swkbdSetValidation(&swkbd, SWKBD_ANYTHING, 0, 0);
     
-    char tempBuf[256];
     SwkbdButton button = swkbdInputText(&swkbd, tempBuf, sizeof(tempBuf));
     
     if (button == SWKBD_BUTTON_CONFIRM) {
