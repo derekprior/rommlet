@@ -531,8 +531,12 @@ static void draw_search_icon(float x, float y, float size, u32 color) {
     C2D_DrawCircleSolid(lensCx, lensCy, 0, lensR, color);
     C2D_DrawCircleSolid(lensCx, lensCy, 0, lensR - 2 * scale, UI_COLOR_HEADER);
     
-    // Handle (diagonal line as rotated rect)
-    C2D_DrawRectSolid(lensCx + 3 * scale, lensCy + 3 * scale, 0, 6 * scale, 2.5f * scale, color);
+    // Handle at ~45 degrees (series of small squares along diagonal)
+    float hw = 2.5f * scale;
+    for (int i = 0; i < 4; i++) {
+        float offset = (3 + i * 1.5f) * scale;
+        C2D_DrawRectSolid(lensCx + offset - hw/2, lensCy + offset - hw/2, 0, hw, hw, color);
+    }
 }
 
 static void draw_toolbar(void) {
