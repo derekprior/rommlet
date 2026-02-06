@@ -538,15 +538,7 @@ static void handle_state_loading(void) {
 
 static void handle_state_settings(u32 kDown) {
     SettingsResult result = settings_update(kDown);
-    if (result == SETTINGS_SAVED) {
-        config_save(&config);
-        api_set_auth(config.username, config.password);
-        api_set_base_url(config.serverUrl);
-        bottom_set_mode(BOTTOM_MODE_DEFAULT);
-        nav_clear();
-        currentState = STATE_PLATFORMS;
-        fetch_platforms();
-    } else if (result == SETTINGS_CANCELLED) {
+    if (result == SETTINGS_CANCELLED) {
         if (config_is_valid(&config)) {
             bottom_set_mode(BOTTOM_MODE_DEFAULT);
             currentState = nav_pop();
