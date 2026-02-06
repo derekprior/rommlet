@@ -59,6 +59,7 @@ void ui_draw_header_bottom(const char *title);
 
 // Get text width
 float ui_get_text_width(const char *text);
+float ui_get_text_width_scaled(const char *text, float scale);
 
 // Draw a centered loading message on top screen
 void ui_draw_loading(const char *message);

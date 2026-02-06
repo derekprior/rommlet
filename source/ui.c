@@ -122,6 +122,10 @@ void ui_draw_download_progress(float progress, const char *sizeText, const char 
 }
 
 float ui_get_text_width(const char *text) {
+    return ui_get_text_width_scaled(text, 0.5f);
+}
+
+float ui_get_text_width_scaled(const char *text, float scale) {
     C2D_TextBufClear(textBuf);
     
     C2D_Text c2dText;
@@ -132,7 +136,7 @@ float ui_get_text_width(const char *text) {
     }
     
     float width, height;
-    C2D_TextGetDimensions(&c2dText, 0.5f, 0.5f, &width, &height);
+    C2D_TextGetDimensions(&c2dText, scale, scale, &width, &height);
     return width;
 }
 

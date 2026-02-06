@@ -35,7 +35,8 @@ typedef enum {
     STATE_SELECT_ROM_FOLDER,
     STATE_QUEUE,
     STATE_SEARCH_FORM,
-    STATE_SEARCH_RESULTS
+    STATE_SEARCH_RESULTS,
+    STATE_ABOUT
 } AppState;
 
 static AppState currentState = STATE_LOADING;
@@ -425,6 +426,13 @@ int main(int argc, char *argv[]) {
             if (!hasTerm) {
                 search_open_keyboard();
             }
+        }
+        
+        // Handle opening about from toolbar
+        if (bottomAction == BOTTOM_ACTION_OPEN_ABOUT && currentState != STATE_ABOUT) {
+            previousState = currentState;
+            bottom_set_mode(BOTTOM_MODE_ABOUT);
+            currentState = STATE_ABOUT;
         }
         
         // Handle search field tap (reopen keyboard)
@@ -995,6 +1003,14 @@ int main(int argc, char *argv[]) {
                 }
                 break;
             }
+            
+            case STATE_ABOUT: {
+                if (kDown & KEY_B) {
+                    bottom_set_mode(BOTTOM_MODE_DEFAULT);
+                    currentState = previousState;
+                }
+                break;
+            }
         }
         
         // Render
@@ -1033,6 +1049,31 @@ int main(int argc, char *argv[]) {
             case STATE_SEARCH_RESULTS:
                 search_results_draw();
                 break;
+            case STATE_ABOUT: {
+                // App name - large centered
+                const char *appName = "Rommlet";
+                float nameW = ui_get_text_width_scaled(appName, 1.0f);
+                ui_draw_text_scaled((SCREEN_TOP_WIDTH - nameW) / 2, 40, appName, UI_COLOR_TEXT, 1.0f);
+                
+                // Tagline
+                const char *tagline = "A RomM client for Nintendo 3DS";
+                float tagW = ui_get_text_width(tagline);
+                ui_draw_text((SCREEN_TOP_WIDTH - tagW) / 2, 70, tagline, UI_COLOR_TEXT_DIM);
+                
+                // Version
+                const char *version = "v" APP_VERSION;
+                float verW = ui_get_text_width_scaled(version, 0.45f);
+                ui_draw_text_scaled((SCREEN_TOP_WIDTH - verW) / 2, 90, version, UI_COLOR_TEXT_DIM, 0.45f);
+                
+                // Sponsor text
+                ui_draw_text(UI_PADDING, 125,
+                    "Rommlet is a free, open source application.", UI_COLOR_TEXT);
+                ui_draw_text(UI_PADDING, 145,
+                    "To say thanks, scan the QR code below to", UI_COLOR_TEXT);
+                ui_draw_text(UI_PADDING, 165,
+                    "sponsor the project.", UI_COLOR_TEXT);
+                break;
+            }
         }
         
         // Draw bottom screen

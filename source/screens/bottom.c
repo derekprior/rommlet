@@ -19,7 +19,7 @@
 #define ICON_SIZE 20
 #define ICON_PADDING 4
 
-// Touch zones - right side: bug, gear, queue, search (right to left)
+// Touch zones - right side: bug, gear, queue, search, info (right to left)
 #define BUG_ICON_X (SCREEN_BOTTOM_WIDTH - ICON_SIZE - ICON_PADDING)
 #define BUG_ICON_Y (ICON_PADDING)
 #define GEAR_ICON_X (SCREEN_BOTTOM_WIDTH - (ICON_SIZE + ICON_PADDING) * 2)
@@ -28,6 +28,8 @@
 #define QUEUE_ICON_Y (ICON_PADDING)
 #define SEARCH_ICON_X (SCREEN_BOTTOM_WIDTH - (ICON_SIZE + ICON_PADDING) * 4)
 #define SEARCH_ICON_Y (ICON_PADDING)
+#define INFO_ICON_X (SCREEN_BOTTOM_WIDTH - (ICON_SIZE + ICON_PADDING) * 5)
+#define INFO_ICON_Y (ICON_PADDING)
 // Left side: home icon
 #define HOME_ICON_X (ICON_PADDING)
 #define HOME_ICON_Y (ICON_PADDING)
@@ -400,6 +402,11 @@ BottomAction bottom_update(void) {
                 touch_in_rect(touch.px, touch.py, SEARCH_ICON_X, SEARCH_ICON_Y, ICON_SIZE, ICON_SIZE)) {
                 return BOTTOM_ACTION_OPEN_SEARCH;
             }
+            // Check for info icon tap
+            if (currentMode != BOTTOM_MODE_ABOUT &&
+                touch_in_rect(touch.px, touch.py, INFO_ICON_X, INFO_ICON_Y, ICON_SIZE, ICON_SIZE)) {
+                return BOTTOM_ACTION_OPEN_ABOUT;
+            }
             // Check for home icon tap
             if (touch_in_rect(touch.px, touch.py, HOME_ICON_X, HOME_ICON_Y, ICON_SIZE, ICON_SIZE)) {
                 return BOTTOM_ACTION_GO_HOME;
@@ -616,6 +623,77 @@ static void draw_home_icon(float x, float y, float size, u32 color) {
     C2D_DrawRectSolid(cx - 2 * scale, roofMid + 2 * scale, 0, 4 * scale, 6 * scale, UI_COLOR_HEADER);
 }
 
+// Draw an info icon (circle with "i") at the given position
+static void draw_info_icon(float x, float y, float size, u32 color) {
+    float cx = x + size / 2;
+    float cy = y + size / 2;
+    float r = size / 2 - 1;
+    
+    // Draw circle outline using small rectangles
+    for (int a = 0; a < 360; a += 10) {
+        float rad = a * 3.14159f / 180.0f;
+        float px = cx + r * cosf(rad);
+        float py = cy + r * sinf(rad);
+        C2D_DrawRectSolid(px - 0.5f, py - 0.5f, 0, 1.5f, 1.5f, color);
+    }
+    
+    // Draw "i" - dot
+    C2D_DrawRectSolid(cx - 1, cy - r * 0.55f, 0, 2, 2, color);
+    // Draw "i" - stem
+    C2D_DrawRectSolid(cx - 1, cy - r * 0.15f, 0, 2, r * 0.7f, color);
+}
+
+// QR code for https://github.com/sponsors/derekprior
+#define QR_SIZE 29
+static const uint8_t qr_data[QR_SIZE][QR_SIZE] = {
+    {1,1,1,1,1,1,1,0,0,0,0,0,0,1,1,1,0,1,1,1,0,0,1,1,1,1,1,1,1},
+    {1,0,0,0,0,0,1,0,0,0,1,1,0,1,1,1,0,0,1,0,1,0,1,0,0,0,0,0,1},
+    {1,0,1,1,1,0,1,0,0,1,0,0,1,0,1,0,1,1,1,1,1,0,1,0,1,1,1,0,1},
+    {1,0,1,1,1,0,1,0,0,0,1,0,1,0,1,0,0,0,1,0,0,0,1,0,1,1,1,0,1},
+    {1,0,1,1,1,0,1,0,0,1,1,0,1,1,0,1,1,0,0,0,0,0,1,0,1,1,1,0,1},
+    {1,0,0,0,0,0,1,0,1,0,1,0,0,0,1,1,0,1,0,1,1,0,1,0,0,0,0,0,1},
+    {1,1,1,1,1,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,1,1,1,1,1,1},
+    {0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0},
+    {1,0,0,1,0,1,1,0,1,1,0,0,1,0,0,0,0,0,0,0,1,1,0,1,0,0,0,0,0},
+    {1,0,1,0,0,0,0,1,1,0,1,0,1,0,0,0,1,0,0,0,1,0,1,0,0,1,0,0,1},
+    {0,1,0,1,1,0,1,1,0,0,0,1,1,0,0,0,0,1,0,1,0,1,0,0,1,1,1,1,0},
+    {0,0,1,1,0,1,0,1,0,0,1,1,1,0,1,1,0,0,1,0,1,0,0,0,1,0,1,1,0},
+    {0,1,1,1,1,0,1,0,1,1,0,1,0,0,0,0,0,1,0,0,0,1,1,0,0,1,0,1,1},
+    {1,1,0,1,0,0,0,0,1,1,1,0,1,0,0,0,0,1,1,1,1,1,0,0,0,0,0,0,0},
+    {0,0,1,0,1,0,1,1,0,0,1,0,1,0,0,0,0,0,1,0,1,0,1,1,1,1,1,1,1},
+    {0,1,1,1,0,0,0,0,0,0,1,1,0,1,1,0,0,1,0,0,1,1,1,0,0,1,0,1,0},
+    {1,1,0,1,1,1,1,0,1,0,1,1,0,1,1,1,0,1,0,0,1,0,0,1,0,0,0,1,0},
+    {0,1,1,0,1,1,0,1,1,1,0,1,1,0,0,0,1,0,1,0,1,1,1,1,0,1,0,0,1},
+    {1,0,1,0,1,0,1,1,0,1,0,1,0,1,0,0,0,1,1,0,0,1,0,1,1,0,0,1,1},
+    {0,0,1,0,1,0,0,1,0,0,1,0,0,1,0,1,0,1,1,0,1,1,0,1,1,0,0,1,1},
+    {1,0,1,0,0,0,1,1,1,0,1,1,1,0,1,0,1,0,1,1,1,1,1,1,1,0,1,0,0},
+    {0,0,0,0,0,0,0,0,1,0,1,1,1,1,0,0,1,0,0,1,1,0,0,0,1,0,1,1,1},
+    {1,1,1,1,1,1,1,0,0,0,0,1,1,1,1,0,0,1,0,0,1,0,1,0,1,0,0,1,0},
+    {1,0,0,0,0,0,1,0,1,0,1,0,0,1,0,0,0,0,1,0,1,0,0,0,1,1,1,1,1},
+    {1,0,1,1,1,0,1,0,0,1,1,0,1,0,1,0,0,1,0,0,1,1,1,1,1,0,0,1,1},
+    {1,0,1,1,1,0,1,0,1,1,1,0,0,1,1,0,0,1,0,1,1,0,1,1,1,1,1,1,0},
+    {1,0,1,1,1,0,1,0,0,1,0,0,1,1,1,0,0,1,0,1,1,0,0,0,1,1,1,0,1},
+    {1,0,0,0,0,0,1,0,0,0,0,1,0,1,0,1,1,1,0,1,1,1,0,0,1,0,0,1,0},
+    {1,1,1,1,1,1,1,0,1,1,1,1,0,1,0,0,0,1,0,0,1,1,1,1,1,1,0,1,0},
+};
+
+static void draw_qr_code(float x, float y, float size) {
+    float moduleSize = size / QR_SIZE;
+    // White background with quiet zone
+    float padding = moduleSize * 2;
+    C2D_DrawRectSolid(x - padding, y - padding, 0,
+                      size + padding * 2, size + padding * 2, C2D_Color32(0xFF, 0xFF, 0xFF, 0xFF));
+    for (int row = 0; row < QR_SIZE; row++) {
+        for (int col = 0; col < QR_SIZE; col++) {
+            if (qr_data[row][col]) {
+                C2D_DrawRectSolid(x + col * moduleSize, y + row * moduleSize, 0,
+                                  moduleSize + 0.5f, moduleSize + 0.5f,
+                                  C2D_Color32(0x00, 0x00, 0x00, 0xFF));
+            }
+        }
+    }
+}
+
 static void draw_toolbar(void) {
     // Header bar
     ui_draw_rect(0, 0, SCREEN_BOTTOM_WIDTH, TOOLBAR_HEIGHT, UI_COLOR_HEADER);
@@ -623,7 +701,8 @@ static void draw_toolbar(void) {
     // Left side: home icon
     draw_home_icon(HOME_ICON_X, HOME_ICON_Y, ICON_SIZE, UI_COLOR_TEXT);
     
-    // Right side (right to left): bug, gear, queue, search
+    // Right side (right to left): bug, gear, queue, search, info
+    draw_info_icon(INFO_ICON_X, INFO_ICON_Y, ICON_SIZE, UI_COLOR_TEXT);
     draw_search_icon(SEARCH_ICON_X, SEARCH_ICON_Y, ICON_SIZE, UI_COLOR_TEXT);
     draw_queue_icon(QUEUE_ICON_X, QUEUE_ICON_Y, ICON_SIZE, UI_COLOR_TEXT);
     draw_gear_icon(GEAR_ICON_X, GEAR_ICON_Y, ICON_SIZE, UI_COLOR_TEXT);
@@ -837,6 +916,15 @@ void bottom_draw(void) {
         
         // "Create New Folder" button
         draw_button(BUTTON_X, CANCEL_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT, "Create New Folder", createFolderPressed, BUTTON_STYLE_SECONDARY);
+    } else if (currentMode == BOTTOM_MODE_ABOUT) {
+        ui_draw_rect(0, 0, SCREEN_BOTTOM_WIDTH, SCREEN_BOTTOM_HEIGHT, UI_COLOR_BG);
+        draw_toolbar();
+        
+        // Center QR code on bottom screen below toolbar
+        float qrSize = 150.0f;
+        float qrX = (SCREEN_BOTTOM_WIDTH - qrSize) / 2;
+        float qrY = TOOLBAR_HEIGHT + (SCREEN_BOTTOM_HEIGHT - TOOLBAR_HEIGHT - qrSize) / 2;
+        draw_qr_code(qrX, qrY, qrSize);
     } else {
         draw_toolbar();
     }
