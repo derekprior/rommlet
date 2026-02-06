@@ -57,6 +57,7 @@ static int selectedPlatformIndex = 0;
 static RomDetail *romDetail = NULL;
 static int selectedRomIndex = 0;
 static int lastRomListIndex = -1;                     // Track selection changes in ROM list
+static int lastSearchListIndex = -1;                  // Track selection changes in search results
 static char currentPlatformSlug[CONFIG_MAX_SLUG_LEN]; // For folder mapping
 
 // Render target (needed for loading screen)
@@ -307,6 +308,7 @@ static void execute_search(void) {
         bottom_set_rom_queued(queue_contains(firstRom->id));
     }
     currentState = STATE_SEARCH_RESULTS;
+    lastSearchListIndex = 0;
 }
 
 // ---------------------------------------------------------------------------
@@ -342,6 +344,7 @@ static void handle_bottom_action(BottomAction action) {
     if (action == BOTTOM_ACTION_GO_HOME && currentState != STATE_PLATFORMS) {
         bottom_set_mode(BOTTOM_MODE_DEFAULT);
         lastRomListIndex = -1;
+        lastSearchListIndex = -1;
         cameFromQueue = false;
         cameFromSearch = false;
         queueAddPending = false;
@@ -702,11 +705,14 @@ static void handle_state_search_results(u32 kDown) {
     SearchResultsResult srResult = search_results_update(kDown, &searchSelectedIndex);
 
     int curSearchIdx = search_get_selected_index();
-    const Rom *curSearchRom = search_get_result_at(curSearchIdx);
-    if (curSearchRom) {
-        const char *slug = search_get_platform_slug(curSearchRom->platformId);
-        bottom_set_rom_exists(check_file_exists(slug, curSearchRom->fsName));
-        bottom_set_rom_queued(queue_contains(curSearchRom->id));
+    if (curSearchIdx != lastSearchListIndex) {
+        const Rom *curSearchRom = search_get_result_at(curSearchIdx);
+        if (curSearchRom) {
+            const char *slug = search_get_platform_slug(curSearchRom->platformId);
+            bottom_set_rom_exists(check_file_exists(slug, curSearchRom->fsName));
+            bottom_set_rom_queued(queue_contains(curSearchRom->id));
+        }
+        lastSearchListIndex = curSearchIdx;
     }
 
     if (srResult == SEARCH_RESULTS_BACK) {
