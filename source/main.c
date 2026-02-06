@@ -386,11 +386,19 @@ int main(int argc, char *argv[]) {
         
         // Handle opening search from toolbar
         if (bottomAction == BOTTOM_ACTION_OPEN_SEARCH) {
-            previousState = currentState;
-            search_init(platforms, platformCount);
+            if (currentState != STATE_SEARCH_FORM) {
+                previousState = currentState == STATE_SEARCH_RESULTS ? previousState : currentState;
+            }
+            const char *existingTerm = search_get_term();
+            bool hasTerm = existingTerm && existingTerm[0];
+            if (!hasTerm) {
+                search_init(platforms, platformCount);
+            }
             bottom_set_mode(BOTTOM_MODE_SEARCH_FORM);
             currentState = STATE_SEARCH_FORM;
-            search_open_keyboard();
+            if (!hasTerm) {
+                search_open_keyboard();
+            }
         }
         
         // Handle search field tap (reopen keyboard)

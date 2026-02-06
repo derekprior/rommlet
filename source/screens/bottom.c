@@ -352,7 +352,7 @@ BottomAction bottom_update(void) {
                 return BOTTOM_ACTION_OPEN_QUEUE;
             }
             // Check for search icon tap
-            if (currentMode != BOTTOM_MODE_SEARCH_FORM && currentMode != BOTTOM_MODE_SEARCH_RESULTS &&
+            if (currentMode != BOTTOM_MODE_SEARCH_FORM &&
                 touch_in_rect(touch.px, touch.py, SEARCH_ICON_X, SEARCH_ICON_Y, ICON_SIZE, ICON_SIZE)) {
                 return BOTTOM_ACTION_OPEN_SEARCH;
             }
