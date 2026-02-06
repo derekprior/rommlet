@@ -20,7 +20,8 @@ typedef enum {
     BOTTOM_MODE_QUEUE,
     BOTTOM_MODE_QUEUE_CONFIRM,
     BOTTOM_MODE_SEARCH_FORM,
-    BOTTOM_MODE_SEARCH_RESULTS
+    BOTTOM_MODE_SEARCH_RESULTS,
+    BOTTOM_MODE_FOLDER_BROWSER
 } BottomMode;
 
 // Bottom screen action results
@@ -38,7 +39,9 @@ typedef enum {
     BOTTOM_ACTION_SEARCH_EXECUTE,
     BOTTOM_ACTION_START_DOWNLOADS,
     BOTTOM_ACTION_CLEAR_QUEUE,
-    BOTTOM_ACTION_CANCEL_CLEAR
+    BOTTOM_ACTION_CANCEL_CLEAR,
+    BOTTOM_ACTION_SELECT_FOLDER,
+    BOTTOM_ACTION_CREATE_FOLDER
 } BottomAction;
 
 // Initialize bottom screen module
@@ -59,6 +62,9 @@ void bottom_set_rom_queued(bool queued);
 
 // Set queue count (for showing/hiding clear button)
 void bottom_set_queue_count(int count);
+
+// Set the currently highlighted folder name (for folder browser mode)
+void bottom_set_folder_name(const char *name);
 
 // Update bottom screen (handle touch input)
 // Returns action if a button was pressed

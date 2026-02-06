@@ -55,6 +55,9 @@ static bool romExists = false;
 static bool romQueued = false;
 static int queueItemCount = 0;
 static bool searchButtonPressed = false;
+static char folderName[256] = "";
+static bool selectFolderPressed = false;
+static bool createFolderPressed = false;
 static bool showCancelButton = false;  // Only show if config was valid before editing
 
 // Circular log buffer
@@ -135,6 +138,8 @@ void bottom_set_mode(BottomMode mode) {
     confirmClearPressed = false;
     cancelClearPressed = false;
     searchButtonPressed = false;
+    selectFolderPressed = false;
+    createFolderPressed = false;
     if (mode != BOTTOM_MODE_SETTINGS) {
         showCancelButton = false;
     }
@@ -159,6 +164,14 @@ void bottom_set_rom_queued(bool queued) {
 
 void bottom_set_queue_count(int count) {
     queueItemCount = count;
+}
+
+void bottom_set_folder_name(const char *name) {
+    if (name) {
+        snprintf(folderName, sizeof(folderName), "%s", name);
+    } else {
+        folderName[0] = '\0';
+    }
 }
 
 static bool touch_in_rect(int tx, int ty, int x, int y, int w, int h) {
@@ -321,6 +334,34 @@ BottomAction bottom_update(void) {
                 action = BOTTOM_ACTION_SEARCH_EXECUTE;
             }
             searchButtonPressed = false;
+        }
+    }
+    
+    // Handle folder browser mode buttons (select + create)
+    if (currentMode == BOTTOM_MODE_FOLDER_BROWSER && !showDebugModal) {
+        if (kDown & KEY_TOUCH) {
+            hidTouchRead(&touch);
+            if (touch_in_rect(touch.px, touch.py, BUTTON_X, SAVE_BUTTON_Y_DUAL, BUTTON_WIDTH, BUTTON_HEIGHT)) {
+                selectFolderPressed = true;
+            }
+            if (touch_in_rect(touch.px, touch.py, BUTTON_X, CANCEL_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT)) {
+                createFolderPressed = true;
+            }
+        }
+        if (kHeld & KEY_TOUCH) {
+            hidTouchRead(&touch);
+            selectFolderPressed = touch_in_rect(touch.px, touch.py, BUTTON_X, SAVE_BUTTON_Y_DUAL, BUTTON_WIDTH, BUTTON_HEIGHT);
+            createFolderPressed = touch_in_rect(touch.px, touch.py, BUTTON_X, CANCEL_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT);
+        }
+        if (kUp & KEY_TOUCH) {
+            if (selectFolderPressed) {
+                action = BOTTOM_ACTION_SELECT_FOLDER;
+            }
+            if (createFolderPressed) {
+                action = BOTTOM_ACTION_CREATE_FOLDER;
+            }
+            selectFolderPressed = false;
+            createFolderPressed = false;
         }
     }
     
@@ -780,6 +821,22 @@ void bottom_draw(void) {
         search_form_draw();
     } else if (currentMode == BOTTOM_MODE_SEARCH_RESULTS) {
         draw_rom_detail_screen();
+    } else if (currentMode == BOTTOM_MODE_FOLDER_BROWSER) {
+        // Background
+        ui_draw_rect(0, 0, SCREEN_BOTTOM_WIDTH, SCREEN_BOTTOM_HEIGHT, UI_COLOR_BG);
+        draw_toolbar();
+        
+        // "Use <folder>" button
+        char useLabel[280];
+        if (folderName[0]) {
+            snprintf(useLabel, sizeof(useLabel), "Use \"%s\"", folderName);
+        } else {
+            snprintf(useLabel, sizeof(useLabel), "Use Selected Folder");
+        }
+        draw_button(BUTTON_X, SAVE_BUTTON_Y_DUAL, BUTTON_WIDTH, BUTTON_HEIGHT, useLabel, selectFolderPressed, BUTTON_STYLE_PRIMARY);
+        
+        // "Create New Folder" button
+        draw_button(BUTTON_X, CANCEL_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT, "Create New Folder", createFolderPressed, BUTTON_STYLE_SECONDARY);
     } else {
         draw_toolbar();
     }

@@ -21,6 +21,16 @@ void browser_exit(void);
 // Update browser state, returns true if a folder was selected
 bool browser_update(u32 kDown);
 
+// Select the currently highlighted folder
+bool browser_select_current(void);
+
+// Create a new folder in current directory and select it in the list
+// Returns true if folder was created
+bool browser_create_folder(void);
+
+// Get the name of the currently highlighted entry
+const char *browser_get_current_name(void);
+
 // Check if browser was cancelled
 bool browser_was_cancelled(void);
 

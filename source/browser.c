@@ -216,38 +216,6 @@ bool browser_update(u32 kDown) {
         }
     }
     
-    // Select highlighted folder
-    if ((kDown & KEY_X) && entryCount > 0) {
-        // Don't allow selecting ".." - that would be confusing
-        if (strcmp(entries[selectedIndex].name, "..") == 0) {
-            // Go up instead of selecting parent
-        } else {
-            snprintf(selectedPath, sizeof(selectedPath), "%s/%s", currentPath, entries[selectedIndex].name);
-            folderSelected = true;
-            return true;
-        }
-    }
-    
-    // Create new folder
-    if (kDown & KEY_Y) {
-        char newFolderName[MAX_NAME_LEN];
-        // Use default folder name if set, otherwise empty
-        if (defaultNewFolderName[0]) {
-            snprintf(newFolderName, sizeof(newFolderName), "%s", defaultNewFolderName);
-        } else {
-            newFolderName[0] = '\0';
-        }
-        if (ui_show_keyboard("New Folder Name", newFolderName, sizeof(newFolderName), false)) {
-            if (newFolderName[0] != '\0') {
-                char newPath[PATH_BUFFER_LEN];
-                snprintf(newPath, sizeof(newPath), "%s/%s", currentPath, newFolderName);
-                if (mkdir(newPath, 0755) == 0) {
-                    load_directory(currentPath);  // Refresh to show new folder
-                }
-            }
-        }
-    }
-    
     // Cancel
     if (kDown & KEY_B) {
         cancelled = true;
@@ -259,6 +227,50 @@ bool browser_update(u32 kDown) {
 
 bool browser_was_cancelled(void) {
     return cancelled;
+}
+
+bool browser_select_current(void) {
+    if (entryCount == 0) return false;
+    if (strcmp(entries[selectedIndex].name, "..") == 0) return false;
+    snprintf(selectedPath, sizeof(selectedPath), "%s/%s", currentPath, entries[selectedIndex].name);
+    folderSelected = true;
+    return true;
+}
+
+bool browser_create_folder(void) {
+    char newFolderName[MAX_NAME_LEN];
+    if (defaultNewFolderName[0]) {
+        snprintf(newFolderName, sizeof(newFolderName), "%s", defaultNewFolderName);
+    } else {
+        newFolderName[0] = '\0';
+    }
+    if (ui_show_keyboard("New Folder Name", newFolderName, sizeof(newFolderName), false)) {
+        if (newFolderName[0] != '\0') {
+            char newPath[PATH_BUFFER_LEN];
+            snprintf(newPath, sizeof(newPath), "%s/%s", currentPath, newFolderName);
+            if (mkdir(newPath, 0755) == 0) {
+                load_directory(currentPath);
+                // Find and select the newly created folder
+                for (int i = 0; i < entryCount; i++) {
+                    if (strcmp(entries[i].name, newFolderName) == 0) {
+                        selectedIndex = i;
+                        if (selectedIndex >= scrollOffset + UI_VISIBLE_ITEMS) {
+                            scrollOffset = selectedIndex - UI_VISIBLE_ITEMS + 1;
+                        }
+                        break;
+                    }
+                }
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+const char *browser_get_current_name(void) {
+    if (entryCount == 0) return "";
+    if (strcmp(entries[selectedIndex].name, "..") == 0) return "";
+    return entries[selectedIndex].name;
 }
 
 const char *browser_get_selected_path(void) {
@@ -329,5 +341,5 @@ void browser_draw(void) {
     
     // Help text
     ui_draw_text(UI_PADDING, SCREEN_TOP_HEIGHT - UI_LINE_HEIGHT - UI_PADDING,
-                 "A: Open | X: Select | Y: New Folder | B: Cancel", UI_COLOR_TEXT_DIM);
+                 "A: Open | B: Cancel", UI_COLOR_TEXT_DIM);
 }
