@@ -112,8 +112,9 @@ static bool save_config_file(const Config *config) {
         }
     }
 
+    bool ok = !ferror(f);
     fclose(f);
-    return true;
+    return ok;
 }
 
 bool config_save(const Config *config) {
