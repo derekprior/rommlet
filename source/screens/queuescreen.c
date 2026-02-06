@@ -85,8 +85,10 @@ void queue_screen_draw(void) {
     int count = queue_count();
 
     if (count == 0) {
-        ui_draw_text(UI_PADDING, SCREEN_TOP_HEIGHT / 2, 
-                     "No ROMs queued", UI_COLOR_TEXT_DIM);
+        const char *emptyMsg = "No ROMs queued";
+        float emptyWidth = ui_get_text_width(emptyMsg);
+        ui_draw_text((SCREEN_TOP_WIDTH - emptyWidth) / 2, SCREEN_TOP_HEIGHT / 2, 
+                     emptyMsg, UI_COLOR_TEXT_DIM);
         ui_draw_text(UI_PADDING, SCREEN_TOP_HEIGHT - UI_LINE_HEIGHT - UI_PADDING,
                      "B: Back", UI_COLOR_TEXT_DIM);
         return;
