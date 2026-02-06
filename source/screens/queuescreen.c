@@ -16,7 +16,7 @@ void queue_screen_init(void) {
     nav.scrollOffset = 0;
 }
 
-QueueResult queue_screen_update(u32 kDown, int *outSelectedIndex) {
+QueueResult queue_screen_update(u32 kDown) {
     if (kDown & KEY_B) {
         return QUEUE_BACK;
     }
@@ -34,11 +34,14 @@ QueueResult queue_screen_update(u32 kDown, int *outSelectedIndex) {
     listnav_update(&nav, kDown);
 
     if (kDown & KEY_A) {
-        if (outSelectedIndex) *outSelectedIndex = nav.selectedIndex;
         return QUEUE_SELECTED;
     }
 
     return QUEUE_NONE;
+}
+
+int queue_screen_get_selected_index(void) {
+    return nav.selectedIndex;
 }
 
 void queue_screen_draw(void) {

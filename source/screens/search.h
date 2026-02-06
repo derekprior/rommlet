@@ -56,7 +56,7 @@ SearchFormResult search_form_update(u32 kDown);
 void search_form_draw(void);
 
 // Update search results (top screen navigation)
-SearchResultsResult search_results_update(u32 kDown, int *outSelectedIndex);
+SearchResultsResult search_results_update(u32 kDown);
 
 // Draw search results on top screen
 void search_results_draw(void);

@@ -270,7 +270,7 @@ void search_form_draw(void) {
 
 // Search results - top screen
 
-SearchResultsResult search_results_update(u32 kDown, int *outSelectedIndex) {
+SearchResultsResult search_results_update(u32 kDown) {
     if (kDown & KEY_B) {
         return SEARCH_RESULTS_BACK;
     }
@@ -283,7 +283,6 @@ SearchResultsResult search_results_update(u32 kDown, int *outSelectedIndex) {
 
     if (kDown & KEY_A) {
         if (nav.selectedIndex < nav.count) {
-            if (outSelectedIndex) *outSelectedIndex = nav.selectedIndex;
             return SEARCH_RESULTS_SELECTED;
         }
     }
