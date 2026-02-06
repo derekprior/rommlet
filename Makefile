@@ -30,7 +30,7 @@ export APP_DESC      := RomM Client for 3DS
 export APP_VERSION   := 0.1.0
 
 # Unique ID for the CIA (must be valid hex number)
-APP_UNIQUE_ID := 0xB0AAE
+APP_UNIQUE_ID := 0x12345
 APP_PRODUCT   := CTR-P-RMLT
 
 #---------------------------------------------------------------------------------
