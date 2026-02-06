@@ -163,9 +163,15 @@ int main(int argc, char *argv[]) {
                 snprintf(folderPath, sizeof(folderPath), "%s/%s", config.romFolder, folderName);
                 struct stat st;
                 folderValid = (stat(folderPath, &st) == 0 && S_ISDIR(st.st_mode));
+                if (!folderValid) {
+                    log_info("Folder '%s' no longer exists, select a new one", folderName);
+                }
+            } else {
+                log_info("No folder configured for platform '%s'", currentPlatformSlug);
             }
             
             if (folderValid) {
+                log_info("Using folder '%s' for platform '%s'", folderName, currentPlatformSlug);
                 // Folder exists - download directly
                 char destPath[CONFIG_MAX_PATH_LEN + CONFIG_MAX_SLUG_LEN + 256 + 3];
                 snprintf(destPath, sizeof(destPath), "%s/%s/%s", 
