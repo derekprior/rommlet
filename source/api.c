@@ -96,6 +96,17 @@ void api_set_auth(const char *username, const char *password) {
     snprintf(authHeader, sizeof(authHeader), "Basic %s", encoded);
 }
 
+// Configure common headers on an open httpc context
+static void setup_http_headers(httpcContext *context, const char *accept) {
+    httpcSetSSLOpt(context, SSLCOPT_DisableVerify);
+    httpcSetKeepAlive(context, HTTPC_KEEPALIVE_ENABLED);
+    httpcAddRequestHeaderField(context, "User-Agent", "Rommlet/1.0");
+    httpcAddRequestHeaderField(context, "Accept", accept);
+    if (authHeader[0] != '\0') {
+        httpcAddRequestHeaderField(context, "Authorization", authHeader);
+    }
+}
+
 static char *http_get(const char *url, int *statusCode) {
     httpcContext context;
     Result ret;
@@ -110,16 +121,8 @@ static char *http_get(const char *url, int *statusCode) {
         return NULL;
     }
 
-    // Set headers (these calls don't fail in practice on 3DS)
-    httpcSetSSLOpt(&context, SSLCOPT_DisableVerify);
-    httpcSetKeepAlive(&context, HTTPC_KEEPALIVE_ENABLED);
-    httpcAddRequestHeaderField(&context, "User-Agent", "Rommlet/1.0");
-    httpcAddRequestHeaderField(&context, "Accept", "application/json");
-
-    if (authHeader[0] != '\0') {
-        httpcAddRequestHeaderField(&context, "Authorization", authHeader);
-        log_trace("Auth: %s", authHeader);
-    }
+    setup_http_headers(&context, "application/json");
+    log_trace("Auth: %s", authHeader);
 
     ret = httpcBeginRequest(&context);
     if (R_FAILED(ret)) {
@@ -438,15 +441,7 @@ bool api_download_rom(int romId, const char *fileName, const char *destPath, Dow
         return false;
     }
 
-    // Set headers
-    httpcSetSSLOpt(&context, SSLCOPT_DisableVerify);
-    httpcSetKeepAlive(&context, HTTPC_KEEPALIVE_ENABLED);
-    httpcAddRequestHeaderField(&context, "User-Agent", "Rommlet/1.0");
-    httpcAddRequestHeaderField(&context, "Accept", "*/*");
-
-    if (authHeader[0] != '\0') {
-        httpcAddRequestHeaderField(&context, "Authorization", authHeader);
-    }
+    setup_http_headers(&context, "*/*");
 
     ret = httpcBeginRequest(&context);
     if (R_FAILED(ret)) {
@@ -483,9 +478,7 @@ bool api_download_rom(int romId, const char *fileName, const char *destPath, Dow
             return false;
         }
 
-        httpcSetSSLOpt(&context, SSLCOPT_DisableVerify);
-        httpcSetKeepAlive(&context, HTTPC_KEEPALIVE_ENABLED);
-        httpcAddRequestHeaderField(&context, "User-Agent", "Rommlet/1.0");
+        setup_http_headers(&context, "*/*");
 
         ret = httpcBeginRequest(&context);
         if (R_FAILED(ret)) {
