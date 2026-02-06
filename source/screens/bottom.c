@@ -61,6 +61,44 @@ static C3D_RenderTarget *bottomTarget = NULL;
 #define CANCEL_BUTTON_Y (SAVE_BUTTON_Y_DUAL + BUTTON_HEIGHT + BUTTON_SPACING)
 #define BUTTON_X ((SCREEN_BOTTOM_WIDTH - BUTTON_WIDTH) / 2)
 
+// Descriptor for a touchable button
+typedef struct {
+    float x, y, w, h;
+    bool *pressed;
+    BottomAction action;
+} TouchButton;
+
+// Generic press/hold/release handler for an array of buttons
+static BottomAction handle_touch_buttons(TouchButton *buttons, int count, u32 kDown, u32 kHeld, u32 kUp) {
+    if (count == 0) return BOTTOM_ACTION_NONE;
+    touchPosition touch;
+    BottomAction action = BOTTOM_ACTION_NONE;
+
+    if (kDown & KEY_TOUCH) {
+        hidTouchRead(&touch);
+        for (int i = 0; i < count; i++) {
+            if (ui_touch_in_rect(touch.px, touch.py, buttons[i].x, buttons[i].y, buttons[i].w, buttons[i].h)) {
+                *buttons[i].pressed = true;
+            }
+        }
+    }
+    if (kHeld & KEY_TOUCH) {
+        hidTouchRead(&touch);
+        for (int i = 0; i < count; i++) {
+            *buttons[i].pressed =
+                ui_touch_in_rect(touch.px, touch.py, buttons[i].x, buttons[i].y, buttons[i].w, buttons[i].h);
+        }
+    }
+    if (kUp & KEY_TOUCH) {
+        for (int i = 0; i < count; i++) {
+            if (*buttons[i].pressed) action = buttons[i].action;
+            *buttons[i].pressed = false;
+        }
+    }
+
+    return action;
+}
+
 void bottom_init(void) {
     bottomTarget = C2D_CreateScreenTarget(GFX_BOTTOM, GFX_LEFT);
     currentMode = BOTTOM_MODE_DEFAULT;
@@ -123,7 +161,6 @@ BottomAction bottom_update(void) {
     u32 kDown = hidKeysDown();
     u32 kHeld = hidKeysHeld();
     u32 kUp = hidKeysUp();
-    touchPosition touch;
 
     // Debug log modal consumes all input when visible
     if (debuglog_is_visible()) {
@@ -133,175 +170,65 @@ BottomAction bottom_update(void) {
 
     BottomAction action = BOTTOM_ACTION_NONE;
 
-    // Handle settings mode buttons
+    // Mode-specific button handling
     if (currentMode == BOTTOM_MODE_SETTINGS) {
-        float saveButtonY = showCancelButton ? SAVE_BUTTON_Y_DUAL : SAVE_BUTTON_Y_SINGLE;
-
+        float saveY = showCancelButton ? SAVE_BUTTON_Y_DUAL : SAVE_BUTTON_Y_SINGLE;
+        TouchButton buttons[] = {
+            {BUTTON_X, saveY, BUTTON_WIDTH, BUTTON_HEIGHT, &saveButtonPressed, BOTTOM_ACTION_SAVE_SETTINGS},
+            {BUTTON_X, CANCEL_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT, &cancelButtonPressed,
+             BOTTOM_ACTION_CANCEL_SETTINGS},
+        };
+        action = handle_touch_buttons(buttons, showCancelButton ? 2 : 1, kDown, kHeld, kUp);
+    } else if (currentMode == BOTTOM_MODE_ROM_ACTIONS) {
+        TouchButton buttons[] = {
+            {BUTTON_X, SAVE_BUTTON_Y_DUAL, BUTTON_WIDTH, BUTTON_HEIGHT, &downloadButtonPressed,
+             BOTTOM_ACTION_DOWNLOAD_ROM},
+            {BUTTON_X, CANCEL_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT, &queueButtonPressed, BOTTOM_ACTION_QUEUE_ROM},
+        };
+        action = handle_touch_buttons(buttons, 2, kDown, kHeld, kUp);
+    } else if (currentMode == BOTTOM_MODE_QUEUE) {
+        TouchButton buttons[] = {
+            {BUTTON_X, SAVE_BUTTON_Y_DUAL, BUTTON_WIDTH, BUTTON_HEIGHT, &startDownloadsPressed,
+             BOTTOM_ACTION_START_DOWNLOADS},
+            {BUTTON_X, CANCEL_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT, &clearQueuePressed, BOTTOM_ACTION_CLEAR_QUEUE},
+        };
+        action = handle_touch_buttons(buttons, queueItemCount > 0 ? 2 : 0, kDown, kHeld, kUp);
+    } else if (currentMode == BOTTOM_MODE_QUEUE_CONFIRM) {
+        TouchButton buttons[] = {
+            {BUTTON_X, SAVE_BUTTON_Y_DUAL, BUTTON_WIDTH, BUTTON_HEIGHT, &confirmClearPressed,
+             BOTTOM_ACTION_CLEAR_QUEUE},
+            {BUTTON_X, CANCEL_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT, &cancelClearPressed, BOTTOM_ACTION_CANCEL_CLEAR},
+        };
+        action = handle_touch_buttons(buttons, 2, kDown, kHeld, kUp);
+    } else if (currentMode == BOTTOM_MODE_SEARCH_FORM) {
+        // Search field tap fires immediately (not on release)
         if (kDown & KEY_TOUCH) {
+            touchPosition touch;
             hidTouchRead(&touch);
-            if (ui_touch_in_rect(touch.px, touch.py, BUTTON_X, saveButtonY, BUTTON_WIDTH, BUTTON_HEIGHT)) {
-                saveButtonPressed = true;
-            }
-            if (showCancelButton &&
-                ui_touch_in_rect(touch.px, touch.py, BUTTON_X, CANCEL_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT)) {
-                cancelButtonPressed = true;
-            }
-        }
-        if (kHeld & KEY_TOUCH) {
-            hidTouchRead(&touch);
-            saveButtonPressed =
-                ui_touch_in_rect(touch.px, touch.py, BUTTON_X, saveButtonY, BUTTON_WIDTH, BUTTON_HEIGHT);
-            if (showCancelButton) {
-                cancelButtonPressed =
-                    ui_touch_in_rect(touch.px, touch.py, BUTTON_X, CANCEL_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT);
-            }
-        }
-        if (kUp & KEY_TOUCH) {
-            if (saveButtonPressed) action = BOTTOM_ACTION_SAVE_SETTINGS;
-            if (cancelButtonPressed) action = BOTTOM_ACTION_CANCEL_SETTINGS;
-            saveButtonPressed = false;
-            cancelButtonPressed = false;
-        }
-    }
-
-    // Handle ROM actions mode buttons (download + queue)
-    if (currentMode == BOTTOM_MODE_ROM_ACTIONS) {
-        if (kDown & KEY_TOUCH) {
-            hidTouchRead(&touch);
-            if (ui_touch_in_rect(touch.px, touch.py, BUTTON_X, SAVE_BUTTON_Y_DUAL, BUTTON_WIDTH, BUTTON_HEIGHT)) {
-                downloadButtonPressed = true;
-            }
-            if (ui_touch_in_rect(touch.px, touch.py, BUTTON_X, CANCEL_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT)) {
-                queueButtonPressed = true;
-            }
-        }
-        if (kHeld & KEY_TOUCH) {
-            hidTouchRead(&touch);
-            downloadButtonPressed =
-                ui_touch_in_rect(touch.px, touch.py, BUTTON_X, SAVE_BUTTON_Y_DUAL, BUTTON_WIDTH, BUTTON_HEIGHT);
-            queueButtonPressed =
-                ui_touch_in_rect(touch.px, touch.py, BUTTON_X, CANCEL_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT);
-        }
-        if (kUp & KEY_TOUCH) {
-            if (downloadButtonPressed) action = BOTTOM_ACTION_DOWNLOAD_ROM;
-            if (queueButtonPressed) action = BOTTOM_ACTION_QUEUE_ROM;
-            downloadButtonPressed = false;
-            queueButtonPressed = false;
-        }
-    }
-
-    // Handle queue mode buttons (start downloads + clear queue)
-    if (currentMode == BOTTOM_MODE_QUEUE) {
-        if (kDown & KEY_TOUCH) {
-            hidTouchRead(&touch);
-            if (ui_touch_in_rect(touch.px, touch.py, BUTTON_X, SAVE_BUTTON_Y_DUAL, BUTTON_WIDTH, BUTTON_HEIGHT)) {
-                startDownloadsPressed = true;
-            }
-            if (queueItemCount > 0 &&
-                ui_touch_in_rect(touch.px, touch.py, BUTTON_X, CANCEL_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT)) {
-                clearQueuePressed = true;
-            }
-        }
-        if (kHeld & KEY_TOUCH) {
-            hidTouchRead(&touch);
-            startDownloadsPressed =
-                ui_touch_in_rect(touch.px, touch.py, BUTTON_X, SAVE_BUTTON_Y_DUAL, BUTTON_WIDTH, BUTTON_HEIGHT);
-            if (queueItemCount > 0) {
-                clearQueuePressed =
-                    ui_touch_in_rect(touch.px, touch.py, BUTTON_X, CANCEL_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT);
-            }
-        }
-        if (kUp & KEY_TOUCH) {
-            if (startDownloadsPressed) action = BOTTOM_ACTION_START_DOWNLOADS;
-            if (clearQueuePressed) action = BOTTOM_ACTION_CLEAR_QUEUE;
-            startDownloadsPressed = false;
-            clearQueuePressed = false;
-        }
-    }
-
-    // Handle queue confirm clear dialog
-    if (currentMode == BOTTOM_MODE_QUEUE_CONFIRM) {
-        if (kDown & KEY_TOUCH) {
-            hidTouchRead(&touch);
-            if (ui_touch_in_rect(touch.px, touch.py, BUTTON_X, SAVE_BUTTON_Y_DUAL, BUTTON_WIDTH, BUTTON_HEIGHT)) {
-                confirmClearPressed = true;
-            }
-            if (ui_touch_in_rect(touch.px, touch.py, BUTTON_X, CANCEL_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT)) {
-                cancelClearPressed = true;
-            }
-        }
-        if (kHeld & KEY_TOUCH) {
-            hidTouchRead(&touch);
-            confirmClearPressed =
-                ui_touch_in_rect(touch.px, touch.py, BUTTON_X, SAVE_BUTTON_Y_DUAL, BUTTON_WIDTH, BUTTON_HEIGHT);
-            cancelClearPressed =
-                ui_touch_in_rect(touch.px, touch.py, BUTTON_X, CANCEL_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT);
-        }
-        if (kUp & KEY_TOUCH) {
-            if (confirmClearPressed) action = BOTTOM_ACTION_CLEAR_QUEUE;
-            if (cancelClearPressed) action = BOTTOM_ACTION_CANCEL_CLEAR;
-            confirmClearPressed = false;
-            cancelClearPressed = false;
-        }
-    }
-
-    // Handle search form mode (search field tap + search button)
-    if (currentMode == BOTTOM_MODE_SEARCH_FORM) {
-        float fieldY = TOOLBAR_HEIGHT + UI_PADDING;
-        float fieldH = 22;
-        float btnY = SCREEN_BOTTOM_HEIGHT - 30 - UI_PADDING;
-        float btnH = 30;
-        float btnX = (SCREEN_BOTTOM_WIDTH - 200) / 2;
-        float btnW = 200;
-
-        if (kDown & KEY_TOUCH) {
-            hidTouchRead(&touch);
-            if (ui_touch_in_rect(touch.px, touch.py, UI_PADDING, fieldY, SCREEN_BOTTOM_WIDTH - UI_PADDING * 2,
-                                 fieldH)) {
+            float fieldY = TOOLBAR_HEIGHT + UI_PADDING;
+            if (ui_touch_in_rect(touch.px, touch.py, UI_PADDING, fieldY, SCREEN_BOTTOM_WIDTH - UI_PADDING * 2, 22)) {
                 action = BOTTOM_ACTION_SEARCH_FIELD;
             }
-            if (ui_touch_in_rect(touch.px, touch.py, btnX, btnY, btnW, btnH)) {
-                searchButtonPressed = true;
-            }
         }
-        if (kHeld & KEY_TOUCH) {
-            hidTouchRead(&touch);
-            searchButtonPressed = ui_touch_in_rect(touch.px, touch.py, btnX, btnY, btnW, btnH);
-        }
-        if (kUp & KEY_TOUCH) {
-            if (searchButtonPressed) action = BOTTOM_ACTION_SEARCH_EXECUTE;
-            searchButtonPressed = false;
-        }
-    }
-
-    // Handle folder browser mode buttons (select + create)
-    if (currentMode == BOTTOM_MODE_FOLDER_BROWSER) {
-        if (kDown & KEY_TOUCH) {
-            hidTouchRead(&touch);
-            if (ui_touch_in_rect(touch.px, touch.py, BUTTON_X, SAVE_BUTTON_Y_DUAL, BUTTON_WIDTH, BUTTON_HEIGHT)) {
-                selectFolderPressed = true;
-            }
-            if (ui_touch_in_rect(touch.px, touch.py, BUTTON_X, CANCEL_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT)) {
-                createFolderPressed = true;
-            }
-        }
-        if (kHeld & KEY_TOUCH) {
-            hidTouchRead(&touch);
-            selectFolderPressed =
-                ui_touch_in_rect(touch.px, touch.py, BUTTON_X, SAVE_BUTTON_Y_DUAL, BUTTON_WIDTH, BUTTON_HEIGHT);
-            createFolderPressed =
-                ui_touch_in_rect(touch.px, touch.py, BUTTON_X, CANCEL_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT);
-        }
-        if (kUp & KEY_TOUCH) {
-            if (selectFolderPressed) action = BOTTOM_ACTION_SELECT_FOLDER;
-            if (createFolderPressed) action = BOTTOM_ACTION_CREATE_FOLDER;
-            selectFolderPressed = false;
-            createFolderPressed = false;
-        }
+        float btnX = (SCREEN_BOTTOM_WIDTH - 200) / 2;
+        float btnY = SCREEN_BOTTOM_HEIGHT - 30 - UI_PADDING;
+        TouchButton buttons[] = {
+            {btnX, btnY, 200, 30, &searchButtonPressed, BOTTOM_ACTION_SEARCH_EXECUTE},
+        };
+        BottomAction btnAction = handle_touch_buttons(buttons, 1, kDown, kHeld, kUp);
+        if (btnAction != BOTTOM_ACTION_NONE) action = btnAction;
+    } else if (currentMode == BOTTOM_MODE_FOLDER_BROWSER) {
+        TouchButton buttons[] = {
+            {BUTTON_X, SAVE_BUTTON_Y_DUAL, BUTTON_WIDTH, BUTTON_HEIGHT, &selectFolderPressed,
+             BOTTOM_ACTION_SELECT_FOLDER},
+            {BUTTON_X, CANCEL_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT, &createFolderPressed, BOTTOM_ACTION_CREATE_FOLDER},
+        };
+        action = handle_touch_buttons(buttons, 2, kDown, kHeld, kUp);
     }
 
     // Toolbar touch handling
     if (kDown & KEY_TOUCH) {
+        touchPosition touch;
         hidTouchRead(&touch);
 
         // Bug icon opens debug log
