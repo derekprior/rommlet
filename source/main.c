@@ -128,7 +128,7 @@ static bool check_rom_exists(void) {
     const char *folderName = config_get_platform_folder(currentPlatformSlug);
     if (!folderName || !folderName[0]) return false;
     char path[CONFIG_MAX_PATH_LEN + CONFIG_MAX_SLUG_LEN + 256 + 3];
-    snprintf(path, sizeof(path), "%s/%s/%s", config.romFolder, folderName, romDetail->fileName);
+    snprintf(path, sizeof(path), "%s/%s/%s", config.romFolder, folderName, romDetail->fsName);
     struct stat st;
     return (stat(path, &st) == 0 && S_ISREG(st.st_mode));
 }
@@ -180,7 +180,7 @@ static const Rom *get_focused_rom(const char **slug, const char **platName) {
         detailAsRom.id = romDetail->id;
         detailAsRom.platformId = romDetail->platformId;
         snprintf(detailAsRom.name, sizeof(detailAsRom.name), "%s", romDetail->name);
-        snprintf(detailAsRom.fsName, sizeof(detailAsRom.fsName), "%s", romDetail->fileName);
+        snprintf(detailAsRom.fsName, sizeof(detailAsRom.fsName), "%s", romDetail->fsName);
         *slug = currentPlatformSlug;
         *platName = romDetail->platformName;
         return &detailAsRom;
@@ -208,25 +208,26 @@ static const Rom *get_focused_rom(const char **slug, const char **platName) {
     return NULL;
 }
 
-// Sync the bottom screen after a download/queue action completes
-static void sync_bottom_after_action(void) {
+// Transition to targetState and sync the bottom screen for ROM actions
+static void sync_bottom_after_action(AppState targetState) {
+    currentState = targetState;
     bottom_set_mode(BOTTOM_MODE_ROM_ACTIONS);
     bottom_set_queue_count(queue_count());
-    if (currentState == STATE_ROMS) {
+    if (targetState == STATE_ROMS) {
         const Rom *rom = roms_get_at(roms_get_selected_index());
         if (rom) {
             bottom_set_rom_exists(check_file_exists(currentPlatformSlug, rom->fsName));
             bottom_set_rom_queued(queue_contains(rom->id));
         }
         lastRomListIndex = roms_get_selected_index();
-    } else if (currentState == STATE_SEARCH_RESULTS) {
+    } else if (targetState == STATE_SEARCH_RESULTS) {
         const Rom *rom = search_get_result_at(search_get_selected_index());
         if (rom) {
             const char *slug = search_get_platform_slug(rom->platformId);
             bottom_set_rom_exists(check_file_exists(slug, rom->fsName));
             bottom_set_rom_queued(queue_contains(rom->id));
         }
-    } else if (currentState == STATE_ROM_DETAIL && romDetail) {
+    } else if (targetState == STATE_ROM_DETAIL && romDetail) {
         bottom_set_rom_exists(check_rom_exists());
         bottom_set_rom_queued(queue_contains(romDetail->id));
     }
@@ -250,9 +251,9 @@ static bool download_queue_entry(QueueEntry *entry) {
         return false;
     }
     char destPath[CONFIG_MAX_PATH_LEN + CONFIG_MAX_SLUG_LEN + 256 + 3];
-    snprintf(destPath, sizeof(destPath), "%s/%s/%s", config.romFolder, folderName, entry->fileName);
+    snprintf(destPath, sizeof(destPath), "%s/%s/%s", config.romFolder, folderName, entry->fsName);
     log_info("Downloading '%s' to: %s", entry->name, destPath);
-    return api_download_rom(entry->romId, entry->fileName, destPath, download_progress);
+    return api_download_rom(entry->romId, entry->fsName, destPath, download_progress);
 }
 
 int main(int argc, char *argv[]) {
@@ -364,7 +365,7 @@ int main(int argc, char *argv[]) {
                     } else {
                         log_error("Download failed!");
                     }
-                    sync_bottom_after_action();
+                    sync_bottom_after_action(currentState);
                 } else {
                     browser_init_rooted(config.romFolder, slug);
                     bottom_set_mode(BOTTOM_MODE_FOLDER_BROWSER);
@@ -658,11 +659,9 @@ int main(int argc, char *argv[]) {
                         currentState = STATE_QUEUE;
                     } else if (cameFromSearch) {
                         cameFromSearch = false;
-                        currentState = STATE_SEARCH_RESULTS;
-                        sync_bottom_after_action();
+                        sync_bottom_after_action(STATE_SEARCH_RESULTS);
                     } else {
-                        currentState = STATE_ROMS;
-                        sync_bottom_after_action();
+                        sync_bottom_after_action(STATE_ROMS);
                     }
                 }
                 break;
@@ -689,7 +688,7 @@ int main(int argc, char *argv[]) {
                         config_set_platform_folder(&config, currentPlatformSlug, folderName);
                         browser_exit();
                         
-                        // Temporarily restore state so get_focused_rom works
+                        // Set state so get_focused_rom works for the return context
                         currentState = folderBrowserReturnState;
                         
                         if (queueAddPending) {
@@ -702,7 +701,7 @@ int main(int argc, char *argv[]) {
                                     log_info("Added '%s' to download queue", rom->name);
                                 }
                             }
-                            sync_bottom_after_action();
+                            sync_bottom_after_action(folderBrowserReturnState);
                         } else {
                             // Was downloading - now download
                             const char *slug, *platName;
@@ -721,7 +720,7 @@ int main(int argc, char *argv[]) {
                                     log_error("Download failed!");
                                 }
                             }
-                            sync_bottom_after_action();
+                            sync_bottom_after_action(folderBrowserReturnState);
                         }
                     }
                 }
@@ -729,8 +728,7 @@ int main(int argc, char *argv[]) {
                 if (browser_was_cancelled()) {
                     browser_exit();
                     queueAddPending = false;
-                    currentState = folderBrowserReturnState;
-                    sync_bottom_after_action();
+                    sync_bottom_after_action(folderBrowserReturnState);
                 }
                 break;
             }

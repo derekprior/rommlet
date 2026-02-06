@@ -455,7 +455,7 @@ RomDetail *api_get_rom_detail(int romId) {
     if (cJSON_IsNumber(id)) detail->id = id->valueint;
     if (cJSON_IsNumber(platformId)) detail->platformId = platformId->valueint;
     if (cJSON_IsString(name)) snprintf(detail->name, sizeof(detail->name), "%s", name->valuestring);
-    if (cJSON_IsString(fsName)) snprintf(detail->fileName, sizeof(detail->fileName), "%s", fsName->valuestring);
+    if (cJSON_IsString(fsName)) snprintf(detail->fsName, sizeof(detail->fsName), "%s", fsName->valuestring);
     if (cJSON_IsString(summary)) snprintf(detail->summary, sizeof(detail->summary), "%s", summary->valuestring);
     if (cJSON_IsString(md5Hash)) snprintf(detail->md5Hash, sizeof(detail->md5Hash), "%s", md5Hash->valuestring);
     if (cJSON_IsString(pathCoverSmall)) snprintf(detail->pathCoverSmall, sizeof(detail->pathCoverSmall), "%s", pathCoverSmall->valuestring);

@@ -13,7 +13,7 @@ void queue_init(void) {
     memset(entries, 0, sizeof(entries));
 }
 
-bool queue_add(int romId, int platformId, const char *name, const char *fileName,
+bool queue_add(int romId, int platformId, const char *name, const char *fsName,
                const char *platformSlug, const char *platformName) {
     if (entryCount >= QUEUE_MAX_ENTRIES) return false;
     if (queue_contains(romId)) return false;
@@ -22,7 +22,7 @@ bool queue_add(int romId, int platformId, const char *name, const char *fileName
     e->romId = romId;
     e->platformId = platformId;
     strncpy(e->name, name, sizeof(e->name) - 1);
-    strncpy(e->fileName, fileName, sizeof(e->fileName) - 1);
+    strncpy(e->fsName, fsName, sizeof(e->fsName) - 1);
     strncpy(e->platformSlug, platformSlug, sizeof(e->platformSlug) - 1);
     strncpy(e->platformName, platformName, sizeof(e->platformName) - 1);
     e->failed = false;
