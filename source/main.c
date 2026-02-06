@@ -146,8 +146,18 @@ static bool check_file_exists(const char *platformSlug, const char *fileName) {
 static bool check_platform_folder_valid(const char *platformSlug) {
     const char *folderName = config_get_platform_folder(platformSlug);
     if (!folderName || !folderName[0]) {
-        log_info("No folder configured for platform '%s'", platformSlug);
-        return false;
+        // Auto-map if a folder matching the slug exists
+        char autoPath[CONFIG_MAX_PATH_LEN + CONFIG_MAX_SLUG_LEN + 2];
+        snprintf(autoPath, sizeof(autoPath), "%s/%s", config.romFolder, platformSlug);
+        struct stat autoSt;
+        if (stat(autoPath, &autoSt) == 0 && S_ISDIR(autoSt.st_mode)) {
+            config_set_platform_folder(&config, platformSlug, platformSlug);
+            log_info("Auto-mapped platform '%s' to existing folder", platformSlug);
+            folderName = platformSlug;
+        } else {
+            log_info("No folder configured for platform '%s'", platformSlug);
+            return false;
+        }
     }
     char folderPath[CONFIG_MAX_PATH_LEN + CONFIG_MAX_SLUG_LEN + 2];
     snprintf(folderPath, sizeof(folderPath), "%s/%s", config.romFolder, folderName);
