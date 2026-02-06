@@ -17,7 +17,7 @@ jobs:
 
       - name: Install build tools
         run: |
-          apt-get update && apt-get install -y --no-install-recommends librsvg2-bin wget unzip
+          apt-get update && apt-get install -y --no-install-recommends clang-format librsvg2-bin wget unzip
           mkdir -p /opt/3ds-tools && cd /opt/3ds-tools
           wget -q https://github.com/Epicpkmn11/bannertool/releases/download/v1.2.2/bannertool.zip
           unzip -q bannertool.zip
@@ -30,6 +30,9 @@ jobs:
 
       - name: Build
         run: make EXTRA_CFLAGS=-Werror && make cia
+
+      - name: Check formatting
+        run: make format-check
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4

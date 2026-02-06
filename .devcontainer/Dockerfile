@@ -5,6 +5,7 @@ FROM devkitpro/devkitarm:latest
 
 # Install additional tools needed for the build
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    clang-format \
     librsvg2-bin \
     git \
     wget \

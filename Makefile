@@ -9,9 +9,11 @@
 #   - librsvg (for SVG icons): brew install librsvg
 #
 # Usage:
-#   make          - Build .3dsx
-#   make cia      - Build .cia (installable)
-#   make clean    - Clean build files
+#   make               - Build .3dsx
+#   make cia           - Build .cia (installable)
+#   make clean         - Clean build files
+#   make format        - Format source files
+#   make format-check  - Check formatting (CI)
 #---------------------------------------------------------------------------------
 
 ifeq ($(strip $(DEVKITARM)),)
@@ -123,7 +125,7 @@ export LIBPATHS       := $(foreach dir,$(LIBDIRS),-L$(dir)/lib)
 
 export _3DSXDEPS      := $(if $(NO_SMDH),,$(OUTPUT).smdh)
 
-.PHONY: all clean cia 3dsx dist
+.PHONY: all clean cia 3dsx dist format format-check
 
 #---------------------------------------------------------------------------------
 all: $(BUILD) $(OUTPUT_DIR) $(GFXFILES) meta/icon.png
@@ -139,6 +141,19 @@ clean:
 	@echo "Cleaning..."
 	@rm -rf $(BUILD)
 	@rm -f meta/banner.bin meta/icon.bin meta/icon.png meta/banner.png
+
+#---------------------------------------------------------------------------------
+# Source formatting
+#---------------------------------------------------------------------------------
+FORMAT_FILES := $(shell find source -name '*.c' -o -name '*.h' | grep -v cJSON)
+
+format:
+	@clang-format -i $(FORMAT_FILES)
+	@echo "Formatted $(words $(FORMAT_FILES)) files"
+
+format-check:
+	@clang-format --dry-run -Werror $(FORMAT_FILES)
+	@echo "Format check passed"
 
 #---------------------------------------------------------------------------------
 # CIA build
