@@ -141,12 +141,17 @@ static void fetch_platforms(void) {
     }
 }
 
+// Build full destination path for a ROM file
+static void build_rom_path(char *dest, size_t destSize, const char *folderName, const char *fsName) {
+    snprintf(dest, destSize, "%s/%s/%s", config.romFolder, folderName, fsName);
+}
+
 // Check if a ROM file exists on disk by platform slug and filename
 static bool check_file_exists(const char *platformSlug, const char *fileName) {
     const char *folderName = config_get_platform_folder(platformSlug);
     if (!folderName || !folderName[0]) return false;
     char path[CONFIG_MAX_PATH_LEN + CONFIG_MAX_SLUG_LEN + 256 + 3];
-    snprintf(path, sizeof(path), "%s/%s/%s", config.romFolder, folderName, fileName);
+    build_rom_path(path, sizeof(path), folderName, fileName);
     struct stat st;
     return (stat(path, &st) == 0 && S_ISREG(st.st_mode));
 }
@@ -246,7 +251,7 @@ static void sync_roms_bottom(int index) {
 // Download the currently focused ROM to the given platform folder
 static void download_focused_rom(const Rom *rom, const char *slug, const char *folderName) {
     char destPath[CONFIG_MAX_PATH_LEN + CONFIG_MAX_SLUG_LEN + 256 + 3];
-    snprintf(destPath, sizeof(destPath), "%s/%s/%s", config.romFolder, folderName, rom->fsName);
+    build_rom_path(destPath, sizeof(destPath), folderName, rom->fsName);
     bottom_set_mode(BOTTOM_MODE_DOWNLOADING);
     set_download_name(slug, rom->name);
     downloadQueueText = NULL;
@@ -266,7 +271,7 @@ static bool download_queue_entry(QueueEntry *entry) {
         return false;
     }
     char destPath[CONFIG_MAX_PATH_LEN + CONFIG_MAX_SLUG_LEN + 256 + 3];
-    snprintf(destPath, sizeof(destPath), "%s/%s/%s", config.romFolder, folderName, entry->fsName);
+    build_rom_path(destPath, sizeof(destPath), folderName, entry->fsName);
     log_info("Downloading '%s' to: %s", entry->name, destPath);
     return api_download_rom(entry->romId, entry->fsName, destPath, download_progress);
 }
