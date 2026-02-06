@@ -95,6 +95,7 @@ static bool save_config_file(const Config *config) {
 
     FILE *f = fopen(CONFIG_PATH, "w");
     if (!f) {
+        log_error("Failed to open config file for writing: %s", CONFIG_PATH);
         return false;
     }
 
@@ -113,6 +114,9 @@ static bool save_config_file(const Config *config) {
     }
 
     bool ok = !ferror(f);
+    if (!ok) {
+        log_error("Failed to write config file: %s", CONFIG_PATH);
+    }
     fclose(f);
     return ok;
 }
