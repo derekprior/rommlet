@@ -11,12 +11,28 @@
 #include <errno.h>
 #include <3ds.h>
 
-#define MAX_URL_LEN 512
+#define MAX_URL_LEN 1024
 #define MAX_RESPONSE_SIZE (512 * 1024)  // 512KB max response
 #define TRACE_BODY_PREVIEW_LEN 500      // Max chars to show for response body
 
 static char baseUrl[256] = "";
 static char authHeader[512] = "";
+
+static void url_encode(const char *src, char *dst, size_t dstLen) {
+    static const char *unreserved = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_.~";
+    size_t j = 0;
+    for (size_t i = 0; src[i] && j < dstLen - 1; i++) {
+        if (strchr(unreserved, src[i])) {
+            dst[j++] = src[i];
+        } else if (j + 3 < dstLen) {
+            snprintf(&dst[j], 4, "%%%02X", (unsigned char)src[i]);
+            j += 3;
+        } else {
+            break;
+        }
+    }
+    dst[j] = '\0';
+}
 
 // Base64 encoding table
 static const char base64_table[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -378,8 +394,10 @@ void api_free_rom_detail(RomDetail *detail) {
 }
 
 bool api_download_rom(int romId, const char *fileName, const char *destPath) {
+    char encodedName[256];
+    url_encode(fileName, encodedName, sizeof(encodedName));
     char url[MAX_URL_LEN];
-    snprintf(url, sizeof(url), "%s/api/roms/%d/content/%s", baseUrl, romId, fileName);
+    snprintf(url, sizeof(url), "%s/api/roms/%d/content/%s", baseUrl, romId, encodedName);
     
     httpcContext context;
     Result ret;
