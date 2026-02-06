@@ -71,8 +71,14 @@ static void show_loading(const char *message) {
 }
 
 // Download context for progress callback
+static char downloadNameBuf[384];
 static const char *downloadName = NULL;
 static const char *downloadQueueText = NULL;
+
+static void set_download_name(const char *slug, const char *name) {
+    snprintf(downloadNameBuf, sizeof(downloadNameBuf), "[%s] %s", slug, name);
+    downloadName = downloadNameBuf;
+}
 
 // Download progress callback - renders progress bar each chunk
 // Returns true to continue, false to cancel
@@ -285,7 +291,7 @@ int main(int argc, char *argv[]) {
                 snprintf(destPath, sizeof(destPath), "%s/%s/%s", 
                         config.romFolder, folderName, romDetail->fileName);
                 bottom_set_mode(BOTTOM_MODE_DOWNLOADING);
-                downloadName = romDetail->name;
+                set_download_name(currentPlatformSlug, romDetail->name);
                 downloadQueueText = NULL;
                 log_info("Downloading to: %s", destPath);
                 if (api_download_rom(romDetail->id, romDetail->fileName, destPath, download_progress)) {
@@ -315,7 +321,7 @@ int main(int argc, char *argv[]) {
                     snprintf(destPath, sizeof(destPath), "%s/%s/%s",
                             config.romFolder, folderName, rom->fsName);
                     bottom_set_mode(BOTTOM_MODE_DOWNLOADING);
-                    downloadName = rom->name;
+                    set_download_name(currentPlatformSlug, rom->name);
                     downloadQueueText = NULL;
                     log_info("Downloading to: %s", destPath);
                     if (api_download_rom(rom->id, rom->fsName, destPath, download_progress)) {
@@ -457,7 +463,7 @@ int main(int argc, char *argv[]) {
                     snprintf(destPath, sizeof(destPath), "%s/%s/%s",
                             config.romFolder, folderName, rom->fsName);
                     bottom_set_mode(BOTTOM_MODE_DOWNLOADING);
-                    downloadName = rom->name;
+                    set_download_name(slug, rom->name);
                     downloadQueueText = NULL;
                     log_info("Downloading to: %s", destPath);
                     if (api_download_rom(rom->id, rom->fsName, destPath, download_progress)) {
@@ -522,7 +528,7 @@ int main(int argc, char *argv[]) {
                     
                     char queueText[64];
                     snprintf(queueText, sizeof(queueText), "ROM %d of %d in your queue", completed + 1, count);
-                    downloadName = entry->name;
+                    set_download_name(entry->platformSlug, entry->name);
                     downloadQueueText = queueText;
                     
                     if (download_queue_entry(entry)) {
@@ -775,7 +781,7 @@ int main(int argc, char *argv[]) {
                                     snprintf(destPath, sizeof(destPath), "%s/%s/%s",
                                             config.romFolder, folderName, rom->fsName);
                                     bottom_set_mode(BOTTOM_MODE_DOWNLOADING);
-                                    downloadName = rom->name;
+                                    set_download_name(currentPlatformSlug, rom->name);
                                     downloadQueueText = NULL;
                                     log_info("Downloading to: %s", destPath);
                                     if (api_download_rom(rom->id, rom->fsName, destPath, download_progress)) {
@@ -793,7 +799,7 @@ int main(int argc, char *argv[]) {
                                     snprintf(destPath, sizeof(destPath), "%s/%s/%s",
                                             config.romFolder, folderName, rom->fsName);
                                     bottom_set_mode(BOTTOM_MODE_DOWNLOADING);
-                                    downloadName = rom->name;
+                                    set_download_name(currentPlatformSlug, rom->name);
                                     downloadQueueText = NULL;
                                     log_info("Downloading to: %s", destPath);
                                     if (api_download_rom(rom->id, rom->fsName, destPath, download_progress)) {
@@ -813,7 +819,7 @@ int main(int argc, char *argv[]) {
                                     snprintf(destPath, sizeof(destPath), "%s/%s/%s", 
                                             config.romFolder, folderName, romDetail->fileName);
                                     bottom_set_mode(BOTTOM_MODE_DOWNLOADING);
-                                    downloadName = romDetail->name;
+                                    set_download_name(currentPlatformSlug, romDetail->name);
                                     downloadQueueText = NULL;
                                     log_info("Downloading to: %s", destPath);
                                     if (api_download_rom(romDetail->id, romDetail->fileName, destPath, download_progress)) {
