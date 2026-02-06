@@ -28,6 +28,7 @@
 
 static bool showDebugModal = false;
 static int logScrollOffset = 0;
+static int logScrollOffsetX = 0;
 static BottomMode currentMode = BOTTOM_MODE_DEFAULT;
 
 // Touch scroll tracking
@@ -83,6 +84,7 @@ void bottom_init(void) {
     bottomTarget = C2D_CreateScreenTarget(GFX_BOTTOM, GFX_LEFT);
     showDebugModal = false;
     logScrollOffset = 0;
+    logScrollOffsetX = 0;
     lastTouchY = -1;
     currentMode = BOTTOM_MODE_DEFAULT;
     showCancelButton = false;
@@ -197,6 +199,7 @@ BottomAction bottom_update(void) {
             if (touch_in_rect(touch.px, touch.py, BUG_ICON_X, BUG_ICON_Y, ICON_SIZE, ICON_SIZE)) {
                 showDebugModal = true;
                 logScrollOffset = 0;
+                logScrollOffsetX = 0;
                 lastTouchY = -1;
                 return action;
             }
@@ -274,6 +277,15 @@ BottomAction bottom_update(void) {
             int maxScroll = logCount > visibleLines ? logCount - visibleLines : 0;
             if (logScrollOffset < maxScroll) logScrollOffset++;
         }
+        if (cstick.dx > 40) {
+            logScrollOffsetX += 4;
+            int maxScrollX = LOG_LINE_LENGTH * 8;
+            if (logScrollOffsetX > maxScrollX) logScrollOffsetX = maxScrollX;
+        }
+        if (cstick.dx < -40) {
+            logScrollOffsetX -= 4;
+            if (logScrollOffsetX < 0) logScrollOffsetX = 0;
+        }
     }
     
     return action;
@@ -349,9 +361,6 @@ static void draw_toolbar(void) {
     draw_bug_icon(BUG_ICON_X, BUG_ICON_Y, ICON_SIZE, UI_COLOR_TEXT);
 }
 
-// Scrollbar dimensions
-#define SCROLLBAR_WIDTH 16
-
 static void draw_debug_modal(void) {
     // Full background
     ui_draw_rect(0, 0, SCREEN_BOTTOM_WIDTH, SCREEN_BOTTOM_HEIGHT, UI_COLOR_BG);
@@ -367,31 +376,17 @@ static void draw_debug_modal(void) {
     snprintf(levelHint, sizeof(levelHint), "ZL/ZR: Level (%s)", log_level_name(log_get_level()));
     ui_draw_text(UI_PADDING, UI_HEADER_HEIGHT + UI_PADDING, levelHint, UI_COLOR_TEXT_DIM);
     
-    // Log content area (leave room for scrollbar)
+    // Log content area
     logAreaTop = UI_HEADER_HEIGHT + UI_PADDING + UI_LINE_HEIGHT + UI_PADDING;
     logAreaHeight = SCREEN_BOTTOM_HEIGHT - logAreaTop - UI_PADDING;
     visibleLines = (int)(logAreaHeight / UI_LINE_HEIGHT);
     
-    // Draw log lines
+    // Draw log lines with horizontal offset
     float y = logAreaTop;
     for (int i = 0; i < visibleLines && i + logScrollOffset < logCount; i++) {
         int lineIndex = (logHead - logCount + i + logScrollOffset + LOG_MAX_LINES) % LOG_MAX_LINES;
-        ui_draw_text(UI_PADDING, y, logBuffer[lineIndex], UI_COLOR_TEXT);
+        ui_draw_text(UI_PADDING - logScrollOffsetX, y, logBuffer[lineIndex], UI_COLOR_TEXT);
         y += UI_LINE_HEIGHT;
-    }
-    
-    // Draw scrollbar track
-    float scrollbarX = SCREEN_BOTTOM_WIDTH - SCROLLBAR_WIDTH - UI_PADDING;
-    ui_draw_rect(scrollbarX, logAreaTop, SCROLLBAR_WIDTH, logAreaHeight, UI_COLOR_SCROLLBAR_TRACK);
-    
-    // Draw scrollbar thumb if there's content to scroll
-    if (logCount > visibleLines) {
-        int maxScroll = logCount - visibleLines;
-        float thumbHeight = (float)visibleLines / logCount * logAreaHeight;
-        if (thumbHeight < 20) thumbHeight = 20; // Minimum thumb size
-        
-        float thumbY = logAreaTop + ((float)logScrollOffset / maxScroll) * (logAreaHeight - thumbHeight);
-        ui_draw_rect(scrollbarX + 2, thumbY, SCROLLBAR_WIDTH - 4, thumbHeight, UI_COLOR_SCROLLBAR_THUMB);
     }
 }
 
