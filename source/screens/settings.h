@@ -8,11 +8,7 @@
 #include <3ds.h>
 #include "../config.h"
 
-typedef enum {
-    SETTINGS_NONE,
-    SETTINGS_SAVED,
-    SETTINGS_CANCELLED
-} SettingsResult;
+typedef enum { SETTINGS_NONE, SETTINGS_SAVED, SETTINGS_CANCELLED } SettingsResult;
 
 // Initialize settings screen
 void settings_init(Config *config);

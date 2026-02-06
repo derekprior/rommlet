@@ -8,11 +8,7 @@
 #include <3ds.h>
 #include "../queue.h"
 
-typedef enum {
-    QUEUE_NONE,
-    QUEUE_BACK,
-    QUEUE_SELECTED
-} QueueResult;
+typedef enum { QUEUE_NONE, QUEUE_BACK, QUEUE_SELECTED } QueueResult;
 
 // Initialize queue screen
 void queue_screen_init(void);

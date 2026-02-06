@@ -51,10 +51,8 @@ void queue_screen_draw(void) {
     if (count == 0) {
         const char *emptyMsg = "No ROMs queued";
         float emptyWidth = ui_get_text_width(emptyMsg);
-        ui_draw_text((SCREEN_TOP_WIDTH - emptyWidth) / 2, SCREEN_TOP_HEIGHT / 2, 
-                     emptyMsg, UI_COLOR_TEXT_DIM);
-        ui_draw_text(UI_PADDING, SCREEN_TOP_HEIGHT - UI_LINE_HEIGHT - UI_PADDING,
-                     "B: Back", UI_COLOR_TEXT_DIM);
+        ui_draw_text((SCREEN_TOP_WIDTH - emptyWidth) / 2, SCREEN_TOP_HEIGHT / 2, emptyMsg, UI_COLOR_TEXT_DIM);
+        ui_draw_text(UI_PADDING, SCREEN_TOP_HEIGHT - UI_LINE_HEIGHT - UI_PADDING, "B: Back", UI_COLOR_TEXT_DIM);
         return;
     }
 
@@ -69,8 +67,7 @@ void queue_screen_draw(void) {
         if (!entry) continue;
 
         char displayText[384];
-        snprintf(displayText, sizeof(displayText), "[%s] %s", 
-                 entry->platformSlug, entry->name);
+        snprintf(displayText, sizeof(displayText), "[%s] %s", entry->platformSlug, entry->name);
 
         bool selected = (i == nav.selectedIndex);
 
@@ -80,8 +77,7 @@ void queue_screen_draw(void) {
             }
             char failText[400];
             snprintf(failText, sizeof(failText), "X %s", displayText);
-            ui_draw_text(UI_PADDING + UI_PADDING, y + 2, failText,
-                         C2D_Color32(0xFF, 0x44, 0x44, 0xFF));
+            ui_draw_text(UI_PADDING + UI_PADDING, y + 2, failText, C2D_Color32(0xFF, 0x44, 0x44, 0xFF));
         } else {
             ui_draw_list_item(UI_PADDING, y, itemWidth, displayText, selected);
         }
@@ -90,6 +86,6 @@ void queue_screen_draw(void) {
 
     listnav_draw_scroll_indicator(&nav);
 
-    ui_draw_text(UI_PADDING, SCREEN_TOP_HEIGHT - UI_LINE_HEIGHT - UI_PADDING,
-                 "A: Details | B: Back | L/R: Page", UI_COLOR_TEXT_DIM);
+    ui_draw_text(UI_PADDING, SCREEN_TOP_HEIGHT - UI_LINE_HEIGHT - UI_PADDING, "A: Details | B: Back | L/R: Page",
+                 UI_COLOR_TEXT_DIM);
 }

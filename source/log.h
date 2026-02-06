@@ -9,12 +9,12 @@
 
 // Log levels (in order of verbosity, most verbose first)
 typedef enum {
-    LOG_TRACE,   // Full request/response bodies, very verbose
-    LOG_DEBUG,   // Detailed execution information
-    LOG_INFO,    // Normal operational messages
-    LOG_WARN,    // Warning conditions
-    LOG_ERROR,   // Error conditions (recoverable)
-    LOG_FATAL    // Fatal errors (will exit)
+    LOG_TRACE, // Full request/response bodies, very verbose
+    LOG_DEBUG, // Detailed execution information
+    LOG_INFO,  // Normal operational messages
+    LOG_WARN,  // Warning conditions
+    LOG_ERROR, // Error conditions (recoverable)
+    LOG_FATAL  // Fatal errors (will exit)
 } LogLevel;
 
 // Subscriber callback - receives level and formatted message

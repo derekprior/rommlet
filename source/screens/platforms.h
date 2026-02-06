@@ -8,11 +8,7 @@
 #include <3ds.h>
 #include "../api.h"
 
-typedef enum {
-    PLATFORMS_NONE,
-    PLATFORMS_SELECTED,
-    PLATFORMS_REFRESH
-} PlatformsResult;
+typedef enum { PLATFORMS_NONE, PLATFORMS_SELECTED, PLATFORMS_REFRESH } PlatformsResult;
 
 // Initialize platforms screen
 void platforms_init(void);

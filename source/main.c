@@ -1,7 +1,7 @@
 /*
  * Rommlet - RomM Client for Nintendo 3DS
  * A homebrew app to browse ROMs on a RomM server
- * 
+ *
  * MIT License
  */
 
@@ -41,13 +41,13 @@ typedef enum {
 } AppState;
 
 static AppState currentState = STATE_LOADING;
-static AppState previousState = STATE_PLATFORMS;  // For returning from settings
+static AppState previousState = STATE_PLATFORMS; // For returning from settings
 static bool needsConfigSetup = false;
-static bool cameFromQueue = false;  // Track if ROM detail was opened from queue
-static bool cameFromSearch = false;  // Track if ROM detail was opened from search
-static bool queueAddPending = false;  // Track if folder selection is for queue add
-static AppState folderBrowserReturnState = STATE_ROM_DETAIL;  // State to return to after folder browser
-static bool queueConfirmShown = false;  // Track if clear-queue confirmation is showing
+static bool cameFromQueue = false;                           // Track if ROM detail was opened from queue
+static bool cameFromSearch = false;                          // Track if ROM detail was opened from search
+static bool queueAddPending = false;                         // Track if folder selection is for queue add
+static AppState folderBrowserReturnState = STATE_ROM_DETAIL; // State to return to after folder browser
+static bool queueConfirmShown = false;                       // Track if clear-queue confirmation is showing
 
 // Shared state
 static Config config;
@@ -56,8 +56,8 @@ static int platformCount = 0;
 static int selectedPlatformIndex = 0;
 static RomDetail *romDetail = NULL;
 static int selectedRomIndex = 0;
-static int lastRomListIndex = -1;  // Track selection changes in ROM list
-static char currentPlatformSlug[CONFIG_MAX_SLUG_LEN];  // For folder mapping
+static int lastRomListIndex = -1;                     // Track selection changes in ROM list
+static char currentPlatformSlug[CONFIG_MAX_SLUG_LEN]; // For folder mapping
 
 // Render target (needed for loading screen)
 static C3D_RenderTarget *topScreen = NULL;
@@ -86,23 +86,22 @@ static void set_download_name(const char *slug, const char *name) {
 // Returns true to continue, false to cancel
 static bool download_progress(u32 downloaded, u32 total) {
     float progress = total > 0 ? (float)downloaded / total : -1.0f;
-    
+
     char sizeText[64];
     if (total > 0) {
-        snprintf(sizeText, sizeof(sizeText), "%.1f / %.1f MB",
-                 downloaded / (1024.0f * 1024.0f), total / (1024.0f * 1024.0f));
+        snprintf(sizeText, sizeof(sizeText), "%.1f / %.1f MB", downloaded / (1024.0f * 1024.0f),
+                 total / (1024.0f * 1024.0f));
     } else {
-        snprintf(sizeText, sizeof(sizeText), "%.1f MB downloaded",
-                 downloaded / (1024.0f * 1024.0f));
+        snprintf(sizeText, sizeof(sizeText), "%.1f MB downloaded", downloaded / (1024.0f * 1024.0f));
     }
-    
+
     C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
     C2D_TargetClear(topScreen, UI_COLOR_BG);
     C2D_SceneBegin(topScreen);
     ui_draw_download_progress(progress, sizeText, downloadName, downloadQueueText);
     bottom_draw();
     C3D_FrameEnd(0);
-    
+
     return !bottom_check_cancel();
 }
 
@@ -188,8 +187,8 @@ static const Rom *get_focused_rom(const char **slug, const char **platName) {
     } else if (currentState == STATE_ROMS) {
         const Rom *rom = roms_get_at(roms_get_selected_index());
         *slug = currentPlatformSlug;
-        *platName = (platforms && selectedPlatformIndex < platformCount)
-            ? platforms[selectedPlatformIndex].displayName : "";
+        *platName =
+            (platforms && selectedPlatformIndex < platformCount) ? platforms[selectedPlatformIndex].displayName : "";
         return rom;
     } else if (currentState == STATE_SEARCH_RESULTS) {
         const Rom *rom = search_get_result_at(search_get_selected_index());
@@ -382,9 +381,8 @@ static void handle_bottom_action(BottomAction action) {
     }
 
     // ROM actions (download/queue) — valid in any rom-focused state
-    bool romFocused = (currentState == STATE_ROM_DETAIL ||
-                       currentState == STATE_ROMS ||
-                       currentState == STATE_SEARCH_RESULTS);
+    bool romFocused =
+        (currentState == STATE_ROM_DETAIL || currentState == STATE_ROMS || currentState == STATE_SEARCH_RESULTS);
 
     if (action == BOTTOM_ACTION_DOWNLOAD_ROM && romFocused) {
         const char *slug, *platName;
@@ -394,8 +392,7 @@ static void handle_bottom_action(BottomAction action) {
             if (check_platform_folder_valid(slug)) {
                 const char *folderName = config_get_platform_folder(slug);
                 char destPath[CONFIG_MAX_PATH_LEN + CONFIG_MAX_SLUG_LEN + 256 + 3];
-                snprintf(destPath, sizeof(destPath), "%s/%s/%s",
-                        config.romFolder, folderName, rom->fsName);
+                snprintf(destPath, sizeof(destPath), "%s/%s/%s", config.romFolder, folderName, rom->fsName);
                 bottom_set_mode(BOTTOM_MODE_DOWNLOADING);
                 set_download_name(slug, rom->name);
                 downloadQueueText = NULL;
@@ -426,8 +423,7 @@ static void handle_bottom_action(BottomAction action) {
                 bottom_set_queue_count(queue_count());
             } else {
                 if (check_platform_folder_valid(slug)) {
-                    if (queue_add(rom->id, rom->platformId, rom->name, rom->fsName,
-                                  slug, platName)) {
+                    if (queue_add(rom->id, rom->platformId, rom->name, rom->fsName, slug, platName)) {
                         log_info("Added '%s' to download queue", rom->name);
                     }
                     bottom_set_rom_queued(queue_contains(rom->id));
@@ -463,7 +459,10 @@ static void handle_bottom_action(BottomAction action) {
             int i = 0;
             while (i < queue_count()) {
                 QueueEntry *entry = queue_get(i);
-                if (!entry) { i++; continue; }
+                if (!entry) {
+                    i++;
+                    continue;
+                }
 
                 char queueText[64];
                 snprintf(queueText, sizeof(queueText), "ROM %d of %d in your queue", completed + 1, count);
@@ -554,8 +553,7 @@ static void handle_state_platforms(u32 kDown) {
         if (roms) {
             log_info("Found %d/%d ROMs", romCount, romTotal);
             roms_set_data(roms, romCount, romTotal, platforms[selectedPlatformIndex].displayName);
-            snprintf(currentPlatformSlug, sizeof(currentPlatformSlug), "%s",
-                    platforms[selectedPlatformIndex].slug);
+            snprintf(currentPlatformSlug, sizeof(currentPlatformSlug), "%s", platforms[selectedPlatformIndex].slug);
             lastRomListIndex = -1;
             bottom_set_mode(BOTTOM_MODE_ROM_ACTIONS);
             bottom_set_queue_count(queue_count());
@@ -642,8 +640,7 @@ static void handle_state_select_folder(u32 kDown, BottomAction bottomAction) {
                 const char *slug, *platName;
                 const Rom *rom = get_focused_rom(&slug, &platName);
                 if (rom) {
-                    if (queue_add(rom->id, rom->platformId, rom->name, rom->fsName,
-                                  slug, platName)) {
+                    if (queue_add(rom->id, rom->platformId, rom->name, rom->fsName, slug, platName)) {
                         log_info("Added '%s' to download queue", rom->name);
                     }
                 }
@@ -653,8 +650,7 @@ static void handle_state_select_folder(u32 kDown, BottomAction bottomAction) {
                 const Rom *rom = get_focused_rom(&slug, &platName);
                 if (rom) {
                     char destPath[CONFIG_MAX_PATH_LEN + CONFIG_MAX_SLUG_LEN + 256 + 3];
-                    snprintf(destPath, sizeof(destPath), "%s/%s/%s",
-                            config.romFolder, folderName, rom->fsName);
+                    snprintf(destPath, sizeof(destPath), "%s/%s/%s", config.romFolder, folderName, rom->fsName);
                     bottom_set_mode(BOTTOM_MODE_DOWNLOADING);
                     set_download_name(slug, rom->name);
                     downloadQueueText = NULL;
@@ -720,9 +716,7 @@ static void handle_state_search_results(u32 kDown) {
         int romId = search_get_result_id_at(searchSelectedIndex);
         if (romId >= 0) {
             const Rom *selRom = search_get_result_at(searchSelectedIndex);
-            open_rom_detail(romId,
-                selRom ? search_get_platform_slug(selRom->platformId) : "",
-                false, true);
+            open_rom_detail(romId, selRom ? search_get_platform_slug(selRom->platformId) : "", false, true);
         }
     } else if (srResult == SEARCH_RESULTS_LOAD_MORE) {
         show_loading("Loading more results...");
@@ -730,8 +724,8 @@ static void handle_state_search_results(u32 kDown) {
         int idCount;
         const int *ids = search_get_platform_ids(&idCount);
         int moreCount, moreTotal;
-        Rom *moreResults = api_search_roms(search_get_term(), ids, idCount,
-                                           offset, ROM_PAGE_SIZE, &moreCount, &moreTotal);
+        Rom *moreResults =
+            api_search_roms(search_get_term(), ids, idCount, offset, ROM_PAGE_SIZE, &moreCount, &moreTotal);
         if (moreResults) {
             log_info("Loaded %d more results", moreCount);
             search_append_results(moreResults, moreCount);
@@ -752,57 +746,53 @@ static void handle_state_about(u32 kDown) {
 
 static void draw_top_screen(void) {
     switch (currentState) {
-        case STATE_LOADING:
-            ui_draw_text(160, 120, "Loading...", UI_COLOR_TEXT);
-            break;
-        case STATE_SETTINGS:
-            settings_draw();
-            break;
-        case STATE_PLATFORMS:
-            platforms_draw();
-            break;
-        case STATE_ROMS:
-            roms_draw();
-            break;
-        case STATE_ROM_DETAIL:
-            romdetail_draw();
-            break;
-        case STATE_SELECT_ROM_FOLDER:
-            browser_draw();
-            break;
-        case STATE_QUEUE:
-            queue_screen_draw();
-            break;
-        case STATE_SEARCH_FORM:
-            ui_draw_text(UI_PADDING, SCREEN_TOP_HEIGHT / 2 - UI_LINE_HEIGHT,
-                         "Enter a search term and tap Search", UI_COLOR_TEXT_DIM);
-            ui_draw_text(UI_PADDING, SCREEN_TOP_HEIGHT / 2,
-                         "to find ROMs across platforms.", UI_COLOR_TEXT_DIM);
-            break;
-        case STATE_SEARCH_RESULTS:
-            search_results_draw();
-            break;
-        case STATE_ABOUT: {
-            const char *appName = "Rommlet";
-            float nameW = ui_get_text_width_scaled(appName, 1.0f);
-            ui_draw_text_scaled((SCREEN_TOP_WIDTH - nameW) / 2, 40, appName, UI_COLOR_TEXT, 1.0f);
+    case STATE_LOADING:
+        ui_draw_text(160, 120, "Loading...", UI_COLOR_TEXT);
+        break;
+    case STATE_SETTINGS:
+        settings_draw();
+        break;
+    case STATE_PLATFORMS:
+        platforms_draw();
+        break;
+    case STATE_ROMS:
+        roms_draw();
+        break;
+    case STATE_ROM_DETAIL:
+        romdetail_draw();
+        break;
+    case STATE_SELECT_ROM_FOLDER:
+        browser_draw();
+        break;
+    case STATE_QUEUE:
+        queue_screen_draw();
+        break;
+    case STATE_SEARCH_FORM:
+        ui_draw_text(UI_PADDING, SCREEN_TOP_HEIGHT / 2 - UI_LINE_HEIGHT, "Enter a search term and tap Search",
+                     UI_COLOR_TEXT_DIM);
+        ui_draw_text(UI_PADDING, SCREEN_TOP_HEIGHT / 2, "to find ROMs across platforms.", UI_COLOR_TEXT_DIM);
+        break;
+    case STATE_SEARCH_RESULTS:
+        search_results_draw();
+        break;
+    case STATE_ABOUT: {
+        const char *appName = "Rommlet";
+        float nameW = ui_get_text_width_scaled(appName, 1.0f);
+        ui_draw_text_scaled((SCREEN_TOP_WIDTH - nameW) / 2, 40, appName, UI_COLOR_TEXT, 1.0f);
 
-            const char *tagline = "A RomM client for Nintendo 3DS";
-            float tagW = ui_get_text_width(tagline);
-            ui_draw_text((SCREEN_TOP_WIDTH - tagW) / 2, 70, tagline, UI_COLOR_TEXT_DIM);
+        const char *tagline = "A RomM client for Nintendo 3DS";
+        float tagW = ui_get_text_width(tagline);
+        ui_draw_text((SCREEN_TOP_WIDTH - tagW) / 2, 70, tagline, UI_COLOR_TEXT_DIM);
 
-            const char *version = "v" APP_VERSION;
-            float verW = ui_get_text_width_scaled(version, 0.45f);
-            ui_draw_text_scaled((SCREEN_TOP_WIDTH - verW) / 2, 90, version, UI_COLOR_TEXT_DIM, 0.45f);
+        const char *version = "v" APP_VERSION;
+        float verW = ui_get_text_width_scaled(version, 0.45f);
+        ui_draw_text_scaled((SCREEN_TOP_WIDTH - verW) / 2, 90, version, UI_COLOR_TEXT_DIM, 0.45f);
 
-            ui_draw_text(UI_PADDING, 125,
-                "Rommlet is a free, open source application.", UI_COLOR_TEXT);
-            ui_draw_text(UI_PADDING, 145,
-                "To say thanks, scan the QR code below to", UI_COLOR_TEXT);
-            ui_draw_text(UI_PADDING, 165,
-                "sponsor the project.", UI_COLOR_TEXT);
-            break;
-        }
+        ui_draw_text(UI_PADDING, 125, "Rommlet is a free, open source application.", UI_COLOR_TEXT);
+        ui_draw_text(UI_PADDING, 145, "To say thanks, scan the QR code below to", UI_COLOR_TEXT);
+        ui_draw_text(UI_PADDING, 165, "sponsor the project.", UI_COLOR_TEXT);
+        break;
+    }
     }
 }
 
@@ -855,16 +845,36 @@ int main(int argc, char *argv[]) {
         handle_bottom_action(bottomAction);
 
         switch (currentState) {
-            case STATE_LOADING:           handle_state_loading(); break;
-            case STATE_SETTINGS:          handle_state_settings(kDown); break;
-            case STATE_PLATFORMS:          handle_state_platforms(kDown); break;
-            case STATE_ROMS:              handle_state_roms(kDown); break;
-            case STATE_ROM_DETAIL:        handle_state_rom_detail(kDown); break;
-            case STATE_SELECT_ROM_FOLDER: handle_state_select_folder(kDown, bottomAction); break;
-            case STATE_QUEUE:             handle_state_queue(kDown); break;
-            case STATE_SEARCH_FORM:       handle_state_search_form(kDown); break;
-            case STATE_SEARCH_RESULTS:    handle_state_search_results(kDown); break;
-            case STATE_ABOUT:             handle_state_about(kDown); break;
+        case STATE_LOADING:
+            handle_state_loading();
+            break;
+        case STATE_SETTINGS:
+            handle_state_settings(kDown);
+            break;
+        case STATE_PLATFORMS:
+            handle_state_platforms(kDown);
+            break;
+        case STATE_ROMS:
+            handle_state_roms(kDown);
+            break;
+        case STATE_ROM_DETAIL:
+            handle_state_rom_detail(kDown);
+            break;
+        case STATE_SELECT_ROM_FOLDER:
+            handle_state_select_folder(kDown, bottomAction);
+            break;
+        case STATE_QUEUE:
+            handle_state_queue(kDown);
+            break;
+        case STATE_SEARCH_FORM:
+            handle_state_search_form(kDown);
+            break;
+        case STATE_SEARCH_RESULTS:
+            handle_state_search_results(kDown);
+            break;
+        case STATE_ABOUT:
+            handle_state_about(kDown);
+            break;
         }
 
         C3D_FrameBegin(C3D_FRAME_SYNCDRAW);

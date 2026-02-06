@@ -9,12 +9,7 @@
 #include <stdbool.h>
 #include "../api.h"
 
-typedef enum {
-    ROMS_NONE,
-    ROMS_BACK,
-    ROMS_SELECTED,
-    ROMS_LOAD_MORE
-} RomsResult;
+typedef enum { ROMS_NONE, ROMS_BACK, ROMS_SELECTED, ROMS_LOAD_MORE } RomsResult;
 
 // Initialize ROMs screen
 void roms_init(void);

@@ -142,15 +142,18 @@ BottomAction bottom_update(void) {
             if (ui_touch_in_rect(touch.px, touch.py, BUTTON_X, saveButtonY, BUTTON_WIDTH, BUTTON_HEIGHT)) {
                 saveButtonPressed = true;
             }
-            if (showCancelButton && ui_touch_in_rect(touch.px, touch.py, BUTTON_X, CANCEL_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT)) {
+            if (showCancelButton &&
+                ui_touch_in_rect(touch.px, touch.py, BUTTON_X, CANCEL_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT)) {
                 cancelButtonPressed = true;
             }
         }
         if (kHeld & KEY_TOUCH) {
             hidTouchRead(&touch);
-            saveButtonPressed = ui_touch_in_rect(touch.px, touch.py, BUTTON_X, saveButtonY, BUTTON_WIDTH, BUTTON_HEIGHT);
+            saveButtonPressed =
+                ui_touch_in_rect(touch.px, touch.py, BUTTON_X, saveButtonY, BUTTON_WIDTH, BUTTON_HEIGHT);
             if (showCancelButton) {
-                cancelButtonPressed = ui_touch_in_rect(touch.px, touch.py, BUTTON_X, CANCEL_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT);
+                cancelButtonPressed =
+                    ui_touch_in_rect(touch.px, touch.py, BUTTON_X, CANCEL_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT);
             }
         }
         if (kUp & KEY_TOUCH) {
@@ -174,8 +177,10 @@ BottomAction bottom_update(void) {
         }
         if (kHeld & KEY_TOUCH) {
             hidTouchRead(&touch);
-            downloadButtonPressed = ui_touch_in_rect(touch.px, touch.py, BUTTON_X, SAVE_BUTTON_Y_DUAL, BUTTON_WIDTH, BUTTON_HEIGHT);
-            queueButtonPressed = ui_touch_in_rect(touch.px, touch.py, BUTTON_X, CANCEL_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT);
+            downloadButtonPressed =
+                ui_touch_in_rect(touch.px, touch.py, BUTTON_X, SAVE_BUTTON_Y_DUAL, BUTTON_WIDTH, BUTTON_HEIGHT);
+            queueButtonPressed =
+                ui_touch_in_rect(touch.px, touch.py, BUTTON_X, CANCEL_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT);
         }
         if (kUp & KEY_TOUCH) {
             if (downloadButtonPressed) action = BOTTOM_ACTION_DOWNLOAD_ROM;
@@ -192,15 +197,18 @@ BottomAction bottom_update(void) {
             if (ui_touch_in_rect(touch.px, touch.py, BUTTON_X, SAVE_BUTTON_Y_DUAL, BUTTON_WIDTH, BUTTON_HEIGHT)) {
                 startDownloadsPressed = true;
             }
-            if (queueItemCount > 0 && ui_touch_in_rect(touch.px, touch.py, BUTTON_X, CANCEL_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT)) {
+            if (queueItemCount > 0 &&
+                ui_touch_in_rect(touch.px, touch.py, BUTTON_X, CANCEL_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT)) {
                 clearQueuePressed = true;
             }
         }
         if (kHeld & KEY_TOUCH) {
             hidTouchRead(&touch);
-            startDownloadsPressed = ui_touch_in_rect(touch.px, touch.py, BUTTON_X, SAVE_BUTTON_Y_DUAL, BUTTON_WIDTH, BUTTON_HEIGHT);
+            startDownloadsPressed =
+                ui_touch_in_rect(touch.px, touch.py, BUTTON_X, SAVE_BUTTON_Y_DUAL, BUTTON_WIDTH, BUTTON_HEIGHT);
             if (queueItemCount > 0) {
-                clearQueuePressed = ui_touch_in_rect(touch.px, touch.py, BUTTON_X, CANCEL_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT);
+                clearQueuePressed =
+                    ui_touch_in_rect(touch.px, touch.py, BUTTON_X, CANCEL_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT);
             }
         }
         if (kUp & KEY_TOUCH) {
@@ -224,8 +232,10 @@ BottomAction bottom_update(void) {
         }
         if (kHeld & KEY_TOUCH) {
             hidTouchRead(&touch);
-            confirmClearPressed = ui_touch_in_rect(touch.px, touch.py, BUTTON_X, SAVE_BUTTON_Y_DUAL, BUTTON_WIDTH, BUTTON_HEIGHT);
-            cancelClearPressed = ui_touch_in_rect(touch.px, touch.py, BUTTON_X, CANCEL_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT);
+            confirmClearPressed =
+                ui_touch_in_rect(touch.px, touch.py, BUTTON_X, SAVE_BUTTON_Y_DUAL, BUTTON_WIDTH, BUTTON_HEIGHT);
+            cancelClearPressed =
+                ui_touch_in_rect(touch.px, touch.py, BUTTON_X, CANCEL_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT);
         }
         if (kUp & KEY_TOUCH) {
             if (confirmClearPressed) action = BOTTOM_ACTION_CLEAR_QUEUE;
@@ -246,7 +256,8 @@ BottomAction bottom_update(void) {
 
         if (kDown & KEY_TOUCH) {
             hidTouchRead(&touch);
-            if (ui_touch_in_rect(touch.px, touch.py, UI_PADDING, fieldY, SCREEN_BOTTOM_WIDTH - UI_PADDING * 2, fieldH)) {
+            if (ui_touch_in_rect(touch.px, touch.py, UI_PADDING, fieldY, SCREEN_BOTTOM_WIDTH - UI_PADDING * 2,
+                                 fieldH)) {
                 action = BOTTOM_ACTION_SEARCH_FIELD;
             }
             if (ui_touch_in_rect(touch.px, touch.py, btnX, btnY, btnW, btnH)) {
@@ -276,8 +287,10 @@ BottomAction bottom_update(void) {
         }
         if (kHeld & KEY_TOUCH) {
             hidTouchRead(&touch);
-            selectFolderPressed = ui_touch_in_rect(touch.px, touch.py, BUTTON_X, SAVE_BUTTON_Y_DUAL, BUTTON_WIDTH, BUTTON_HEIGHT);
-            createFolderPressed = ui_touch_in_rect(touch.px, touch.py, BUTTON_X, CANCEL_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT);
+            selectFolderPressed =
+                ui_touch_in_rect(touch.px, touch.py, BUTTON_X, SAVE_BUTTON_Y_DUAL, BUTTON_WIDTH, BUTTON_HEIGHT);
+            createFolderPressed =
+                ui_touch_in_rect(touch.px, touch.py, BUTTON_X, CANCEL_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT);
         }
         if (kUp & KEY_TOUCH) {
             if (selectFolderPressed) action = BOTTOM_ACTION_SELECT_FOLDER;
@@ -341,10 +354,13 @@ static void draw_settings_screen(void) {
     ui_draw_icon_bug(BUG_ICON_X, BUG_ICON_Y, ICON_SIZE, UI_COLOR_TEXT);
 
     if (showCancelButton) {
-        ui_draw_button(BUTTON_X, SAVE_BUTTON_Y_DUAL, BUTTON_WIDTH, BUTTON_HEIGHT, "Save and Connect", saveButtonPressed, UI_BUTTON_PRIMARY);
-        ui_draw_button(BUTTON_X, CANCEL_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT, "Cancel", cancelButtonPressed, UI_BUTTON_SECONDARY);
+        ui_draw_button(BUTTON_X, SAVE_BUTTON_Y_DUAL, BUTTON_WIDTH, BUTTON_HEIGHT, "Save and Connect", saveButtonPressed,
+                       UI_BUTTON_PRIMARY);
+        ui_draw_button(BUTTON_X, CANCEL_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT, "Cancel", cancelButtonPressed,
+                       UI_BUTTON_SECONDARY);
     } else {
-        ui_draw_button(BUTTON_X, SAVE_BUTTON_Y_SINGLE, BUTTON_WIDTH, BUTTON_HEIGHT, "Save and Connect", saveButtonPressed, UI_BUTTON_PRIMARY);
+        ui_draw_button(BUTTON_X, SAVE_BUTTON_Y_SINGLE, BUTTON_WIDTH, BUTTON_HEIGHT, "Save and Connect",
+                       saveButtonPressed, UI_BUTTON_PRIMARY);
     }
 }
 
@@ -353,7 +369,8 @@ static void draw_rom_actions_screen(void) {
     draw_toolbar();
 
     const char *downloadLabel = romExists ? "Download Again" : "Download";
-    ui_draw_button(BUTTON_X, SAVE_BUTTON_Y_DUAL, BUTTON_WIDTH, BUTTON_HEIGHT, downloadLabel, downloadButtonPressed, UI_BUTTON_PRIMARY);
+    ui_draw_button(BUTTON_X, SAVE_BUTTON_Y_DUAL, BUTTON_WIDTH, BUTTON_HEIGHT, downloadLabel, downloadButtonPressed,
+                   UI_BUTTON_PRIMARY);
 
     const char *queueLabel = romQueued ? "Remove from Queue" : "Add to Queue";
     UIButtonStyle queueStyle = romQueued ? UI_BUTTON_DANGER : UI_BUTTON_SECONDARY;
@@ -362,7 +379,8 @@ static void draw_rom_actions_screen(void) {
 
 static void draw_downloading_screen(void) {
     ui_draw_rect(0, 0, SCREEN_BOTTOM_WIDTH, SCREEN_BOTTOM_HEIGHT, UI_COLOR_BG);
-    ui_draw_button(BUTTON_X, SAVE_BUTTON_Y_SINGLE, BUTTON_WIDTH, BUTTON_HEIGHT, "Cancel Download", false, UI_BUTTON_DANGER);
+    ui_draw_button(BUTTON_X, SAVE_BUTTON_Y_SINGLE, BUTTON_WIDTH, BUTTON_HEIGHT, "Cancel Download", false,
+                   UI_BUTTON_DANGER);
 }
 
 static void draw_queue_screen(void) {
@@ -370,8 +388,10 @@ static void draw_queue_screen(void) {
     draw_toolbar();
 
     if (queueItemCount > 0) {
-        ui_draw_button(BUTTON_X, SAVE_BUTTON_Y_DUAL, BUTTON_WIDTH, BUTTON_HEIGHT, "Start Downloads", startDownloadsPressed, UI_BUTTON_PRIMARY);
-        ui_draw_button(BUTTON_X, CANCEL_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT, "Clear Queue", clearQueuePressed, UI_BUTTON_DANGER);
+        ui_draw_button(BUTTON_X, SAVE_BUTTON_Y_DUAL, BUTTON_WIDTH, BUTTON_HEIGHT, "Start Downloads",
+                       startDownloadsPressed, UI_BUTTON_PRIMARY);
+        ui_draw_button(BUTTON_X, CANCEL_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT, "Clear Queue", clearQueuePressed,
+                       UI_BUTTON_DANGER);
     }
 }
 
@@ -381,11 +401,13 @@ static void draw_queue_confirm_screen(void) {
 
     const char *prompt = "Are you sure?";
     float promptWidth = ui_get_text_width(prompt);
-    ui_draw_text((SCREEN_BOTTOM_WIDTH - promptWidth) / 2, SAVE_BUTTON_Y_DUAL - UI_LINE_HEIGHT - UI_PADDING,
-                 prompt, UI_COLOR_TEXT);
+    ui_draw_text((SCREEN_BOTTOM_WIDTH - promptWidth) / 2, SAVE_BUTTON_Y_DUAL - UI_LINE_HEIGHT - UI_PADDING, prompt,
+                 UI_COLOR_TEXT);
 
-    ui_draw_button(BUTTON_X, SAVE_BUTTON_Y_DUAL, BUTTON_WIDTH, BUTTON_HEIGHT, "Clear Queue", confirmClearPressed, UI_BUTTON_DANGER);
-    ui_draw_button(BUTTON_X, CANCEL_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT, "Cancel", cancelClearPressed, UI_BUTTON_SECONDARY);
+    ui_draw_button(BUTTON_X, SAVE_BUTTON_Y_DUAL, BUTTON_WIDTH, BUTTON_HEIGHT, "Clear Queue", confirmClearPressed,
+                   UI_BUTTON_DANGER);
+    ui_draw_button(BUTTON_X, CANCEL_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT, "Cancel", cancelClearPressed,
+                   UI_BUTTON_SECONDARY);
 }
 
 void bottom_draw(void) {
@@ -418,8 +440,10 @@ void bottom_draw(void) {
         } else {
             snprintf(useLabel, sizeof(useLabel), "Use Selected Folder");
         }
-        ui_draw_button(BUTTON_X, SAVE_BUTTON_Y_DUAL, BUTTON_WIDTH, BUTTON_HEIGHT, useLabel, selectFolderPressed, UI_BUTTON_PRIMARY);
-        ui_draw_button(BUTTON_X, CANCEL_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT, "Create New Folder", createFolderPressed, UI_BUTTON_SECONDARY);
+        ui_draw_button(BUTTON_X, SAVE_BUTTON_Y_DUAL, BUTTON_WIDTH, BUTTON_HEIGHT, useLabel, selectFolderPressed,
+                       UI_BUTTON_PRIMARY);
+        ui_draw_button(BUTTON_X, CANCEL_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT, "Create New Folder", createFolderPressed,
+                       UI_BUTTON_SECONDARY);
     } else if (currentMode == BOTTOM_MODE_ABOUT) {
         ui_draw_rect(0, 0, SCREEN_BOTTOM_WIDTH, SCREEN_BOTTOM_HEIGHT, UI_COLOR_BG);
         draw_toolbar();

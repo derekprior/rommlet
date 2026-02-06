@@ -13,14 +13,7 @@ static LogLevel currentLevel = LOG_INFO;
 static LogSubscriber subscribers[LOG_MAX_SUBSCRIBERS] = {NULL};
 static int subscriberCount = 0;
 
-static const char *levelNames[] = {
-    "TRACE",
-    "DEBUG",
-    "INFO",
-    "WARN",
-    "ERROR",
-    "FATAL"
-};
+static const char *levelNames[] = {"TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL"};
 
 void log_init(void) {
     currentLevel = LOG_INFO;
@@ -47,18 +40,18 @@ LogLevel log_get_level(void) {
 
 bool log_subscribe(LogSubscriber subscriber) {
     if (!subscriber) return false;
-    
+
     // Check if already subscribed
     for (int i = 0; i < subscriberCount; i++) {
         if (subscribers[i] == subscriber) {
             return true;
         }
     }
-    
+
     if (subscriberCount >= LOG_MAX_SUBSCRIBERS) {
         return false;
     }
-    
+
     subscribers[subscriberCount++] = subscriber;
     return true;
 }
@@ -88,11 +81,11 @@ static void log_message(LogLevel level, const char *fmt, va_list args) {
     if (level < currentLevel) {
         return;
     }
-    
+
     // Format the message
     char buffer[LOG_BUFFER_SIZE];
     vsnprintf(buffer, sizeof(buffer), fmt, args);
-    
+
     // Notify all subscribers
     for (int i = 0; i < subscriberCount; i++) {
         if (subscribers[i]) {

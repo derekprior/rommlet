@@ -12,11 +12,7 @@
 // Maximum platforms that can be filtered
 #define SEARCH_MAX_PLATFORMS 128
 
-typedef enum {
-    SEARCH_FORM_NONE,
-    SEARCH_FORM_BACK,
-    SEARCH_FORM_EXECUTE
-} SearchFormResult;
+typedef enum { SEARCH_FORM_NONE, SEARCH_FORM_BACK, SEARCH_FORM_EXECUTE } SearchFormResult;
 
 typedef enum {
     SEARCH_RESULTS_NONE,

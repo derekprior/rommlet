@@ -78,12 +78,11 @@ void listnav_visible_range(const ListNav *nav, int *start, int *end) {
 
 void listnav_draw_scroll_indicator(const ListNav *nav) {
     char scrollText[64];
-    int displayIndex = nav->selectedIndex < nav->count
-        ? nav->selectedIndex + 1 : nav->count;
+    int displayIndex = nav->selectedIndex < nav->count ? nav->selectedIndex + 1 : nav->count;
     snprintf(scrollText, sizeof(scrollText), "%d/%d", displayIndex, nav->total);
     float textWidth = ui_get_text_width(scrollText);
-    ui_draw_text(SCREEN_TOP_WIDTH - textWidth - UI_PADDING,
-                 UI_HEADER_HEIGHT + UI_PADDING, scrollText, UI_COLOR_TEXT_DIM);
+    ui_draw_text(SCREEN_TOP_WIDTH - textWidth - UI_PADDING, UI_HEADER_HEIGHT + UI_PADDING, scrollText,
+                 UI_COLOR_TEXT_DIM);
 }
 
 bool listnav_on_load_more(const ListNav *nav) {

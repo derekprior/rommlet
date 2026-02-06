@@ -14,8 +14,8 @@ void queue_init(void) {
     memset(entries, 0, sizeof(entries));
 }
 
-bool queue_add(int romId, int platformId, const char *name, const char *fsName,
-               const char *platformSlug, const char *platformName) {
+bool queue_add(int romId, int platformId, const char *name, const char *fsName, const char *platformSlug,
+               const char *platformName) {
     if (entryCount >= QUEUE_MAX_ENTRIES) return false;
     if (queue_contains(romId)) return false;
 

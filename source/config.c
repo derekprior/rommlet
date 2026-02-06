@@ -32,38 +32,38 @@ bool config_load(Config *config) {
     if (!f) {
         return false;
     }
-    
+
     // Reset mappings when loading config
     mappingCount = 0;
     mappingsLoaded = true;
-    
+
     char line[512];
     bool inMappingsSection = false;
-    
+
     while (fgets(line, sizeof(line), f)) {
         // Remove newline
         char *newline = strchr(line, '\n');
         if (newline) *newline = '\0';
         newline = strchr(line, '\r');
         if (newline) *newline = '\0';
-        
+
         // Skip empty lines
         if (line[0] == '\0') continue;
-        
+
         // Check for section headers
         if (line[0] == '[') {
             inMappingsSection = (strcmp(line, "[platform_mappings]") == 0);
             continue;
         }
-        
+
         // Parse key=value
         char *eq = strchr(line, '=');
         if (!eq) continue;
-        
+
         *eq = '\0';
         char *key = line;
         char *value = eq + 1;
-        
+
         if (inMappingsSection) {
             // Platform mapping entry
             if (mappingCount < MAX_MAPPINGS) {
@@ -84,7 +84,7 @@ bool config_load(Config *config) {
             }
         }
     }
-    
+
     fclose(f);
     return config_is_valid(config);
 }
@@ -92,18 +92,18 @@ bool config_load(Config *config) {
 static bool save_config_file(const Config *config) {
     // Ensure directory exists
     mkdir(CONFIG_DIR, 0755);
-    
+
     FILE *f = fopen(CONFIG_PATH, "w");
     if (!f) {
         return false;
     }
-    
+
     // Write main config
     fprintf(f, "serverUrl=%s\n", config->serverUrl);
     fprintf(f, "username=%s\n", config->username);
     fprintf(f, "password=%s\n", config->password);
     fprintf(f, "romFolder=%s\n", config->romFolder);
-    
+
     // Write platform mappings section
     if (mappingCount > 0) {
         fprintf(f, "\n[platform_mappings]\n");
@@ -111,7 +111,7 @@ static bool save_config_file(const Config *config) {
             fprintf(f, "%s=%s\n", mappings[i].slug, mappings[i].folder);
         }
     }
-    
+
     fclose(f);
     return true;
 }
@@ -121,9 +121,7 @@ bool config_save(const Config *config) {
 }
 
 bool config_is_valid(const Config *config) {
-    return config->serverUrl[0] != '\0' &&
-           config->username[0] != '\0' &&
-           config->password[0] != '\0' &&
+    return config->serverUrl[0] != '\0' && config->username[0] != '\0' && config->password[0] != '\0' &&
            config->romFolder[0] != '\0';
 }
 
@@ -145,14 +143,14 @@ bool config_set_platform_folder(const Config *config, const char *platformSlug, 
             return save_config_file(config);
         }
     }
-    
+
     // Add new mapping
     if (mappingCount >= MAX_MAPPINGS) return false;
-    
+
     snprintf(mappings[mappingCount].slug, CONFIG_MAX_SLUG_LEN, "%.63s", platformSlug);
     snprintf(mappings[mappingCount].folder, CONFIG_MAX_SLUG_LEN, "%.63s", folderName);
     mappingCount++;
-    
+
     log_info("Platform '%s' folder set to '%s'", platformSlug, folderName);
     return save_config_file(config);
 }
