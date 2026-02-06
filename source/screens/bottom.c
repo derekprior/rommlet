@@ -384,6 +384,9 @@ void bottom_draw(void) {
     }
 }
 
+// Called from the download progress callback, which renders its own frames.
+// Safe to call hidScanInput() here because the normal main-loop frame cycle
+// is not running during downloads — the progress callback IS the frame loop.
 bool bottom_check_cancel(void) {
     hidScanInput();
     u32 kDown = hidKeysDown();
