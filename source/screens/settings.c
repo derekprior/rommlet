@@ -38,7 +38,7 @@ SettingsResult settings_update(u32 kDown) {
     if (browsingFolders) {
         bool selected = browser_update(kDown);
         if (selected) {
-            strncpy(currentConfig->romFolder, browser_get_selected_path(), CONFIG_MAX_PATH_LEN - 1);
+            snprintf(currentConfig->romFolder, sizeof(currentConfig->romFolder), "%s", browser_get_selected_path());
             browsingFolders = false;
             browser_exit();
         } else if (browser_was_cancelled()) {

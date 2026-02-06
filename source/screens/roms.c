@@ -37,7 +37,7 @@ void roms_set_data(Rom *roms, int count, int total, const char *platformName) {
     nav.total = total;
     nav.selectedIndex = 0;
     nav.scrollOffset = 0;
-    strncpy(currentPlatform, platformName, sizeof(currentPlatform) - 1);
+    snprintf(currentPlatform, sizeof(currentPlatform), "%s", platformName);
 }
 
 void roms_append_data(Rom *roms, int count) {

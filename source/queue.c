@@ -3,6 +3,7 @@
  */
 
 #include "queue.h"
+#include <stdio.h>
 #include <string.h>
 
 static QueueEntry entries[QUEUE_MAX_ENTRIES];
@@ -21,10 +22,10 @@ bool queue_add(int romId, int platformId, const char *name, const char *fsName,
     QueueEntry *e = &entries[entryCount];
     e->romId = romId;
     e->platformId = platformId;
-    strncpy(e->name, name, sizeof(e->name) - 1);
-    strncpy(e->fsName, fsName, sizeof(e->fsName) - 1);
-    strncpy(e->platformSlug, platformSlug, sizeof(e->platformSlug) - 1);
-    strncpy(e->platformName, platformName, sizeof(e->platformName) - 1);
+    snprintf(e->name, sizeof(e->name), "%s", name);
+    snprintf(e->fsName, sizeof(e->fsName), "%s", fsName);
+    snprintf(e->platformSlug, sizeof(e->platformSlug), "%s", platformSlug);
+    snprintf(e->platformName, sizeof(e->platformName), "%s", platformName);
     e->failed = false;
     entryCount++;
     return true;

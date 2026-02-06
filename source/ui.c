@@ -155,8 +155,7 @@ bool ui_show_keyboard(const char *hint, char *buffer, size_t bufferSize, bool pa
     SwkbdButton button = swkbdInputText(&swkbd, tempBuf, sizeof(tempBuf));
     
     if (button == SWKBD_BUTTON_CONFIRM) {
-        strncpy(buffer, tempBuf, bufferSize - 1);
-        buffer[bufferSize - 1] = '\0';
+        snprintf(buffer, bufferSize, "%s", tempBuf);
         return true;
     }
     

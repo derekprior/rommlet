@@ -52,7 +52,7 @@ static void load_directory(const char *path) {
     selectedIndex = 0;
     scrollOffset = 0;
     
-    strncpy(currentPath, path, MAX_PATH_LEN - 1);
+    snprintf(currentPath, sizeof(currentPath), "%s", path);
     
     // Remove trailing slash if present (except for root)
     size_t len = strlen(currentPath);

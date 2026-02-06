@@ -73,7 +73,7 @@ void api_exit(void) {
 }
 
 void api_set_base_url(const char *url) {
-    strncpy(baseUrl, url, sizeof(baseUrl) - 1);
+    snprintf(baseUrl, sizeof(baseUrl), "%s", url);
     // Remove trailing slash if present
     size_t len = strlen(baseUrl);
     if (len > 0 && baseUrl[len - 1] == '/') {
