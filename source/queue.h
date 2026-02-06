@@ -15,7 +15,6 @@ typedef struct {
     char name[256];
     char fsName[256];
     char platformSlug[64];
-    char platformName[128];
     bool failed;
 } QueueEntry;
 
@@ -23,8 +22,7 @@ typedef struct {
 void queue_init(void);
 
 // Add a ROM to the queue. Returns true if added, false if full or duplicate.
-bool queue_add(int romId, int platformId, const char *name, const char *fsName, const char *platformSlug,
-               const char *platformName);
+bool queue_add(int romId, int platformId, const char *name, const char *fsName, const char *platformSlug);
 
 // Remove entry by romId. Returns true if found and removed.
 bool queue_remove(int romId);

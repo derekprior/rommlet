@@ -22,8 +22,8 @@ static void queue_save(void) {
     FILE *f = fopen(QUEUE_PATH, "w");
     if (!f) return;
     for (int i = 0; i < entryCount; i++) {
-        fprintf(f, "%d\t%d\t%s\t%s\t%s\t%s\n", entries[i].romId, entries[i].platformId, entries[i].platformSlug,
-                entries[i].platformName, entries[i].fsName, entries[i].name);
+        fprintf(f, "%d\t%d\t%s\t%s\t%s\n", entries[i].romId, entries[i].platformId, entries[i].platformSlug,
+                entries[i].fsName, entries[i].name);
     }
     if (ferror(f)) {
         log_error("Failed to write queue file");
@@ -44,25 +44,24 @@ static void queue_load(void) {
         if (nl) *nl = '\0';
         if (line[0] == '\0') continue;
 
-        // Parse: romId \t platformId \t platformSlug \t platformName \t fsName \t name
-        char *fields[6];
+        // Parse: romId \t platformId \t platformSlug \t fsName \t name
+        char *fields[5];
         int fieldCount = 0;
         char *p = line;
-        for (int i = 0; i < 5 && p; i++) {
+        for (int i = 0; i < 4 && p; i++) {
             fields[fieldCount++] = p;
             p = strchr(p, '\t');
             if (p) *p++ = '\0';
         }
         if (p) fields[fieldCount++] = p;
-        if (fieldCount < 6) continue;
+        if (fieldCount < 5) continue;
 
         QueueEntry *e = &entries[entryCount];
         e->romId = atoi(fields[0]);
         e->platformId = atoi(fields[1]);
         snprintf(e->platformSlug, sizeof(e->platformSlug), "%s", fields[2]);
-        snprintf(e->platformName, sizeof(e->platformName), "%s", fields[3]);
-        snprintf(e->fsName, sizeof(e->fsName), "%s", fields[4]);
-        snprintf(e->name, sizeof(e->name), "%s", fields[5]);
+        snprintf(e->fsName, sizeof(e->fsName), "%s", fields[3]);
+        snprintf(e->name, sizeof(e->name), "%s", fields[4]);
         e->failed = false;
         entryCount++;
     }
@@ -79,8 +78,7 @@ void queue_init(void) {
     queue_load();
 }
 
-bool queue_add(int romId, int platformId, const char *name, const char *fsName, const char *platformSlug,
-               const char *platformName) {
+bool queue_add(int romId, int platformId, const char *name, const char *fsName, const char *platformSlug) {
     if (entryCount >= QUEUE_MAX_ENTRIES) return false;
     if (queue_contains(romId)) return false;
 
@@ -90,7 +88,6 @@ bool queue_add(int romId, int platformId, const char *name, const char *fsName, 
     snprintf(e->name, sizeof(e->name), "%s", name);
     snprintf(e->fsName, sizeof(e->fsName), "%s", fsName);
     snprintf(e->platformSlug, sizeof(e->platformSlug), "%s", platformSlug);
-    snprintf(e->platformName, sizeof(e->platformName), "%s", platformName);
     e->failed = false;
     entryCount++;
     queue_save();
