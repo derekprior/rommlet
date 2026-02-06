@@ -137,7 +137,7 @@ void settings_draw(void) {
                 memset(masked, '*', len);
                 masked[len] = '\0';
             } else {
-                strcpy(masked, "(optional)");
+                snprintf(masked, sizeof(masked), "(optional)");
             }
             ui_draw_list_item(UI_PADDING, y, fieldWidth, masked, selectedField == FIELD_PASSWORD);
             break;
