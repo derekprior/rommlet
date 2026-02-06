@@ -427,3 +427,83 @@ void ui_draw_qr_code(float x, float y, float size) {
         }
     }
 }
+
+// ---------------------------------------------------------------------------
+// Word-wrapped text
+// ---------------------------------------------------------------------------
+
+int ui_draw_wrapped_text(float x, float y, float maxWidth, const char *text, u32 color, int maxLines, int skipLines) {
+    if (!text || !text[0]) return 0;
+
+    char line[256];
+    char word[128];
+    int lineLen = 0;
+    int wordLen = 0;
+    int lineCount = 0;
+    int drawnLines = 0;
+    int len = strlen(text);
+
+    line[0] = '\0';
+
+    for (int i = 0; i <= len; i++) {
+        char c = text[i];
+        bool isSpace = (c == ' ' || c == '\0' || c == '\n');
+
+        if (isSpace) {
+            if (wordLen > 0) {
+                word[wordLen] = '\0';
+
+                char testLine[256];
+                if (lineLen > 0) {
+                    snprintf(testLine, sizeof(testLine), "%s %s", line, word);
+                } else {
+                    snprintf(testLine, sizeof(testLine), "%s", word);
+                }
+
+                float testWidth = ui_get_text_width(testLine);
+
+                if (testWidth <= maxWidth || lineLen == 0) {
+                    if (lineLen > 0) {
+                        snprintf(line + lineLen, sizeof(line) - lineLen, " %s", word);
+                    } else {
+                        snprintf(line, sizeof(line), "%s", word);
+                    }
+                    lineLen = strlen(line);
+                } else {
+                    if (lineCount >= skipLines && drawnLines < maxLines) {
+                        ui_draw_text(x, y + drawnLines * UI_LINE_HEIGHT, line, color);
+                        drawnLines++;
+                    }
+                    lineCount++;
+                    snprintf(line, sizeof(line), "%s", word);
+                    lineLen = strlen(line);
+                }
+
+                wordLen = 0;
+            }
+
+            if (c == '\n' && lineLen > 0) {
+                if (lineCount >= skipLines && drawnLines < maxLines) {
+                    ui_draw_text(x, y + drawnLines * UI_LINE_HEIGHT, line, color);
+                    drawnLines++;
+                }
+                lineCount++;
+                line[0] = '\0';
+                lineLen = 0;
+            }
+        } else {
+            if (wordLen < (int)sizeof(word) - 1) {
+                word[wordLen++] = c;
+            }
+        }
+
+        if (drawnLines >= maxLines && lineCount >= skipLines) break;
+    }
+
+    if (lineLen > 0 && drawnLines < maxLines && lineCount >= skipLines) {
+        ui_draw_text(x, y + drawnLines * UI_LINE_HEIGHT, line, color);
+        drawnLines++;
+    }
+
+    return drawnLines;
+}

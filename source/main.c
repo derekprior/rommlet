@@ -794,9 +794,11 @@ static void draw_top_screen(void) {
         float verW = ui_get_text_width_scaled(version, 0.45f);
         ui_draw_text_scaled((SCREEN_TOP_WIDTH - verW) / 2, 90, version, UI_COLOR_TEXT_DIM, 0.45f);
 
-        ui_draw_text(UI_PADDING, 125, "Rommlet is a free, open source application.", UI_COLOR_TEXT);
-        ui_draw_text(UI_PADDING, 145, "To say thanks, scan the QR code below to", UI_COLOR_TEXT);
-        ui_draw_text(UI_PADDING, 165, "sponsor the project.", UI_COLOR_TEXT);
+        float contentWidth = SCREEN_TOP_WIDTH - (UI_PADDING * 2);
+        ui_draw_wrapped_text(UI_PADDING, 125, contentWidth,
+                             "Rommlet is a free, open source application. "
+                             "To say thanks, scan the QR code below to sponsor the project.",
+                             UI_COLOR_TEXT, 4, 0);
         break;
     }
     }
