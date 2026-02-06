@@ -329,6 +329,83 @@ Rom *api_get_roms(int platformId, int offset, int limit, int *count, int *total)
     return roms;
 }
 
+Rom *api_search_roms(const char *searchTerm, const int *platformIds, int platformIdCount,
+                     int offset, int limit, int *count, int *total) {
+    *count = 0;
+    *total = 0;
+    
+    char encodedTerm[512];
+    url_encode(searchTerm, encodedTerm, sizeof(encodedTerm));
+    
+    char url[MAX_URL_LEN];
+    int pos = snprintf(url, sizeof(url), "%s/api/roms?search_term=%s&offset=%d&limit=%d&order_by=name",
+                       baseUrl, encodedTerm, offset, limit);
+    
+    for (int i = 0; i < platformIdCount && pos < (int)sizeof(url) - 32; i++) {
+        pos += snprintf(url + pos, sizeof(url) - pos, "&platform_ids=%d", platformIds[i]);
+    }
+    
+    int statusCode;
+    char *response = http_get(url, &statusCode);
+    if (!response) {
+        return NULL;
+    }
+    
+    cJSON *json = cJSON_Parse(response);
+    free(response);
+    
+    if (!json) {
+        log_error("JSON parse error");
+        return NULL;
+    }
+    
+    cJSON *totalJson = cJSON_GetObjectItem(json, "total");
+    if (cJSON_IsNumber(totalJson)) {
+        *total = totalJson->valueint;
+    }
+    
+    cJSON *items = cJSON_GetObjectItem(json, "items");
+    if (!items || !cJSON_IsArray(items)) {
+        log_error("Expected items array");
+        cJSON_Delete(json);
+        return NULL;
+    }
+    
+    int arraySize = cJSON_GetArraySize(items);
+    if (arraySize == 0) {
+        cJSON_Delete(json);
+        return NULL;
+    }
+    
+    Rom *roms = calloc(arraySize, sizeof(Rom));
+    if (!roms) {
+        cJSON_Delete(json);
+        return NULL;
+    }
+    
+    int i = 0;
+    cJSON *item;
+    cJSON_ArrayForEach(item, items) {
+        cJSON *id = cJSON_GetObjectItem(item, "id");
+        cJSON *platformIdJson = cJSON_GetObjectItem(item, "platform_id");
+        cJSON *name = cJSON_GetObjectItem(item, "name");
+        cJSON *fsName = cJSON_GetObjectItem(item, "fs_name");
+        cJSON *pathCoverSmall = cJSON_GetObjectItem(item, "path_cover_small");
+        
+        if (cJSON_IsNumber(id)) roms[i].id = id->valueint;
+        if (cJSON_IsNumber(platformIdJson)) roms[i].platformId = platformIdJson->valueint;
+        if (cJSON_IsString(name)) snprintf(roms[i].name, sizeof(roms[i].name), "%s", name->valuestring);
+        if (cJSON_IsString(fsName)) snprintf(roms[i].fsName, sizeof(roms[i].fsName), "%s", fsName->valuestring);
+        if (cJSON_IsString(pathCoverSmall)) snprintf(roms[i].pathCoverSmall, sizeof(roms[i].pathCoverSmall), "%s", pathCoverSmall->valuestring);
+        
+        i++;
+    }
+    
+    *count = i;
+    cJSON_Delete(json);
+    return roms;
+}
+
 void api_free_roms(Rom *roms, int count) {
     (void)count;
     if (roms) free(roms);

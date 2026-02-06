@@ -62,6 +62,12 @@ void api_free_platforms(Platform *platforms, int count);
 // Returns array of ROMs, sets count and total. Caller must free with api_free_roms
 Rom *api_get_roms(int platformId, int offset, int limit, int *count, int *total);
 
+// Search ROMs across platforms
+// platformIds is an array of platform IDs to search (NULL or count 0 = all platforms)
+// Returns array of ROMs, sets count and total. Caller must free with api_free_roms
+Rom *api_search_roms(const char *searchTerm, const int *platformIds, int platformIdCount,
+                     int offset, int limit, int *count, int *total);
+
 // Free ROMs array
 void api_free_roms(Rom *roms, int count);
 

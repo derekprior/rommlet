@@ -3,6 +3,7 @@
  */
 
 #include "bottom.h"
+#include "search.h"
 #include "../ui.h"
 #include <stdio.h>
 #include <string.h>
@@ -25,6 +26,8 @@
 #define GEAR_ICON_Y (ICON_PADDING)
 #define QUEUE_ICON_X (SCREEN_BOTTOM_WIDTH - (ICON_SIZE + ICON_PADDING) * 3)
 #define QUEUE_ICON_Y (ICON_PADDING)
+#define SEARCH_ICON_X (ICON_PADDING)
+#define SEARCH_ICON_Y (ICON_PADDING)
 #define CLOSE_ICON_X (SCREEN_BOTTOM_WIDTH - ICON_SIZE - ICON_PADDING)
 #define CLOSE_ICON_Y (ICON_PADDING)
 
@@ -48,6 +51,7 @@ static bool cancelClearPressed = false;
 static bool romExists = false;
 static bool romQueued = false;
 static int queueItemCount = 0;
+static bool searchButtonPressed = false;
 static bool showCancelButton = false;  // Only show if config was valid before editing
 
 // Circular log buffer
@@ -127,6 +131,7 @@ void bottom_set_mode(BottomMode mode) {
     clearQueuePressed = false;
     confirmClearPressed = false;
     cancelClearPressed = false;
+    searchButtonPressed = false;
     if (mode != BOTTOM_MODE_SETTINGS) {
         showCancelButton = false;
     }
@@ -199,7 +204,7 @@ BottomAction bottom_update(void) {
     }
     
     // Handle ROM detail mode buttons (download + queue)
-    if ((currentMode == BOTTOM_MODE_ROM_DETAIL || currentMode == BOTTOM_MODE_ROMS) && !showDebugModal) {
+    if ((currentMode == BOTTOM_MODE_ROM_DETAIL || currentMode == BOTTOM_MODE_ROMS || currentMode == BOTTOM_MODE_SEARCH_RESULTS) && !showDebugModal) {
         if (kDown & KEY_TOUCH) {
             hidTouchRead(&touch);
             if (touch_in_rect(touch.px, touch.py, BUTTON_X, SAVE_BUTTON_Y_DUAL, BUTTON_WIDTH, BUTTON_HEIGHT)) {
@@ -284,6 +289,38 @@ BottomAction bottom_update(void) {
         }
     }
     
+    // Handle search form mode (search field tap + search button)
+    if (currentMode == BOTTOM_MODE_SEARCH_FORM && !showDebugModal) {
+        // Search field area: top area below toolbar
+        float fieldY = 24 + UI_PADDING;  // TOOLBAR_HEIGHT + padding
+        float fieldH = 22;
+        // Search button area: bottom of screen
+        float btnY = SCREEN_BOTTOM_HEIGHT - 30 - UI_PADDING;
+        float btnH = 30;
+        float btnX = (SCREEN_BOTTOM_WIDTH - 200) / 2;
+        float btnW = 200;
+        
+        if (kDown & KEY_TOUCH) {
+            hidTouchRead(&touch);
+            if (touch_in_rect(touch.px, touch.py, UI_PADDING, fieldY, SCREEN_BOTTOM_WIDTH - UI_PADDING * 2, fieldH)) {
+                action = BOTTOM_ACTION_SEARCH_FIELD;
+            }
+            if (touch_in_rect(touch.px, touch.py, btnX, btnY, btnW, btnH)) {
+                searchButtonPressed = true;
+            }
+        }
+        if (kHeld & KEY_TOUCH) {
+            hidTouchRead(&touch);
+            searchButtonPressed = touch_in_rect(touch.px, touch.py, btnX, btnY, btnW, btnH);
+        }
+        if (kUp & KEY_TOUCH) {
+            if (searchButtonPressed) {
+                action = BOTTOM_ACTION_SEARCH_EXECUTE;
+            }
+            searchButtonPressed = false;
+        }
+    }
+    
     if (kDown & KEY_TOUCH) {
         hidTouchRead(&touch);
         lastTouchY = touch.py;
@@ -313,6 +350,11 @@ BottomAction bottom_update(void) {
             if (currentMode != BOTTOM_MODE_QUEUE && currentMode != BOTTOM_MODE_QUEUE_CONFIRM &&
                 touch_in_rect(touch.px, touch.py, QUEUE_ICON_X, QUEUE_ICON_Y, ICON_SIZE, ICON_SIZE)) {
                 return BOTTOM_ACTION_OPEN_QUEUE;
+            }
+            // Check for search icon tap
+            if (currentMode != BOTTOM_MODE_SEARCH_FORM && currentMode != BOTTOM_MODE_SEARCH_RESULTS &&
+                touch_in_rect(touch.px, touch.py, SEARCH_ICON_X, SEARCH_ICON_Y, ICON_SIZE, ICON_SIZE)) {
+                return BOTTOM_ACTION_OPEN_SEARCH;
             }
         }
     }
@@ -476,6 +518,23 @@ static void draw_queue_icon(float x, float y, float size, u32 color) {
     C2D_DrawRectSolid(ax, ay, 0, 3 * scale, 2 * scale, color);
 }
 
+// Draw a magnifying glass icon at the given position
+static void draw_search_icon(float x, float y, float size, u32 color) {
+    float cx = x + size / 2;
+    float cy = y + size / 2;
+    float scale = size / 20.0f;
+    
+    // Lens circle
+    float lensR = 5 * scale;
+    float lensCx = cx - 2 * scale;
+    float lensCy = cy - 2 * scale;
+    C2D_DrawCircleSolid(lensCx, lensCy, 0, lensR, color);
+    C2D_DrawCircleSolid(lensCx, lensCy, 0, lensR - 2 * scale, UI_COLOR_HEADER);
+    
+    // Handle (diagonal line as rotated rect)
+    C2D_DrawRectSolid(lensCx + 3 * scale, lensCy + 3 * scale, 0, 6 * scale, 2.5f * scale, color);
+}
+
 static void draw_toolbar(void) {
     // Header bar
     ui_draw_rect(0, 0, SCREEN_BOTTOM_WIDTH, TOOLBAR_HEIGHT, UI_COLOR_HEADER);
@@ -488,6 +547,9 @@ static void draw_toolbar(void) {
     
     // Bug icon (debug)
     draw_bug_icon(BUG_ICON_X, BUG_ICON_Y, ICON_SIZE, UI_COLOR_TEXT);
+    
+    // Search icon
+    draw_search_icon(SEARCH_ICON_X, SEARCH_ICON_Y, ICON_SIZE, UI_COLOR_TEXT);
 }
 
 static void draw_debug_modal(void) {
@@ -674,6 +736,13 @@ void bottom_draw(void) {
         draw_queue_screen();
     } else if (currentMode == BOTTOM_MODE_QUEUE_CONFIRM) {
         draw_queue_confirm_screen();
+    } else if (currentMode == BOTTOM_MODE_SEARCH_FORM) {
+        // Background
+        ui_draw_rect(0, 0, SCREEN_BOTTOM_WIDTH, SCREEN_BOTTOM_HEIGHT, UI_COLOR_BG);
+        draw_toolbar();
+        search_form_draw();
+    } else if (currentMode == BOTTOM_MODE_SEARCH_RESULTS) {
+        draw_rom_detail_screen();
     } else {
         draw_toolbar();
     }
