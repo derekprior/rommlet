@@ -24,6 +24,7 @@
 #include "queue.h"
 #include "screens/queuescreen.h"
 #include "screens/search.h"
+#include "screens/about.h"
 #include "debuglog.h"
 
 // App states
@@ -739,7 +740,8 @@ static void handle_state_search_results(u32 kDown) {
 }
 
 static void handle_state_about(u32 kDown) {
-    if (kDown & KEY_B) {
+    AboutResult result = about_update(kDown);
+    if (result == ABOUT_BACK) {
         bottom_set_mode(BOTTOM_MODE_DEFAULT);
         currentState = nav_pop();
     }
@@ -780,26 +782,9 @@ static void draw_top_screen(void) {
     case STATE_SEARCH_RESULTS:
         search_results_draw();
         break;
-    case STATE_ABOUT: {
-        const char *appName = "Rommlet";
-        float nameW = ui_get_text_width_scaled(appName, 1.0f);
-        ui_draw_text_scaled((SCREEN_TOP_WIDTH - nameW) / 2, 40, appName, UI_COLOR_TEXT, 1.0f);
-
-        const char *tagline = "A RomM client for Nintendo 3DS";
-        float tagW = ui_get_text_width(tagline);
-        ui_draw_text((SCREEN_TOP_WIDTH - tagW) / 2, 70, tagline, UI_COLOR_TEXT_DIM);
-
-        const char *version = "v" APP_VERSION;
-        float verW = ui_get_text_width_scaled(version, 0.45f);
-        ui_draw_text_scaled((SCREEN_TOP_WIDTH - verW) / 2, 90, version, UI_COLOR_TEXT_DIM, 0.45f);
-
-        float contentWidth = SCREEN_TOP_WIDTH - (UI_PADDING * 2);
-        ui_draw_wrapped_text(UI_PADDING, 125, contentWidth,
-                             "Rommlet is a free, open source application. "
-                             "To say thanks, scan the QR code below to sponsor the project.",
-                             UI_COLOR_TEXT, 4, 0);
+    case STATE_ABOUT:
+        about_draw();
         break;
-    }
     }
 }
 
