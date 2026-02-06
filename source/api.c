@@ -122,7 +122,6 @@ static char *http_get(const char *url, int *statusCode) {
     }
 
     setup_http_headers(&context, "application/json");
-    log_trace("Auth: %s", authHeader);
 
     ret = httpcBeginRequest(&context);
     if (R_FAILED(ret)) {
