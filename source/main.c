@@ -735,10 +735,12 @@ int main(int argc, char *argv[]) {
                 // Update folder name for bottom screen button
                 bottom_set_folder_name(browser_get_current_name());
                 
-                // Handle create folder from bottom button
+                // Handle create folder from bottom button - auto-selects the new folder
                 if (bottomAction == BOTTOM_ACTION_CREATE_FOLDER) {
-                    browser_create_folder();
-                    bottom_set_folder_name(browser_get_current_name());
+                    if (browser_create_folder()) {
+                        browser_select_current();
+                        bottomAction = BOTTOM_ACTION_SELECT_FOLDER;
+                    }
                 }
                 
                 // Handle select folder from bottom button
