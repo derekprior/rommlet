@@ -521,7 +521,11 @@ bool api_download_rom(int romId, const char *fileName, const char *destPath, Dow
             }
             totalDownloaded += bytesRead;
             if (progressCb) {
-                progressCb(totalDownloaded, contentLength);
+                if (!progressCb(totalDownloaded, contentLength)) {
+                    log_info("Download cancelled by user");
+                    success = false;
+                    break;
+                }
             }
         }
         

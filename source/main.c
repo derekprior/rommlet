@@ -59,7 +59,8 @@ static void show_loading(const char *message) {
 }
 
 // Download progress callback - renders progress bar each chunk
-static void download_progress(u32 downloaded, u32 total) {
+// Returns true to continue, false to cancel
+static bool download_progress(u32 downloaded, u32 total) {
     float progress = total > 0 ? (float)downloaded / total : -1.0f;
     
     char sizeText[64];
@@ -77,6 +78,8 @@ static void download_progress(u32 downloaded, u32 total) {
     ui_draw_download_progress(progress, sizeText);
     bottom_draw();
     C3D_FrameEnd(0);
+    
+    return !bottom_check_cancel();
 }
 
 // Helper to fetch platforms from API
@@ -197,6 +200,7 @@ int main(int argc, char *argv[]) {
                 char destPath[CONFIG_MAX_PATH_LEN + CONFIG_MAX_SLUG_LEN + 256 + 3];
                 snprintf(destPath, sizeof(destPath), "%s/%s/%s", 
                         config.romFolder, folderName, romDetail->fileName);
+                bottom_set_mode(BOTTOM_MODE_DOWNLOADING);
                 show_loading("Downloading ROM...");
                 log_info("Downloading to: %s", destPath);
                 if (api_download_rom(romDetail->id, romDetail->fileName, destPath, download_progress)) {
@@ -204,6 +208,7 @@ int main(int argc, char *argv[]) {
                 } else {
                     log_error("Download failed!");
                 }
+                bottom_set_mode(BOTTOM_MODE_ROM_DETAIL);
             } else {
                 // No mapping or folder doesn't exist - show folder browser
                 browser_init_rooted(config.romFolder, currentPlatformSlug);
@@ -331,6 +336,7 @@ int main(int argc, char *argv[]) {
                         char destPath[CONFIG_MAX_PATH_LEN + CONFIG_MAX_SLUG_LEN + 256 + 3];
                         snprintf(destPath, sizeof(destPath), "%s/%s/%s", 
                                 config.romFolder, folderName, romDetail->fileName);
+                        bottom_set_mode(BOTTOM_MODE_DOWNLOADING);
                         show_loading("Downloading ROM...");
                         log_info("Downloading to: %s", destPath);
                         if (api_download_rom(romDetail->id, romDetail->fileName, destPath, download_progress)) {

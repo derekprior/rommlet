@@ -77,6 +77,13 @@ static int visibleLines = 0;
 #define BUTTON2_HIGHLIGHT     C2D_Color32(0x8a, 0x8a, 0x90, 0xFF)
 #define BUTTON2_BORDER        C2D_Color32(0x3a, 0x3a, 0x40, 0xFF)
 
+// Danger button colors (red)
+#define BUTTON_DANGER_COLOR_TOP     C2D_Color32(0xc0, 0x40, 0x40, 0xFF)
+#define BUTTON_DANGER_COLOR_BOTTOM  C2D_Color32(0xa0, 0x30, 0x30, 0xFF)
+#define BUTTON_DANGER_COLOR_PRESSED C2D_Color32(0x80, 0x20, 0x20, 0xFF)
+#define BUTTON_DANGER_HIGHLIGHT     C2D_Color32(0xe0, 0x60, 0x60, 0xFF)
+#define BUTTON_DANGER_BORDER        C2D_Color32(0x60, 0x20, 0x20, 0xFF)
+
 // Shared
 #define BUTTON_SHADOW_COLOR  C2D_Color32(0x1a, 0x1a, 0x2e, 0x80)
 
@@ -391,7 +398,9 @@ static void draw_debug_modal(void) {
 }
 
 // Draw a 3DS-style button with shadow and gradient effect
-static void draw_button(float x, float y, float w, float h, const char *text, bool pressed, bool secondary) {
+typedef enum { BUTTON_STYLE_PRIMARY, BUTTON_STYLE_SECONDARY, BUTTON_STYLE_DANGER } ButtonStyle;
+
+static void draw_button(float x, float y, float w, float h, const char *text, bool pressed, ButtonStyle style) {
     // Shadow (offset down and right)
     if (!pressed) {
         ui_draw_rect(x + 3, y + 3, w, h, BUTTON_SHADOW_COLOR);
@@ -402,11 +411,30 @@ static void draw_button(float x, float y, float w, float h, const char *text, bo
     float by = pressed ? y + 1 : y;
     
     // Colors based on style
-    u32 colorTop = secondary ? BUTTON2_COLOR_TOP : BUTTON_COLOR_TOP;
-    u32 colorBottom = secondary ? BUTTON2_COLOR_BOTTOM : BUTTON_COLOR_BOTTOM;
-    u32 colorPressed = secondary ? BUTTON2_COLOR_PRESSED : BUTTON_COLOR_PRESSED;
-    u32 colorHighlight = secondary ? BUTTON2_HIGHLIGHT : BUTTON_HIGHLIGHT;
-    u32 colorBorder = secondary ? BUTTON2_BORDER : BUTTON_BORDER;
+    u32 colorTop, colorBottom, colorPressed, colorHighlight, colorBorder;
+    switch (style) {
+        case BUTTON_STYLE_DANGER:
+            colorTop = BUTTON_DANGER_COLOR_TOP;
+            colorBottom = BUTTON_DANGER_COLOR_BOTTOM;
+            colorPressed = BUTTON_DANGER_COLOR_PRESSED;
+            colorHighlight = BUTTON_DANGER_HIGHLIGHT;
+            colorBorder = BUTTON_DANGER_BORDER;
+            break;
+        case BUTTON_STYLE_SECONDARY:
+            colorTop = BUTTON2_COLOR_TOP;
+            colorBottom = BUTTON2_COLOR_BOTTOM;
+            colorPressed = BUTTON2_COLOR_PRESSED;
+            colorHighlight = BUTTON2_HIGHLIGHT;
+            colorBorder = BUTTON2_BORDER;
+            break;
+        default:
+            colorTop = BUTTON_COLOR_TOP;
+            colorBottom = BUTTON_COLOR_BOTTOM;
+            colorPressed = BUTTON_COLOR_PRESSED;
+            colorHighlight = BUTTON_HIGHLIGHT;
+            colorBorder = BUTTON_BORDER;
+            break;
+    }
     
     // Dark border
     ui_draw_rect(bx - 2, by - 2, w + 4, h + 4, colorBorder);
@@ -440,10 +468,10 @@ static void draw_settings_screen(void) {
     
     // Buttons - position depends on whether cancel is shown
     if (showCancelButton) {
-        draw_button(BUTTON_X, SAVE_BUTTON_Y_DUAL, BUTTON_WIDTH, BUTTON_HEIGHT, "Save and Connect", saveButtonPressed, false);
-        draw_button(BUTTON_X, CANCEL_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT, "Cancel", cancelButtonPressed, true);
+        draw_button(BUTTON_X, SAVE_BUTTON_Y_DUAL, BUTTON_WIDTH, BUTTON_HEIGHT, "Save and Connect", saveButtonPressed, BUTTON_STYLE_PRIMARY);
+        draw_button(BUTTON_X, CANCEL_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT, "Cancel", cancelButtonPressed, BUTTON_STYLE_SECONDARY);
     } else {
-        draw_button(BUTTON_X, SAVE_BUTTON_Y_SINGLE, BUTTON_WIDTH, BUTTON_HEIGHT, "Save and Connect", saveButtonPressed, false);
+        draw_button(BUTTON_X, SAVE_BUTTON_Y_SINGLE, BUTTON_WIDTH, BUTTON_HEIGHT, "Save and Connect", saveButtonPressed, BUTTON_STYLE_PRIMARY);
     }
 }
 
@@ -455,7 +483,19 @@ static void draw_rom_detail_screen(void) {
     draw_toolbar();
     
     // Download button centered
-    draw_button(BUTTON_X, SAVE_BUTTON_Y_SINGLE, BUTTON_WIDTH, BUTTON_HEIGHT, "Download", downloadButtonPressed, false);
+    draw_button(BUTTON_X, SAVE_BUTTON_Y_SINGLE, BUTTON_WIDTH, BUTTON_HEIGHT, "Download", downloadButtonPressed, BUTTON_STYLE_PRIMARY);
+}
+
+static void draw_downloading_screen(void) {
+    // Background
+    ui_draw_rect(0, 0, SCREEN_BOTTOM_WIDTH, SCREEN_BOTTOM_HEIGHT, UI_COLOR_BG);
+    
+    // Cancel button centered
+    draw_button(BUTTON_X, SAVE_BUTTON_Y_SINGLE, BUTTON_WIDTH, BUTTON_HEIGHT, "Cancel Download", false, BUTTON_STYLE_DANGER);
+    
+    // Hint text
+    ui_draw_text(UI_PADDING, SCREEN_BOTTOM_HEIGHT - UI_LINE_HEIGHT - UI_PADDING,
+                 "B: Cancel", UI_COLOR_TEXT_DIM);
 }
 
 void bottom_draw(void) {
@@ -468,6 +508,8 @@ void bottom_draw(void) {
         draw_settings_screen();
     } else if (currentMode == BOTTOM_MODE_ROM_DETAIL) {
         draw_rom_detail_screen();
+    } else if (currentMode == BOTTOM_MODE_DOWNLOADING) {
+        draw_downloading_screen();
     } else {
         draw_toolbar();
     }
@@ -489,4 +531,21 @@ void bottom_log_subscriber(LogLevel level, const char *message) {
     if (logCount < LOG_MAX_LINES) {
         logCount++;
     }
+}
+
+bool bottom_check_cancel(void) {
+    hidScanInput();
+    u32 kDown = hidKeysDown();
+    
+    if (kDown & KEY_B) return true;
+    
+    if (kDown & KEY_TOUCH) {
+        touchPosition touch;
+        hidTouchRead(&touch);
+        if (touch_in_rect(touch.px, touch.py, BUTTON_X, SAVE_BUTTON_Y_SINGLE, BUTTON_WIDTH, BUTTON_HEIGHT)) {
+            return true;
+        }
+    }
+    
+    return false;
 }

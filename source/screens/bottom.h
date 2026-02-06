@@ -14,7 +14,8 @@
 typedef enum {
     BOTTOM_MODE_DEFAULT,
     BOTTOM_MODE_SETTINGS,
-    BOTTOM_MODE_ROM_DETAIL
+    BOTTOM_MODE_ROM_DETAIL,
+    BOTTOM_MODE_DOWNLOADING
 } BottomMode;
 
 // Bottom screen action results
@@ -42,6 +43,10 @@ BottomAction bottom_update(void);
 
 // Draw bottom screen
 void bottom_draw(void);
+
+// Check if user wants to cancel a download (polls input, no full update)
+// Returns true if cancel was requested
+bool bottom_check_cancel(void);
 
 // Log subscriber for the debug UI
 // Register with log_subscribe(&bottom_log_subscriber)

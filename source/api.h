@@ -73,7 +73,8 @@ RomDetail *api_get_rom_detail(int romId);
 void api_free_rom_detail(RomDetail *detail);
 
 // Progress callback for downloads (bytesDownloaded, totalBytes; total may be 0 if unknown)
-typedef void (*DownloadProgressCb)(uint32_t bytesDownloaded, uint32_t totalBytes);
+// Return true to continue, false to cancel
+typedef bool (*DownloadProgressCb)(uint32_t bytesDownloaded, uint32_t totalBytes);
 
 // Download a ROM file to the specified path
 // fileName is the fs_name from the ROM detail (used in URL path)
