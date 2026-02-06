@@ -37,6 +37,12 @@ int roms_get_count(void);
 // Get ROM ID at index (returns -1 if invalid)
 int roms_get_id_at(int index);
 
+// Get ROM at index (returns NULL if invalid)
+const Rom *roms_get_at(int index);
+
+// Get current selected index
+int roms_get_selected_index(void);
+
 // Update ROMs screen, returns result
 // selectedIndex is set when ROMS_SELECTED is returned
 RomsResult roms_update(u32 kDown, int *selectedIndex);

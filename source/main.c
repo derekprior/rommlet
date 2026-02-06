@@ -40,6 +40,7 @@ static AppState previousState = STATE_PLATFORMS;  // For returning from settings
 static bool needsConfigSetup = false;
 static bool cameFromQueue = false;  // Track if ROM detail was opened from queue
 static bool queueAddPending = false;  // Track if folder selection is for queue add
+static AppState folderBrowserReturnState = STATE_ROM_DETAIL;  // State to return to after folder browser
 static bool queueConfirmShown = false;  // Track if clear-queue confirmation is showing
 
 // Shared state
@@ -49,6 +50,7 @@ static int platformCount = 0;
 static int selectedPlatformIndex = 0;
 static RomDetail *romDetail = NULL;
 static int selectedRomIndex = 0;
+static int lastRomListIndex = -1;  // Track selection changes in ROM list
 static char currentPlatformSlug[CONFIG_MAX_SLUG_LEN];  // For folder mapping
 
 // Render target (needed for loading screen)
@@ -120,6 +122,16 @@ static bool check_rom_exists(void) {
     return (stat(path, &st) == 0 && S_ISREG(st.st_mode));
 }
 
+// Check if a ROM file exists on disk by filename
+static bool check_file_exists(const char *platformSlug, const char *fileName) {
+    const char *folderName = config_get_platform_folder(platformSlug);
+    if (!folderName || !folderName[0]) return false;
+    char path[CONFIG_MAX_PATH_LEN + CONFIG_MAX_SLUG_LEN + 256 + 3];
+    snprintf(path, sizeof(path), "%s/%s/%s", config.romFolder, folderName, fileName);
+    struct stat st;
+    return (stat(path, &st) == 0 && S_ISREG(st.st_mode));
+}
+
 // Check if a platform folder is configured and valid on disk
 static bool check_platform_folder_valid(const char *platformSlug) {
     const char *folderName = config_get_platform_folder(platformSlug);
@@ -135,6 +147,16 @@ static bool check_platform_folder_valid(const char *platformSlug) {
         return false;
     }
     return true;
+}
+
+// Update bottom screen state for the selected ROM in the list
+static void sync_roms_bottom(int index) {
+    const Rom *rom = roms_get_at(index);
+    if (rom) {
+        bottom_set_rom_exists(check_file_exists(currentPlatformSlug, rom->fsName));
+        bottom_set_rom_queued(queue_contains(rom->id));
+    }
+    lastRomListIndex = index;
 }
 
 // Add the current ROM to the queue (assumes folder is valid)
@@ -263,7 +285,38 @@ int main(int argc, char *argv[]) {
                 // No mapping or folder doesn't exist - show folder browser
                 browser_init_rooted(config.romFolder, currentPlatformSlug);
                 bottom_set_mode(BOTTOM_MODE_DEFAULT);
+                folderBrowserReturnState = STATE_ROM_DETAIL;
                 currentState = STATE_SELECT_ROM_FOLDER;
+            }
+        }
+        
+        // Handle download ROM from ROM list
+        if (bottomAction == BOTTOM_ACTION_DOWNLOAD_ROM && currentState == STATE_ROMS) {
+            const Rom *rom = roms_get_at(roms_get_selected_index());
+            if (rom) {
+                queueAddPending = false;
+                if (check_platform_folder_valid(currentPlatformSlug)) {
+                    const char *folderName = config_get_platform_folder(currentPlatformSlug);
+                    char destPath[CONFIG_MAX_PATH_LEN + CONFIG_MAX_SLUG_LEN + 256 + 3];
+                    snprintf(destPath, sizeof(destPath), "%s/%s/%s",
+                            config.romFolder, folderName, rom->fsName);
+                    bottom_set_mode(BOTTOM_MODE_DOWNLOADING);
+                    downloadName = rom->name;
+                    downloadQueueText = NULL;
+                    log_info("Downloading to: %s", destPath);
+                    if (api_download_rom(rom->id, rom->fsName, destPath, download_progress)) {
+                        log_info("Download complete!");
+                    } else {
+                        log_error("Download failed!");
+                    }
+                    bottom_set_mode(BOTTOM_MODE_ROMS);
+                    sync_roms_bottom(roms_get_selected_index());
+                } else {
+                    browser_init_rooted(config.romFolder, currentPlatformSlug);
+                    bottom_set_mode(BOTTOM_MODE_DEFAULT);
+                    folderBrowserReturnState = STATE_ROMS;
+                    currentState = STATE_SELECT_ROM_FOLDER;
+                }
             }
         }
         
@@ -283,7 +336,36 @@ int main(int argc, char *argv[]) {
                     queueAddPending = true;
                     browser_init_rooted(config.romFolder, currentPlatformSlug);
                     bottom_set_mode(BOTTOM_MODE_DEFAULT);
+                    folderBrowserReturnState = STATE_ROM_DETAIL;
                     currentState = STATE_SELECT_ROM_FOLDER;
+                }
+            }
+        }
+        
+        // Handle add/remove queue from ROM list
+        if (bottomAction == BOTTOM_ACTION_QUEUE_ROM && currentState == STATE_ROMS) {
+            const Rom *rom = roms_get_at(roms_get_selected_index());
+            if (rom) {
+                if (queue_contains(rom->id)) {
+                    queue_remove(rom->id);
+                    log_info("Removed '%s' from download queue", rom->name);
+                    bottom_set_rom_queued(false);
+                    bottom_set_queue_count(queue_count());
+                } else {
+                    if (check_platform_folder_valid(currentPlatformSlug)) {
+                        if (queue_add(rom->id, rom->platformId, rom->name, rom->fsName,
+                                      currentPlatformSlug, platforms[selectedPlatformIndex].displayName)) {
+                            log_info("Added '%s' to download queue", rom->name);
+                        }
+                        bottom_set_rom_queued(queue_contains(rom->id));
+                        bottom_set_queue_count(queue_count());
+                    } else {
+                        queueAddPending = true;
+                        browser_init_rooted(config.romFolder, currentPlatformSlug);
+                        bottom_set_mode(BOTTOM_MODE_DEFAULT);
+                        folderBrowserReturnState = STATE_ROMS;
+                        currentState = STATE_SELECT_ROM_FOLDER;
+                    }
                 }
             }
         }
@@ -403,6 +485,12 @@ int main(int argc, char *argv[]) {
                     if (roms) {
                         log_info("Found %d/%d ROMs", romCount, romTotal);
                         roms_set_data(roms, romCount, romTotal, platforms[selectedPlatformIndex].displayName);
+                        snprintf(currentPlatformSlug, sizeof(currentPlatformSlug), "%s",
+                                platforms[selectedPlatformIndex].slug);
+                        lastRomListIndex = -1;
+                        bottom_set_mode(BOTTOM_MODE_ROMS);
+                        bottom_set_queue_count(queue_count());
+                        sync_roms_bottom(0);
                         currentState = STATE_ROMS;
                     } else {
                         log_error("Failed to fetch ROMs");
@@ -415,7 +503,16 @@ int main(int argc, char *argv[]) {
                 
             case STATE_ROMS: {
                 RomsResult result = roms_update(kDown, &selectedRomIndex);
+                
+                // Sync bottom screen when selection changes
+                int curIdx = roms_get_selected_index();
+                if (curIdx != lastRomListIndex && curIdx < roms_get_count()) {
+                    sync_roms_bottom(curIdx);
+                }
+                
                 if (result == ROMS_BACK) {
+                    bottom_set_mode(BOTTOM_MODE_DEFAULT);
+                    lastRomListIndex = -1;
                     currentState = STATE_PLATFORMS;
                 } else if (result == ROMS_SELECTED) {
                     // Fetch ROM details
@@ -468,7 +565,8 @@ int main(int argc, char *argv[]) {
                         bottom_set_queue_count(queue_count());
                         currentState = STATE_QUEUE;
                     } else {
-                        bottom_set_mode(BOTTOM_MODE_DEFAULT);
+                        bottom_set_mode(BOTTOM_MODE_ROMS);
+                        sync_roms_bottom(roms_get_selected_index());
                         currentState = STATE_ROMS;
                     }
                 }
@@ -486,36 +584,74 @@ int main(int argc, char *argv[]) {
                     if (queueAddPending) {
                         // Was adding to queue - now add it
                         queueAddPending = false;
-                        add_current_rom_to_queue();
-                        bottom_set_mode(BOTTOM_MODE_ROM_DETAIL);
-                        bottom_set_rom_exists(check_rom_exists());
-                        currentState = STATE_ROM_DETAIL;
+                        if (folderBrowserReturnState == STATE_ROMS) {
+                            const Rom *rom = roms_get_at(roms_get_selected_index());
+                            if (rom) {
+                                if (queue_add(rom->id, rom->platformId, rom->name, rom->fsName,
+                                              currentPlatformSlug, platforms[selectedPlatformIndex].displayName)) {
+                                    log_info("Added '%s' to download queue", rom->name);
+                                }
+                            }
+                            bottom_set_mode(BOTTOM_MODE_ROMS);
+                            bottom_set_queue_count(queue_count());
+                            sync_roms_bottom(roms_get_selected_index());
+                        } else {
+                            add_current_rom_to_queue();
+                            bottom_set_mode(BOTTOM_MODE_ROM_DETAIL);
+                            bottom_set_rom_exists(check_rom_exists());
+                        }
+                        currentState = folderBrowserReturnState;
                     } else {
                         // Was downloading - now download
-                        if (romDetail) {
-                            char destPath[CONFIG_MAX_PATH_LEN + CONFIG_MAX_SLUG_LEN + 256 + 3];
-                            snprintf(destPath, sizeof(destPath), "%s/%s/%s", 
-                                    config.romFolder, folderName, romDetail->fileName);
-                            bottom_set_mode(BOTTOM_MODE_DOWNLOADING);
-                            downloadName = romDetail->name;
-                            downloadQueueText = NULL;
-                            log_info("Downloading to: %s", destPath);
-                            if (api_download_rom(romDetail->id, romDetail->fileName, destPath, download_progress)) {
-                                log_info("Download complete!");
-                            } else {
-                                log_error("Download failed!");
+                        if (folderBrowserReturnState == STATE_ROMS) {
+                            const Rom *rom = roms_get_at(roms_get_selected_index());
+                            if (rom) {
+                                char destPath[CONFIG_MAX_PATH_LEN + CONFIG_MAX_SLUG_LEN + 256 + 3];
+                                snprintf(destPath, sizeof(destPath), "%s/%s/%s",
+                                        config.romFolder, folderName, rom->fsName);
+                                bottom_set_mode(BOTTOM_MODE_DOWNLOADING);
+                                downloadName = rom->name;
+                                downloadQueueText = NULL;
+                                log_info("Downloading to: %s", destPath);
+                                if (api_download_rom(rom->id, rom->fsName, destPath, download_progress)) {
+                                    log_info("Download complete!");
+                                } else {
+                                    log_error("Download failed!");
+                                }
                             }
+                            bottom_set_mode(BOTTOM_MODE_ROMS);
+                            sync_roms_bottom(roms_get_selected_index());
+                        } else {
+                            if (romDetail) {
+                                char destPath[CONFIG_MAX_PATH_LEN + CONFIG_MAX_SLUG_LEN + 256 + 3];
+                                snprintf(destPath, sizeof(destPath), "%s/%s/%s", 
+                                        config.romFolder, folderName, romDetail->fileName);
+                                bottom_set_mode(BOTTOM_MODE_DOWNLOADING);
+                                downloadName = romDetail->name;
+                                downloadQueueText = NULL;
+                                log_info("Downloading to: %s", destPath);
+                                if (api_download_rom(romDetail->id, romDetail->fileName, destPath, download_progress)) {
+                                    log_info("Download complete!");
+                                } else {
+                                    log_error("Download failed!");
+                                }
+                            }
+                            bottom_set_mode(BOTTOM_MODE_ROM_DETAIL);
+                            bottom_set_rom_exists(check_rom_exists());
                         }
-                        bottom_set_mode(BOTTOM_MODE_ROM_DETAIL);
-                        bottom_set_rom_exists(check_rom_exists());
-                        currentState = STATE_ROM_DETAIL;
+                        currentState = folderBrowserReturnState;
                     }
                 } else if (browser_was_cancelled()) {
                     browser_exit();
                     queueAddPending = false;
-                    bottom_set_mode(BOTTOM_MODE_ROM_DETAIL);
-                    bottom_set_rom_exists(check_rom_exists());
-                    currentState = STATE_ROM_DETAIL;
+                    if (folderBrowserReturnState == STATE_ROMS) {
+                        bottom_set_mode(BOTTOM_MODE_ROMS);
+                        sync_roms_bottom(roms_get_selected_index());
+                    } else {
+                        bottom_set_mode(BOTTOM_MODE_ROM_DETAIL);
+                        bottom_set_rom_exists(check_rom_exists());
+                    }
+                    currentState = folderBrowserReturnState;
                 }
                 break;
             }

@@ -90,6 +90,17 @@ int roms_get_id_at(int index) {
     return romList[index].id;
 }
 
+const Rom *roms_get_at(int index) {
+    if (!romList || index < 0 || index >= romCount) {
+        return NULL;
+    }
+    return &romList[index];
+}
+
+int roms_get_selected_index(void) {
+    return selectedIndex;
+}
+
 RomsResult roms_update(u32 kDown, int *outSelectedIndex) {
     // Back to platforms
     if (kDown & KEY_B) {

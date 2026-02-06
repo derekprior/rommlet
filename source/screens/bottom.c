@@ -199,7 +199,7 @@ BottomAction bottom_update(void) {
     }
     
     // Handle ROM detail mode buttons (download + queue)
-    if (currentMode == BOTTOM_MODE_ROM_DETAIL && !showDebugModal) {
+    if ((currentMode == BOTTOM_MODE_ROM_DETAIL || currentMode == BOTTOM_MODE_ROMS) && !showDebugModal) {
         if (kDown & KEY_TOUCH) {
             hidTouchRead(&touch);
             if (touch_in_rect(touch.px, touch.py, BUTTON_X, SAVE_BUTTON_Y_DUAL, BUTTON_WIDTH, BUTTON_HEIGHT)) {
@@ -666,7 +666,7 @@ void bottom_draw(void) {
         draw_debug_modal();
     } else if (currentMode == BOTTOM_MODE_SETTINGS) {
         draw_settings_screen();
-    } else if (currentMode == BOTTOM_MODE_ROM_DETAIL) {
+    } else if (currentMode == BOTTOM_MODE_ROMS || currentMode == BOTTOM_MODE_ROM_DETAIL) {
         draw_rom_detail_screen();
     } else if (currentMode == BOTTOM_MODE_DOWNLOADING) {
         draw_downloading_screen();
