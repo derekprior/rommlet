@@ -488,7 +488,7 @@ static void draw_rom_detail_screen(void) {
     draw_toolbar();
     
     // Download button centered
-    const char *downloadLabel = romExists ? "Redownload" : "Download";
+    const char *downloadLabel = romExists ? "Download Again" : "Download";
     draw_button(BUTTON_X, SAVE_BUTTON_Y_SINGLE, BUTTON_WIDTH, BUTTON_HEIGHT, downloadLabel, downloadButtonPressed, BUTTON_STYLE_PRIMARY);
 }
 
