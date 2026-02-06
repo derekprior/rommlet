@@ -20,6 +20,9 @@ typedef struct {
 // Reset navigation state to defaults
 void listnav_reset(ListNav *nav);
 
+// Set item counts and reset selection to the top
+void listnav_set(ListNav *nav, int count, int total);
+
 // Handle d-pad and L/R input. Returns true if selection changed.
 bool listnav_update(ListNav *nav, u32 kDown);
 

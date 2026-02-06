@@ -14,6 +14,13 @@ void listnav_reset(ListNav *nav) {
     nav->visibleItems = 0;
 }
 
+void listnav_set(ListNav *nav, int count, int total) {
+    nav->count = count;
+    nav->total = total;
+    nav->selectedIndex = 0;
+    nav->scrollOffset = 0;
+}
+
 // Display count includes "Load more" row when count < total
 static int display_count(const ListNav *nav) {
     return nav->count + (nav->count < nav->total ? 1 : 0);

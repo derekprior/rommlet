@@ -83,10 +83,7 @@ void search_set_results(Rom *roms, int count, int total) {
         free(resultList);
     }
     resultList = roms;
-    nav.count = count;
-    nav.total = total;
-    nav.selectedIndex = 0;
-    nav.scrollOffset = 0;
+    listnav_set(&nav, count, total);
 }
 
 void search_append_results(Rom *roms, int count) {

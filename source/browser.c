@@ -47,10 +47,7 @@ static int compare_entries(const void *a, const void *b) {
 }
 
 static void load_directory(const char *path) {
-    nav.count = 0;
-    nav.total = 0;
-    nav.selectedIndex = 0;
-    nav.scrollOffset = 0;
+    listnav_set(&nav, 0, 0);
     nav.visibleItems = UI_VISIBLE_ITEMS - 1; // path display takes one line
 
     snprintf(currentPath, sizeof(currentPath), "%s", path);

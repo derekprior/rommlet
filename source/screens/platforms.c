@@ -18,10 +18,7 @@ void platforms_init(void) {
 
 void platforms_set_data(Platform *platforms, int count) {
     platformList = platforms;
-    nav.count = count;
-    nav.total = count;
-    nav.selectedIndex = 0;
-    nav.scrollOffset = 0;
+    listnav_set(&nav, count, count);
 }
 
 PlatformsResult platforms_update(u32 kDown, int *outSelectedIndex) {
