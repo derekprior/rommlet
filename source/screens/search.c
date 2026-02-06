@@ -378,10 +378,10 @@ void search_results_draw(void) {
     
     for (int i = scrollOffset; i < visibleEnd; i++) {
         if (i < resultCount) {
-            // Format as "[Platform] ROM Name"
+            // Format as "[slug] ROM Name"
             char displayText[512];
-            const char *platName = search_get_platform_name(resultList[i].platformId);
-            snprintf(displayText, sizeof(displayText), "[%s] %s", platName, resultList[i].name);
+            const char *slug = search_get_platform_slug(resultList[i].platformId);
+            snprintf(displayText, sizeof(displayText), "[%s] %s", slug, resultList[i].name);
             ui_draw_list_item(UI_PADDING, y, itemWidth, displayText, i == selectedIndex);
         } else {
             // "Load more..." row
