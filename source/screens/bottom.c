@@ -38,6 +38,7 @@ static int lastTouchY = -1;
 static bool saveButtonPressed = false;
 static bool cancelButtonPressed = false;
 static bool downloadButtonPressed = false;
+static bool romExists = false;
 static bool showCancelButton = false;  // Only show if config was valid before editing
 
 // Circular log buffer
@@ -123,6 +124,10 @@ void bottom_set_settings_mode(bool canCancel) {
     cancelButtonPressed = false;
     downloadButtonPressed = false;
     showCancelButton = canCancel;
+}
+
+void bottom_set_rom_exists(bool exists) {
+    romExists = exists;
 }
 
 static bool touch_in_rect(int tx, int ty, int x, int y, int w, int h) {
@@ -483,7 +488,8 @@ static void draw_rom_detail_screen(void) {
     draw_toolbar();
     
     // Download button centered
-    draw_button(BUTTON_X, SAVE_BUTTON_Y_SINGLE, BUTTON_WIDTH, BUTTON_HEIGHT, "Download", downloadButtonPressed, BUTTON_STYLE_PRIMARY);
+    const char *downloadLabel = romExists ? "Redownload" : "Download";
+    draw_button(BUTTON_X, SAVE_BUTTON_Y_SINGLE, BUTTON_WIDTH, BUTTON_HEIGHT, downloadLabel, downloadButtonPressed, BUTTON_STYLE_PRIMARY);
 }
 
 static void draw_downloading_screen(void) {

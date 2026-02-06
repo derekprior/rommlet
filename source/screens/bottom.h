@@ -37,6 +37,9 @@ void bottom_exit(void);
 void bottom_set_mode(BottomMode mode);
 void bottom_set_settings_mode(bool canCancel);
 
+// Set whether the current ROM already exists on disk
+void bottom_set_rom_exists(bool exists);
+
 // Update bottom screen (handle touch input)
 // Returns action if a button was pressed
 BottomAction bottom_update(void);

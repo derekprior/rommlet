@@ -99,6 +99,17 @@ static void fetch_platforms(void) {
     }
 }
 
+// Check if the current ROM file already exists on disk
+static bool check_rom_exists(void) {
+    if (!romDetail) return false;
+    const char *folderName = config_get_platform_folder(currentPlatformSlug);
+    if (!folderName || !folderName[0]) return false;
+    char path[CONFIG_MAX_PATH_LEN + CONFIG_MAX_SLUG_LEN + 256 + 3];
+    snprintf(path, sizeof(path), "%s/%s/%s", config.romFolder, folderName, romDetail->fileName);
+    struct stat st;
+    return (stat(path, &st) == 0 && S_ISREG(st.st_mode));
+}
+
 int main(int argc, char *argv[]) {
     // Initialize services
     gfxInitDefault();
@@ -209,6 +220,7 @@ int main(int argc, char *argv[]) {
                     log_error("Download failed!");
                 }
                 bottom_set_mode(BOTTOM_MODE_ROM_DETAIL);
+                bottom_set_rom_exists(check_rom_exists());
             } else {
                 // No mapping or folder doesn't exist - show folder browser
                 browser_init_rooted(config.romFolder, currentPlatformSlug);
@@ -294,6 +306,7 @@ int main(int argc, char *argv[]) {
                             snprintf(currentPlatformSlug, sizeof(currentPlatformSlug), "%s", 
                                     platforms[selectedPlatformIndex].slug);
                             bottom_set_mode(BOTTOM_MODE_ROM_DETAIL);
+                            bottom_set_rom_exists(check_rom_exists());
                             currentState = STATE_ROM_DETAIL;
                         } else {
                             log_error("Failed to fetch ROM details");
@@ -346,10 +359,12 @@ int main(int argc, char *argv[]) {
                         }
                     }
                     bottom_set_mode(BOTTOM_MODE_ROM_DETAIL);
+                    bottom_set_rom_exists(check_rom_exists());
                     currentState = STATE_ROM_DETAIL;
                 } else if (browser_was_cancelled()) {
                     browser_exit();
                     bottom_set_mode(BOTTOM_MODE_ROM_DETAIL);
+                    bottom_set_rom_exists(check_rom_exists());
                     currentState = STATE_ROM_DETAIL;
                 }
                 break;
