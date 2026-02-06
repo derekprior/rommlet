@@ -110,14 +110,14 @@ static char *http_get(const char *url, int *statusCode) {
         return NULL;
     }
     
-    // Set headers
-    ret = httpcSetSSLOpt(&context, SSLCOPT_DisableVerify);
-    ret = httpcSetKeepAlive(&context, HTTPC_KEEPALIVE_ENABLED);
-    ret = httpcAddRequestHeaderField(&context, "User-Agent", "Rommlet/1.0");
-    ret = httpcAddRequestHeaderField(&context, "Accept", "application/json");
+    // Set headers (these calls don't fail in practice on 3DS)
+    httpcSetSSLOpt(&context, SSLCOPT_DisableVerify);
+    httpcSetKeepAlive(&context, HTTPC_KEEPALIVE_ENABLED);
+    httpcAddRequestHeaderField(&context, "User-Agent", "Rommlet/1.0");
+    httpcAddRequestHeaderField(&context, "Accept", "application/json");
     
     if (authHeader[0] != '\0') {
-        ret = httpcAddRequestHeaderField(&context, "Authorization", authHeader);
+        httpcAddRequestHeaderField(&context, "Authorization", authHeader);
         log_trace("Auth: %s", authHeader);
     }
     
