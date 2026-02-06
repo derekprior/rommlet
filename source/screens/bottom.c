@@ -18,11 +18,13 @@
 #define ICON_SIZE 20
 #define ICON_PADDING 4
 
-// Touch zones - bug icon on right, gear icon next to it
+// Touch zones - bug icon on right, gear icon next to it, queue icon next
 #define BUG_ICON_X (SCREEN_BOTTOM_WIDTH - ICON_SIZE - ICON_PADDING)
 #define BUG_ICON_Y (ICON_PADDING)
 #define GEAR_ICON_X (SCREEN_BOTTOM_WIDTH - (ICON_SIZE + ICON_PADDING) * 2)
 #define GEAR_ICON_Y (ICON_PADDING)
+#define QUEUE_ICON_X (SCREEN_BOTTOM_WIDTH - (ICON_SIZE + ICON_PADDING) * 3)
+#define QUEUE_ICON_Y (ICON_PADDING)
 #define CLOSE_ICON_X (SCREEN_BOTTOM_WIDTH - ICON_SIZE - ICON_PADDING)
 #define CLOSE_ICON_Y (ICON_PADDING)
 
@@ -38,7 +40,14 @@ static int lastTouchY = -1;
 static bool saveButtonPressed = false;
 static bool cancelButtonPressed = false;
 static bool downloadButtonPressed = false;
+static bool queueButtonPressed = false;
+static bool startDownloadsPressed = false;
+static bool clearQueuePressed = false;
+static bool confirmClearPressed = false;
+static bool cancelClearPressed = false;
 static bool romExists = false;
+static bool romQueued = false;
+static int queueItemCount = 0;
 static bool showCancelButton = false;  // Only show if config was valid before editing
 
 // Circular log buffer
@@ -113,6 +122,11 @@ void bottom_set_mode(BottomMode mode) {
     saveButtonPressed = false;
     cancelButtonPressed = false;
     downloadButtonPressed = false;
+    queueButtonPressed = false;
+    startDownloadsPressed = false;
+    clearQueuePressed = false;
+    confirmClearPressed = false;
+    cancelClearPressed = false;
     if (mode != BOTTOM_MODE_SETTINGS) {
         showCancelButton = false;
     }
@@ -123,11 +137,20 @@ void bottom_set_settings_mode(bool canCancel) {
     saveButtonPressed = false;
     cancelButtonPressed = false;
     downloadButtonPressed = false;
+    queueButtonPressed = false;
     showCancelButton = canCancel;
 }
 
 void bottom_set_rom_exists(bool exists) {
     romExists = exists;
+}
+
+void bottom_set_rom_queued(bool queued) {
+    romQueued = queued;
+}
+
+void bottom_set_queue_count(int count) {
+    queueItemCount = count;
 }
 
 static bool touch_in_rect(int tx, int ty, int x, int y, int w, int h) {
@@ -175,23 +198,89 @@ BottomAction bottom_update(void) {
         }
     }
     
-    // Handle ROM detail mode buttons
+    // Handle ROM detail mode buttons (download + queue)
     if (currentMode == BOTTOM_MODE_ROM_DETAIL && !showDebugModal) {
         if (kDown & KEY_TOUCH) {
             hidTouchRead(&touch);
-            if (touch_in_rect(touch.px, touch.py, BUTTON_X, SAVE_BUTTON_Y_SINGLE, BUTTON_WIDTH, BUTTON_HEIGHT)) {
+            if (touch_in_rect(touch.px, touch.py, BUTTON_X, SAVE_BUTTON_Y_DUAL, BUTTON_WIDTH, BUTTON_HEIGHT)) {
                 downloadButtonPressed = true;
+            }
+            if (touch_in_rect(touch.px, touch.py, BUTTON_X, CANCEL_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT)) {
+                queueButtonPressed = true;
             }
         }
         if (kHeld & KEY_TOUCH) {
             hidTouchRead(&touch);
-            downloadButtonPressed = touch_in_rect(touch.px, touch.py, BUTTON_X, SAVE_BUTTON_Y_SINGLE, BUTTON_WIDTH, BUTTON_HEIGHT);
+            downloadButtonPressed = touch_in_rect(touch.px, touch.py, BUTTON_X, SAVE_BUTTON_Y_DUAL, BUTTON_WIDTH, BUTTON_HEIGHT);
+            queueButtonPressed = touch_in_rect(touch.px, touch.py, BUTTON_X, CANCEL_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT);
         }
         if (kUp & KEY_TOUCH) {
             if (downloadButtonPressed) {
                 action = BOTTOM_ACTION_DOWNLOAD_ROM;
             }
+            if (queueButtonPressed) {
+                action = BOTTOM_ACTION_QUEUE_ROM;
+            }
             downloadButtonPressed = false;
+            queueButtonPressed = false;
+        }
+    }
+    
+    // Handle queue mode buttons (start downloads + clear queue)
+    if (currentMode == BOTTOM_MODE_QUEUE && !showDebugModal) {
+        if (kDown & KEY_TOUCH) {
+            hidTouchRead(&touch);
+            if (touch_in_rect(touch.px, touch.py, BUTTON_X, SAVE_BUTTON_Y_DUAL, BUTTON_WIDTH, BUTTON_HEIGHT)) {
+                startDownloadsPressed = true;
+            }
+            if (queueItemCount > 0 && touch_in_rect(touch.px, touch.py, BUTTON_X, CANCEL_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT)) {
+                clearQueuePressed = true;
+            }
+        }
+        if (kHeld & KEY_TOUCH) {
+            hidTouchRead(&touch);
+            startDownloadsPressed = touch_in_rect(touch.px, touch.py, BUTTON_X, SAVE_BUTTON_Y_DUAL, BUTTON_WIDTH, BUTTON_HEIGHT);
+            if (queueItemCount > 0) {
+                clearQueuePressed = touch_in_rect(touch.px, touch.py, BUTTON_X, CANCEL_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT);
+            }
+        }
+        if (kUp & KEY_TOUCH) {
+            if (startDownloadsPressed) {
+                action = BOTTOM_ACTION_START_DOWNLOADS;
+            }
+            if (clearQueuePressed) {
+                action = BOTTOM_ACTION_CLEAR_QUEUE;
+            }
+            startDownloadsPressed = false;
+            clearQueuePressed = false;
+        }
+    }
+    
+    // Handle queue confirm clear dialog
+    if (currentMode == BOTTOM_MODE_QUEUE_CONFIRM && !showDebugModal) {
+        if (kDown & KEY_TOUCH) {
+            hidTouchRead(&touch);
+            if (touch_in_rect(touch.px, touch.py, BUTTON_X, SAVE_BUTTON_Y_DUAL, BUTTON_WIDTH, BUTTON_HEIGHT)) {
+                confirmClearPressed = true;
+            }
+            if (touch_in_rect(touch.px, touch.py, BUTTON_X, CANCEL_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT)) {
+                cancelClearPressed = true;
+            }
+        }
+        if (kHeld & KEY_TOUCH) {
+            hidTouchRead(&touch);
+            confirmClearPressed = touch_in_rect(touch.px, touch.py, BUTTON_X, SAVE_BUTTON_Y_DUAL, BUTTON_WIDTH, BUTTON_HEIGHT);
+            cancelClearPressed = touch_in_rect(touch.px, touch.py, BUTTON_X, CANCEL_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT);
+        }
+        if (kUp & KEY_TOUCH) {
+            if (confirmClearPressed) {
+                action = BOTTOM_ACTION_CLEAR_QUEUE;
+            }
+            if (cancelClearPressed) {
+                action = BOTTOM_ACTION_CANCEL_CLEAR;
+            }
+            confirmClearPressed = false;
+            cancelClearPressed = false;
         }
     }
     
@@ -219,6 +308,11 @@ BottomAction bottom_update(void) {
             if (currentMode != BOTTOM_MODE_SETTINGS &&
                 touch_in_rect(touch.px, touch.py, GEAR_ICON_X, GEAR_ICON_Y, ICON_SIZE, ICON_SIZE)) {
                 return BOTTOM_ACTION_OPEN_SETTINGS;
+            }
+            // Check for queue icon tap
+            if (currentMode != BOTTOM_MODE_QUEUE && currentMode != BOTTOM_MODE_QUEUE_CONFIRM &&
+                touch_in_rect(touch.px, touch.py, QUEUE_ICON_X, QUEUE_ICON_Y, ICON_SIZE, ICON_SIZE)) {
+                return BOTTOM_ACTION_OPEN_QUEUE;
             }
         }
     }
@@ -362,9 +456,32 @@ static void draw_gear_icon(float x, float y, float size, u32 color) {
     C2D_DrawCircleSolid(cx, cy, 0, innerR, UI_COLOR_HEADER);
 }
 
+// Draw a queue/list icon at the given position
+static void draw_queue_icon(float x, float y, float size, u32 color) {
+    float scale = size / 20.0f;
+    float lx = x + 3 * scale;
+    float ly = y + 4 * scale;
+    float lineW = 14 * scale;
+    float lineH = 2 * scale;
+    float gap = 4 * scale;
+
+    // Three horizontal lines (list icon)
+    C2D_DrawRectSolid(lx, ly, 0, lineW, lineH, color);
+    C2D_DrawRectSolid(lx, ly + gap, 0, lineW, lineH, color);
+    C2D_DrawRectSolid(lx, ly + gap * 2, 0, lineW, lineH, color);
+
+    // Small arrow pointing down on right side
+    float ax = x + 14 * scale;
+    float ay = ly + gap * 2 + lineH + 1 * scale;
+    C2D_DrawRectSolid(ax, ay, 0, 3 * scale, 2 * scale, color);
+}
+
 static void draw_toolbar(void) {
     // Header bar
     ui_draw_rect(0, 0, SCREEN_BOTTOM_WIDTH, TOOLBAR_HEIGHT, UI_COLOR_HEADER);
+    
+    // Queue icon
+    draw_queue_icon(QUEUE_ICON_X, QUEUE_ICON_Y, ICON_SIZE, UI_COLOR_TEXT);
     
     // Gear icon (settings)
     draw_gear_icon(GEAR_ICON_X, GEAR_ICON_Y, ICON_SIZE, UI_COLOR_TEXT);
@@ -484,12 +601,17 @@ static void draw_rom_detail_screen(void) {
     // Background
     ui_draw_rect(0, 0, SCREEN_BOTTOM_WIDTH, SCREEN_BOTTOM_HEIGHT, UI_COLOR_BG);
     
-    // Toolbar at top with gear and bug icons
+    // Toolbar at top with gear, queue, and bug icons
     draw_toolbar();
     
-    // Download button centered
+    // Download button (top)
     const char *downloadLabel = romExists ? "Download Again" : "Download";
-    draw_button(BUTTON_X, SAVE_BUTTON_Y_SINGLE, BUTTON_WIDTH, BUTTON_HEIGHT, downloadLabel, downloadButtonPressed, BUTTON_STYLE_PRIMARY);
+    draw_button(BUTTON_X, SAVE_BUTTON_Y_DUAL, BUTTON_WIDTH, BUTTON_HEIGHT, downloadLabel, downloadButtonPressed, BUTTON_STYLE_PRIMARY);
+    
+    // Queue button (bottom)
+    const char *queueLabel = romQueued ? "Remove from Queue" : "Add to Queue";
+    ButtonStyle queueStyle = romQueued ? BUTTON_STYLE_DANGER : BUTTON_STYLE_SECONDARY;
+    draw_button(BUTTON_X, CANCEL_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT, queueLabel, queueButtonPressed, queueStyle);
 }
 
 static void draw_downloading_screen(void) {
@@ -504,6 +626,40 @@ static void draw_downloading_screen(void) {
                  "B: Cancel", UI_COLOR_TEXT_DIM);
 }
 
+static void draw_queue_screen(void) {
+    // Background
+    ui_draw_rect(0, 0, SCREEN_BOTTOM_WIDTH, SCREEN_BOTTOM_HEIGHT, UI_COLOR_BG);
+    
+    // Toolbar at top
+    draw_toolbar();
+    
+    if (queueItemCount > 0) {
+        // Start Downloads button (top)
+        draw_button(BUTTON_X, SAVE_BUTTON_Y_DUAL, BUTTON_WIDTH, BUTTON_HEIGHT, "Start Downloads", startDownloadsPressed, BUTTON_STYLE_PRIMARY);
+        // Clear Queue button (bottom)
+        draw_button(BUTTON_X, CANCEL_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT, "Clear Queue", clearQueuePressed, BUTTON_STYLE_DANGER);
+    }
+}
+
+static void draw_queue_confirm_screen(void) {
+    // Background
+    ui_draw_rect(0, 0, SCREEN_BOTTOM_WIDTH, SCREEN_BOTTOM_HEIGHT, UI_COLOR_BG);
+    
+    // Toolbar at top
+    draw_toolbar();
+    
+    // "Are you sure?" text
+    const char *prompt = "Are you sure?";
+    float promptWidth = ui_get_text_width(prompt);
+    ui_draw_text((SCREEN_BOTTOM_WIDTH - promptWidth) / 2, SAVE_BUTTON_Y_DUAL - UI_LINE_HEIGHT - UI_PADDING,
+                 prompt, UI_COLOR_TEXT);
+    
+    // Clear Queue button (top, danger)
+    draw_button(BUTTON_X, SAVE_BUTTON_Y_DUAL, BUTTON_WIDTH, BUTTON_HEIGHT, "Clear Queue", confirmClearPressed, BUTTON_STYLE_DANGER);
+    // Cancel button (bottom)
+    draw_button(BUTTON_X, CANCEL_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT, "Cancel", cancelClearPressed, BUTTON_STYLE_SECONDARY);
+}
+
 void bottom_draw(void) {
     C2D_SceneBegin(bottomTarget);
     C2D_TargetClear(bottomTarget, UI_COLOR_BG);
@@ -516,6 +672,10 @@ void bottom_draw(void) {
         draw_rom_detail_screen();
     } else if (currentMode == BOTTOM_MODE_DOWNLOADING) {
         draw_downloading_screen();
+    } else if (currentMode == BOTTOM_MODE_QUEUE) {
+        draw_queue_screen();
+    } else if (currentMode == BOTTOM_MODE_QUEUE_CONFIRM) {
+        draw_queue_confirm_screen();
     } else {
         draw_toolbar();
     }

@@ -15,7 +15,9 @@ typedef enum {
     BOTTOM_MODE_DEFAULT,
     BOTTOM_MODE_SETTINGS,
     BOTTOM_MODE_ROM_DETAIL,
-    BOTTOM_MODE_DOWNLOADING
+    BOTTOM_MODE_DOWNLOADING,
+    BOTTOM_MODE_QUEUE,
+    BOTTOM_MODE_QUEUE_CONFIRM
 } BottomMode;
 
 // Bottom screen action results
@@ -24,7 +26,12 @@ typedef enum {
     BOTTOM_ACTION_SAVE_SETTINGS,
     BOTTOM_ACTION_CANCEL_SETTINGS,
     BOTTOM_ACTION_OPEN_SETTINGS,
-    BOTTOM_ACTION_DOWNLOAD_ROM
+    BOTTOM_ACTION_DOWNLOAD_ROM,
+    BOTTOM_ACTION_QUEUE_ROM,
+    BOTTOM_ACTION_OPEN_QUEUE,
+    BOTTOM_ACTION_START_DOWNLOADS,
+    BOTTOM_ACTION_CLEAR_QUEUE,
+    BOTTOM_ACTION_CANCEL_CLEAR
 } BottomAction;
 
 // Initialize bottom screen module
@@ -39,6 +46,12 @@ void bottom_set_settings_mode(bool canCancel);
 
 // Set whether the current ROM already exists on disk
 void bottom_set_rom_exists(bool exists);
+
+// Set whether the current ROM is in the download queue
+void bottom_set_rom_queued(bool queued);
+
+// Set queue count (for showing/hiding clear button)
+void bottom_set_queue_count(int count);
 
 // Update bottom screen (handle touch input)
 // Returns action if a button was pressed
