@@ -141,18 +141,7 @@ static void fetch_platforms(void) {
     }
 }
 
-// Check if the current ROM file already exists on disk
-static bool check_rom_exists(void) {
-    if (!romDetail) return false;
-    const char *folderName = config_get_platform_folder(currentPlatformSlug);
-    if (!folderName || !folderName[0]) return false;
-    char path[CONFIG_MAX_PATH_LEN + CONFIG_MAX_SLUG_LEN + 256 + 3];
-    snprintf(path, sizeof(path), "%s/%s/%s", config.romFolder, folderName, romDetail->fsName);
-    struct stat st;
-    return (stat(path, &st) == 0 && S_ISREG(st.st_mode));
-}
-
-// Check if a ROM file exists on disk by filename
+// Check if a ROM file exists on disk by platform slug and filename
 static bool check_file_exists(const char *platformSlug, const char *fileName) {
     const char *folderName = config_get_platform_folder(platformSlug);
     if (!folderName || !folderName[0]) return false;
@@ -239,7 +228,7 @@ static void sync_bottom_after_action(AppState targetState) {
             bottom_set_rom_queued(queue_contains(rom->id));
         }
     } else if (targetState == STATE_ROM_DETAIL && romDetail) {
-        bottom_set_rom_exists(check_rom_exists());
+        bottom_set_rom_exists(check_file_exists(currentPlatformSlug, romDetail->fsName));
         bottom_set_rom_queued(queue_contains(romDetail->id));
     }
 }
@@ -299,7 +288,7 @@ static bool open_rom_detail(int romId, const char *slug) {
     snprintf(currentPlatformSlug, sizeof(currentPlatformSlug), "%s", slug);
     nav_push(currentState);
     bottom_set_mode(BOTTOM_MODE_ROM_ACTIONS);
-    bottom_set_rom_exists(check_rom_exists());
+    bottom_set_rom_exists(check_file_exists(currentPlatformSlug, romDetail->fsName));
     bottom_set_rom_queued(queue_contains(romDetail->id));
     bottom_set_queue_count(queue_count());
     currentState = STATE_ROM_DETAIL;
