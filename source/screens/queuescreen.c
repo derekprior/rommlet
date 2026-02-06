@@ -44,11 +44,7 @@ QueueResult queue_screen_update(u32 kDown, int *outSelectedIndex) {
 void queue_screen_draw(void) {
     ui_draw_header("Download Queue");
 
-    int count = queue_count();
-    nav.count = count;
-    nav.total = count;
-
-    if (count == 0) {
+    if (nav.count == 0) {
         const char *emptyMsg = "No ROMs queued";
         float emptyWidth = ui_get_text_width(emptyMsg);
         ui_draw_text((SCREEN_TOP_WIDTH - emptyWidth) / 2, SCREEN_TOP_HEIGHT / 2, emptyMsg, UI_COLOR_TEXT_DIM);
