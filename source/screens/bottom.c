@@ -19,15 +19,18 @@
 #define ICON_SIZE 20
 #define ICON_PADDING 4
 
-// Touch zones - bug icon on right, gear icon next to it, queue icon next
+// Touch zones - right side: bug, gear, queue, search (right to left)
 #define BUG_ICON_X (SCREEN_BOTTOM_WIDTH - ICON_SIZE - ICON_PADDING)
 #define BUG_ICON_Y (ICON_PADDING)
 #define GEAR_ICON_X (SCREEN_BOTTOM_WIDTH - (ICON_SIZE + ICON_PADDING) * 2)
 #define GEAR_ICON_Y (ICON_PADDING)
 #define QUEUE_ICON_X (SCREEN_BOTTOM_WIDTH - (ICON_SIZE + ICON_PADDING) * 3)
 #define QUEUE_ICON_Y (ICON_PADDING)
-#define SEARCH_ICON_X (ICON_PADDING)
+#define SEARCH_ICON_X (SCREEN_BOTTOM_WIDTH - (ICON_SIZE + ICON_PADDING) * 4)
 #define SEARCH_ICON_Y (ICON_PADDING)
+// Left side: home icon
+#define HOME_ICON_X (ICON_PADDING)
+#define HOME_ICON_Y (ICON_PADDING)
 #define CLOSE_ICON_X (SCREEN_BOTTOM_WIDTH - ICON_SIZE - ICON_PADDING)
 #define CLOSE_ICON_Y (ICON_PADDING)
 
@@ -356,6 +359,10 @@ BottomAction bottom_update(void) {
                 touch_in_rect(touch.px, touch.py, SEARCH_ICON_X, SEARCH_ICON_Y, ICON_SIZE, ICON_SIZE)) {
                 return BOTTOM_ACTION_OPEN_SEARCH;
             }
+            // Check for home icon tap
+            if (touch_in_rect(touch.px, touch.py, HOME_ICON_X, HOME_ICON_Y, ICON_SIZE, ICON_SIZE)) {
+                return BOTTOM_ACTION_GO_HOME;
+            }
         }
     }
     
@@ -539,21 +546,47 @@ static void draw_search_icon(float x, float y, float size, u32 color) {
     }
 }
 
+// Draw a home icon at the given position
+static void draw_home_icon(float x, float y, float size, u32 color) {
+    float cx = x + size / 2;
+    float scale = size / 20.0f;
+    
+    // Roof (triangle as two angled rects)
+    float roofTop = y + 2 * scale;
+    float roofMid = y + 9 * scale;
+    float halfW = 8 * scale;
+    // Left slope
+    for (int i = 0; i < 4; i++) {
+        float fy = roofTop + i * 2 * scale;
+        float fw = (i + 1) * 2 * scale;
+        C2D_DrawRectSolid(cx - fw, fy, 0, fw, 2 * scale, color);
+    }
+    // Right slope
+    for (int i = 0; i < 4; i++) {
+        float fy = roofTop + i * 2 * scale;
+        float fw = (i + 1) * 2 * scale;
+        C2D_DrawRectSolid(cx, fy, 0, fw, 2 * scale, color);
+    }
+    
+    // House body
+    C2D_DrawRectSolid(cx - halfW + 2 * scale, roofMid, 0, (halfW - 2 * scale) * 2, 8 * scale, color);
+    
+    // Door (cutout)
+    C2D_DrawRectSolid(cx - 2 * scale, roofMid + 2 * scale, 0, 4 * scale, 6 * scale, UI_COLOR_HEADER);
+}
+
 static void draw_toolbar(void) {
     // Header bar
     ui_draw_rect(0, 0, SCREEN_BOTTOM_WIDTH, TOOLBAR_HEIGHT, UI_COLOR_HEADER);
     
-    // Queue icon
-    draw_queue_icon(QUEUE_ICON_X, QUEUE_ICON_Y, ICON_SIZE, UI_COLOR_TEXT);
+    // Left side: home icon
+    draw_home_icon(HOME_ICON_X, HOME_ICON_Y, ICON_SIZE, UI_COLOR_TEXT);
     
-    // Gear icon (settings)
-    draw_gear_icon(GEAR_ICON_X, GEAR_ICON_Y, ICON_SIZE, UI_COLOR_TEXT);
-    
-    // Bug icon (debug)
-    draw_bug_icon(BUG_ICON_X, BUG_ICON_Y, ICON_SIZE, UI_COLOR_TEXT);
-    
-    // Search icon
+    // Right side (right to left): bug, gear, queue, search
     draw_search_icon(SEARCH_ICON_X, SEARCH_ICON_Y, ICON_SIZE, UI_COLOR_TEXT);
+    draw_queue_icon(QUEUE_ICON_X, QUEUE_ICON_Y, ICON_SIZE, UI_COLOR_TEXT);
+    draw_gear_icon(GEAR_ICON_X, GEAR_ICON_Y, ICON_SIZE, UI_COLOR_TEXT);
+    draw_bug_icon(BUG_ICON_X, BUG_ICON_Y, ICON_SIZE, UI_COLOR_TEXT);
 }
 
 static void draw_debug_modal(void) {

@@ -265,6 +265,16 @@ int main(int argc, char *argv[]) {
             currentState = STATE_SETTINGS;
         }
         
+        // Handle home button - return to platform list
+        if (bottomAction == BOTTOM_ACTION_GO_HOME && currentState != STATE_PLATFORMS) {
+            bottom_set_mode(BOTTOM_MODE_DEFAULT);
+            lastRomListIndex = -1;
+            cameFromQueue = false;
+            cameFromSearch = false;
+            queueAddPending = false;
+            currentState = STATE_PLATFORMS;
+        }
+        
         // Handle download ROM from detail screen
         if (bottomAction == BOTTOM_ACTION_DOWNLOAD_ROM && currentState == STATE_ROM_DETAIL && romDetail) {
             queueAddPending = false;
