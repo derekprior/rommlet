@@ -174,6 +174,6 @@ void settings_draw(void) {
     }
 
     // Help text at bottom
-    ui_draw_text(UI_PADDING, SCREEN_TOP_HEIGHT - UI_LINE_HEIGHT - UI_PADDING, "A: Select | B: Cancel",
+    ui_draw_text(UI_PADDING, SCREEN_TOP_HEIGHT - UI_LINE_HEIGHT - UI_PADDING, "A: Select \xC2\xB7 B: Cancel",
                  UI_COLOR_TEXT_DIM);
 }

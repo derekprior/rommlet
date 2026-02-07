@@ -85,6 +85,6 @@ void queue_screen_draw(void) {
 
     listnav_draw_scroll_indicator(&nav);
 
-    ui_draw_text(UI_PADDING, SCREEN_TOP_HEIGHT - UI_LINE_HEIGHT - UI_PADDING, "A: Details | B: Back | L/R: Page",
-                 UI_COLOR_TEXT_DIM);
+    ui_draw_text(UI_PADDING, SCREEN_TOP_HEIGHT - UI_LINE_HEIGHT - UI_PADDING,
+                 "A: Details \xC2\xB7 B: Back \xC2\xB7 L/R: Page", UI_COLOR_TEXT_DIM);
 }

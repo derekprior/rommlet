@@ -255,7 +255,7 @@ void search_form_draw(void) {
     // Help text
     float bottomY = SCREEN_BOTTOM_HEIGHT - UI_LINE_HEIGHT - UI_PADDING;
     if (!searchTerm[0]) {
-        ui_draw_text(UI_PADDING, bottomY, "A: Toggle | B: Back", UI_COLOR_TEXT_DIM);
+        ui_draw_text(UI_PADDING, bottomY, "A: Toggle \xC2\xB7 B: Back", UI_COLOR_TEXT_DIM);
     }
 }
 
@@ -323,6 +323,6 @@ void search_results_draw(void) {
 
     listnav_draw_scroll_indicator(&nav);
 
-    ui_draw_text(UI_PADDING, SCREEN_TOP_HEIGHT - UI_LINE_HEIGHT - UI_PADDING, "A: Details | B: Back | L/R: Page",
-                 UI_COLOR_TEXT_DIM);
+    ui_draw_text(UI_PADDING, SCREEN_TOP_HEIGHT - UI_LINE_HEIGHT - UI_PADDING,
+                 "A: Details \xC2\xB7 B: Back \xC2\xB7 L/R: Page", UI_COLOR_TEXT_DIM);
 }
