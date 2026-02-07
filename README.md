@@ -20,16 +20,10 @@ A Nintendo 3DS homebrew client for [RomM](https://github.com/rommapp/romm). Brow
 
 ## Installation
 
-### Using .3dsx (Homebrew Launcher)
+Download the [latest release](https://github.com/derekprior/rommlet/releases/latest) and unzip it to the `/3ds/` folder on your SD card. From there you have two options:
 
-1. Copy `rommlet.3dsx` to `/3ds/` on your SD card
-2. Launch via Homebrew Launcher
-
-### Using .cia (Installable)
-
-1. Copy `rommlet.cia` to your SD card
-2. Install with FBI or similar
-3. Launch from Home Menu
+- **Homebrew Launcher** — Launch `rommlet.3dsx` directly from the Homebrew Launcher
+- **Home Menu (CIA)** — Install `rommlet.cia` using FBI or a similar title manager, then launch from the Home Menu
 
 ### Enabling Sound
 
