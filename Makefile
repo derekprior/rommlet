@@ -124,6 +124,7 @@ export INCLUDE        := $(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
 export LIBPATHS       := $(foreach dir,$(LIBDIRS),-L$(dir)/lib)
 
 export _3DSXDEPS      := $(if $(NO_SMDH),,$(OUTPUT).smdh)
+export _3DSXFLAGS     := $(if $(NO_SMDH),,--smdh=$(OUTPUT).smdh)
 
 .PHONY: all clean cia 3dsx dist format format-check
 
