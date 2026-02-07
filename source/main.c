@@ -78,7 +78,7 @@ static RomDetail *romDetail = NULL;
 static int lastRomListIndex = -1;                     // Track selection changes in ROM list
 static int lastSearchListIndex = -1;                  // Track selection changes in search results
 static char currentPlatformSlug[CONFIG_MAX_SLUG_LEN]; // For folder mapping
-static AppState folderPickerReturnState;               // Modal return state for folder picker
+static AppState folderPickerReturnState;              // Modal return state for folder picker
 
 // Render target (needed for loading screen)
 static C3D_RenderTarget *topScreen = NULL;

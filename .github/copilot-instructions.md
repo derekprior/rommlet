@@ -14,7 +14,9 @@ make format-check           # Check formatting (used in CI)
 
 CI builds with `make EXTRA_CFLAGS=-Werror` — all warnings are errors. Always build locally before pushing.
 
-There are no tests or linters configured. The build is the only verification.
+Always run `make format` before committing to ensure code passes the CI format check.
+
+There are no tests or linters configured. The build and format check are the only verification.
 
 ## Architecture
 
