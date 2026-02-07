@@ -9,6 +9,7 @@
 #include "sound.h"
 #include <3ds.h>
 #include <math.h>
+#include <stdio.h>
 #include <string.h>
 
 #define SAMPLE_RATE 22050
@@ -52,6 +53,13 @@ static void generate_pop(void) {
 }
 
 void sound_init(void) {
+    // Check for DSP firmware before calling ndspInit — in CIA mode,
+    // ndspInit crashes with a data abort instead of returning an error
+    // when the firmware file is missing.
+    FILE *f = fopen("sdmc:/3ds/dspfirm.cdc", "r");
+    if (!f) return;
+    fclose(f);
+
     if (ndspInit() != 0) return;
 
     clickBuf = (s16 *)linearAlloc(CLICK_SAMPLES * sizeof(s16));
