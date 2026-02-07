@@ -805,9 +805,10 @@ static void draw_top_screen(void) {
         queue_screen_draw();
         break;
     case STATE_SEARCH_FORM:
-        ui_draw_text(UI_PADDING, SCREEN_TOP_HEIGHT / 2 - UI_LINE_HEIGHT, "Enter a search term and tap Search",
-                     UI_COLOR_TEXT_DIM);
-        ui_draw_text(UI_PADDING, SCREEN_TOP_HEIGHT / 2, "to find ROMs across platforms.", UI_COLOR_TEXT_DIM);
+        ui_draw_wrapped_text(
+            UI_PADDING, SCREEN_TOP_HEIGHT / 2 - UI_LINE_HEIGHT, SCREEN_TOP_WIDTH - UI_PADDING * 2,
+            "Enter a search term and tap the Search button to find ROMs across the selected platforms.",
+            UI_COLOR_TEXT_DIM, 0, 0);
         break;
     case STATE_SEARCH_RESULTS:
         search_results_draw();
