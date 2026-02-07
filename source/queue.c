@@ -3,10 +3,12 @@
  */
 
 #include "queue.h"
+#include "config.h"
 #include "log.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 
 #define QUEUE_PATH "sdmc:/3ds/rommlet/queue.txt"
 
@@ -20,6 +22,10 @@ static void queue_save(void) {
         return;
     }
     FILE *f = fopen(QUEUE_PATH, "w");
+    if (!f) {
+        mkdir(CONFIG_DIR, 0755);
+        f = fopen(QUEUE_PATH, "w");
+    }
     if (!f) return;
     for (int i = 0; i < entryCount; i++) {
         fprintf(f, "%d\t%d\t%s\t%s\t%s\n", entries[i].romId, entries[i].platformId, entries[i].platformSlug,

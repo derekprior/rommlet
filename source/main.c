@@ -838,6 +838,7 @@ int main(int argc, char *argv[]) {
     sound_init();
     log_init();
     config_init(&config);
+    mkdir(CONFIG_DIR, 0755);
     api_init();
 
     if (!config_load(&config)) {
