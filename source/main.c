@@ -95,7 +95,8 @@ static void show_loading(const char *message) {
     C3D_FrameEnd(0);
 }
 
-// Download context for progress callback
+// Progress state for download/extraction callbacks.
+// Set progressLabel before calling api_download_rom() or zip_extract().
 static char downloadNameBuf[384];
 static const char *downloadName = NULL;
 static const char *downloadQueueText = NULL;

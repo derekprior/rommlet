@@ -22,7 +22,7 @@ bool zip_is_zip_file(const char *filename) {
 
 // Ensure all directories in a path exist
 static bool ensure_parent_dirs(const char *filePath) {
-    char tmp[512];
+    char tmp[768];
     snprintf(tmp, sizeof(tmp), "%s", filePath);
 
     for (char *p = tmp + 1; *p; p++) {
@@ -87,9 +87,17 @@ bool zip_extract(const char *zipPath, const char *destDir, ExtractProgressCb pro
             break;
         }
 
-        // Build destination path
-        char destPath[512];
-        snprintf(destPath, sizeof(destPath), "%s/%s", destDir, filename);
+        // Build destination path, skipping if too long
+        size_t dirLen = strlen(destDir);
+        size_t nameLen = strlen(filename);
+        char destPath[768];
+        if (dirLen + 1 + nameLen >= sizeof(destPath)) {
+            log_error("Path too long, skipping: %s/%s", destDir, filename);
+            continue;
+        }
+        memcpy(destPath, destDir, dirLen);
+        destPath[dirLen] = '/';
+        memcpy(destPath + dirLen + 1, filename, nameLen + 1);
 
         // Reject path traversal (Zip Slip)
         if (strstr(filename, "..") != NULL) {
@@ -98,7 +106,6 @@ bool zip_extract(const char *zipPath, const char *destDir, ExtractProgressCb pro
         }
 
         // Skip directories (entries ending with /)
-        size_t nameLen = strlen(filename);
         if (nameLen > 0 && filename[nameLen - 1] == '/') {
             mkdir(destPath, 0755);
             continue;
