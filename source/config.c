@@ -23,7 +23,7 @@ static bool mappingsLoaded = false;
 
 void config_init(Config *config) {
     memset(config, 0, sizeof(Config));
-    snprintf(config->serverUrl, CONFIG_MAX_URL_LEN, "http://pinbox.local");
+    config->serverUrl[0] = '\0';
     snprintf(config->romFolder, CONFIG_MAX_PATH_LEN, "sdmc:/roms");
 }
 
