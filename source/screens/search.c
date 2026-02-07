@@ -291,7 +291,9 @@ void search_results_draw(void) {
     ui_draw_header(headerText);
 
     if (!resultList || nav.count == 0) {
-        ui_draw_text(UI_PADDING, SCREEN_TOP_HEIGHT / 2, "No results found.", UI_COLOR_TEXT_DIM);
+        const char *msg = "No matching ROMs found";
+        float msgW = ui_get_text_width(msg);
+        ui_draw_text((SCREEN_TOP_WIDTH - msgW) / 2, SCREEN_TOP_HEIGHT / 2 - UI_LINE_HEIGHT / 2, msg, UI_COLOR_TEXT_DIM);
         ui_draw_text(UI_PADDING, SCREEN_TOP_HEIGHT - UI_LINE_HEIGHT - UI_PADDING, "B: Back to Search",
                      UI_COLOR_TEXT_DIM);
         return;
