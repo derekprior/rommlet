@@ -23,9 +23,6 @@ void platforms_set_data(Platform *platforms, int count) {
 
 PlatformsResult platforms_update(u32 kDown, int *outSelectedIndex) {
     if (!platformList || nav.count == 0) {
-        if (kDown & KEY_X) {
-            return PLATFORMS_REFRESH;
-        }
         return PLATFORMS_NONE;
     }
 
@@ -36,10 +33,6 @@ PlatformsResult platforms_update(u32 kDown, int *outSelectedIndex) {
         return PLATFORMS_SELECTED;
     }
 
-    if (kDown & KEY_X) {
-        return PLATFORMS_REFRESH;
-    }
-
     return PLATFORMS_NONE;
 }
 
@@ -47,8 +40,7 @@ void platforms_draw(void) {
     ui_draw_header("Platforms");
 
     if (!platformList || nav.count == 0) {
-        ui_draw_text(UI_PADDING, SCREEN_TOP_HEIGHT / 2, "No platforms found. Press X to refresh.", UI_COLOR_TEXT_DIM);
-        ui_draw_text(UI_PADDING, SCREEN_TOP_HEIGHT - UI_LINE_HEIGHT - UI_PADDING, "X: Refresh", UI_COLOR_TEXT_DIM);
+        ui_draw_text(UI_PADDING, SCREEN_TOP_HEIGHT / 2, "No platforms found.", UI_COLOR_TEXT_DIM);
         return;
     }
 
@@ -70,6 +62,5 @@ void platforms_draw(void) {
         listnav_draw_scroll_indicator(&nav);
     }
 
-    ui_draw_text(UI_PADDING, SCREEN_TOP_HEIGHT - UI_LINE_HEIGHT - UI_PADDING, "A: Select | X: Refresh",
-                 UI_COLOR_TEXT_DIM);
+    ui_draw_text(UI_PADDING, SCREEN_TOP_HEIGHT - UI_LINE_HEIGHT - UI_PADDING, "A: Select", UI_COLOR_TEXT_DIM);
 }

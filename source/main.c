@@ -569,8 +569,6 @@ static void handle_state_platforms(u32 kDown) {
         } else {
             log_error("Failed to fetch ROMs");
         }
-    } else if (result == PLATFORMS_REFRESH) {
-        fetch_platforms();
     }
 }
 
