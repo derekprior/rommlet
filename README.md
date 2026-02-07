@@ -58,6 +58,10 @@ Once connected, browse platforms and ROMs using the D-Pad and A button. Use the 
 
 Settings are stored at `/3ds/rommlet/config.ini` on your SD card.
 
+### Security
+
+Your RomM username and password are stored in plain text in `config.ini` on your SD card. Authentication uses HTTP Basic Auth, which transmits credentials unencrypted unless your server is available via HTTPS. Use a unique password for your RomM server and rely on other security measures (network isolation, VPN, etc.) if you are concerned about access.
+
 ## Building from Source
 
 ### GitHub Codespaces (Recommended)
