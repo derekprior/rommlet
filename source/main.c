@@ -99,51 +99,30 @@ static void show_loading(const char *message) {
 static char downloadNameBuf[384];
 static const char *downloadName = NULL;
 static const char *downloadQueueText = NULL;
+static const char *progressLabel = "Downloading...";
 
 static void set_download_name(const char *slug, const char *name) {
     snprintf(downloadNameBuf, sizeof(downloadNameBuf), "[%s] %s", slug, name);
     downloadName = downloadNameBuf;
 }
 
-// Download progress callback - renders progress bar each chunk
+// Progress callback shared by download and extraction
 // Returns true to continue, false to cancel
-static bool download_progress(u32 downloaded, u32 total) {
-    float progress = total > 0 ? (float)downloaded / total : -1.0f;
+static bool progress_callback(uint32_t current, uint32_t total) {
+    float progress = total > 0 ? (float)current / total : -1.0f;
 
     char sizeText[64];
     if (total > 0) {
-        snprintf(sizeText, sizeof(sizeText), "%.1f / %.1f MB", downloaded / (1024.0f * 1024.0f),
+        snprintf(sizeText, sizeof(sizeText), "%.1f / %.1f MB", current / (1024.0f * 1024.0f),
                  total / (1024.0f * 1024.0f));
     } else {
-        snprintf(sizeText, sizeof(sizeText), "%.1f MB downloaded", downloaded / (1024.0f * 1024.0f));
+        snprintf(sizeText, sizeof(sizeText), "%.1f MB", current / (1024.0f * 1024.0f));
     }
 
     C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
     C2D_TargetClear(topScreen, UI_COLOR_BG);
     C2D_SceneBegin(topScreen);
-    ui_draw_progress(progress, "Downloading...", sizeText, downloadName, downloadQueueText);
-    bottom_draw();
-    C3D_FrameEnd(0);
-
-    return !bottom_check_cancel();
-}
-
-// Extraction progress callback - renders progress bar each chunk
-static bool extract_progress(uint32_t extracted, uint32_t total) {
-    float progress = total > 0 ? (float)extracted / total : -1.0f;
-
-    char sizeText[64];
-    if (total > 0) {
-        snprintf(sizeText, sizeof(sizeText), "%.1f / %.1f MB", extracted / (1024.0f * 1024.0f),
-                 total / (1024.0f * 1024.0f));
-    } else {
-        snprintf(sizeText, sizeof(sizeText), "%.1f MB extracted", extracted / (1024.0f * 1024.0f));
-    }
-
-    C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
-    C2D_TargetClear(topScreen, UI_COLOR_BG);
-    C2D_SceneBegin(topScreen);
-    ui_draw_progress(progress, "Extracting...", sizeText, downloadName, downloadQueueText);
+    ui_draw_progress(progress, progressLabel, sizeText, downloadName, downloadQueueText);
     bottom_draw();
     C3D_FrameEnd(0);
 
@@ -309,15 +288,18 @@ static void sync_roms_bottom(int index) {
 }
 
 // Extract a zip file after download, showing progress. Returns true on success.
-static bool extract_if_zip(const char *destPath, const char *destDir) {
-    // Get just the filename from the path
-    const char *filename = strrchr(destPath, '/');
-    filename = filename ? filename + 1 : destPath;
+static bool extract_if_zip(const char *destPath) {
+    if (!zip_is_zip_file(destPath)) return true;
 
-    if (!zip_is_zip_file(filename)) return true;
+    // Derive directory from the full path
+    char destDir[CONFIG_MAX_PATH_LEN + CONFIG_MAX_SLUG_LEN + 2];
+    snprintf(destDir, sizeof(destDir), "%s", destPath);
+    char *lastSlash = strrchr(destDir, '/');
+    if (lastSlash) *lastSlash = '\0';
 
     log_info("Extracting zip: %s", destPath);
-    if (zip_extract(destPath, destDir, extract_progress)) {
+    progressLabel = "Extracting...";
+    if (zip_extract(destPath, destDir, progress_callback)) {
         log_info("Extraction complete!");
         return true;
     } else {
@@ -333,12 +315,11 @@ static void download_focused_rom(const Rom *rom, const char *slug, const char *f
     bottom_set_mode(BOTTOM_MODE_DOWNLOADING);
     set_download_name(slug, rom->name);
     downloadQueueText = NULL;
+    progressLabel = "Downloading...";
     log_info("Downloading to: %s", destPath);
-    if (api_download_rom(rom->id, rom->fsName, destPath, download_progress)) {
+    if (api_download_rom(rom->id, rom->fsName, destPath, progress_callback)) {
         log_info("Download complete!");
-        char destDir[CONFIG_MAX_PATH_LEN + CONFIG_MAX_SLUG_LEN + 2];
-        snprintf(destDir, sizeof(destDir), "%s/%s", config.romFolder, folderName);
-        if (!extract_if_zip(destPath, destDir)) {
+        if (!extract_if_zip(destPath)) {
             remove(destPath);
         }
     } else {
@@ -356,10 +337,9 @@ static bool download_queue_entry(QueueEntry *entry) {
     char destPath[CONFIG_MAX_PATH_LEN + CONFIG_MAX_SLUG_LEN + 256 + 3];
     build_rom_path(destPath, sizeof(destPath), folderName, entry->fsName);
     log_info("Downloading '%s' to: %s", entry->name, destPath);
-    if (!api_download_rom(entry->romId, entry->fsName, destPath, download_progress)) return false;
-    char destDir[CONFIG_MAX_PATH_LEN + CONFIG_MAX_SLUG_LEN + 2];
-    snprintf(destDir, sizeof(destDir), "%s/%s", config.romFolder, folderName);
-    if (!extract_if_zip(destPath, destDir)) {
+    progressLabel = "Downloading...";
+    if (!api_download_rom(entry->romId, entry->fsName, destPath, progress_callback)) return false;
+    if (!extract_if_zip(destPath)) {
         remove(destPath);
         return false;
     }
