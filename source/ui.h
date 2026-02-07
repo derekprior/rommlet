@@ -91,6 +91,7 @@ void ui_draw_icon_gear(float x, float y, float size, u32 color);
 void ui_draw_icon_queue(float x, float y, float size, u32 color);
 void ui_draw_icon_search(float x, float y, float size, u32 color);
 void ui_draw_icon_home(float x, float y, float size, u32 color);
+void ui_draw_icon_info(float x, float y, float size, u32 color);
 
 // Draw QR code for sponsor link
 void ui_draw_qr_code(float x, float y, float size);

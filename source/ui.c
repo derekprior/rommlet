@@ -384,6 +384,25 @@ void ui_draw_icon_home(float x, float y, float size, u32 color) {
     C2D_DrawRectSolid(cx - 2 * scale, roofMid + 2 * scale, 0, 4 * scale, 6 * scale, UI_COLOR_HEADER);
 }
 
+void ui_draw_icon_info(float x, float y, float size, u32 color) {
+    float cx = x + size / 2;
+    float cy = y + size / 2;
+    float scale = size / 20.0f;
+    float radius = 9 * scale;
+
+    // Filled circle
+    C2D_DrawCircleSolid(cx, cy, 0, radius, color);
+
+    // Negative-space "i" dot
+    float dotR = 1.5f * scale;
+    C2D_DrawCircleSolid(cx, cy - 4 * scale, 0, dotR, UI_COLOR_HEADER);
+
+    // Negative-space "i" bar
+    float barW = 3 * scale;
+    float barH = 7 * scale;
+    C2D_DrawRectSolid(cx - barW / 2, cy - 1 * scale, 0, barW, barH, UI_COLOR_HEADER);
+}
+
 // ---------------------------------------------------------------------------
 // QR code (https://github.com/sponsors/derekprior)
 // ---------------------------------------------------------------------------
