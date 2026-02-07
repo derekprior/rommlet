@@ -29,7 +29,7 @@ include $(DEVKITARM)/3ds_rules
 export APP_TITLE     := Rommlet
 export APP_AUTHOR    := Derek Prior
 export APP_DESC      := RomM Client for 3DS
-export APP_VERSION   := 0.1.0
+export APP_VERSION   := 1.0.0
 
 # Unique ID for the CIA (must be valid hex number)
 APP_UNIQUE_ID := 0xB0AAE
