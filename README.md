@@ -31,6 +31,19 @@ A Nintendo 3DS homebrew client for [RomM](https://github.com/rommapp/romm). Brow
 2. Install with FBI or similar
 3. Launch from Home Menu
 
+### Enabling Sound
+
+Rommlet plays UI sound effects using the 3DS DSP hardware. This requires the DSP firmware file `dspfirm.cdc` on your SD card. Sound is optional — the app works fine without it.
+
+If you don't already have this file, dump it using the Rosalina menu in Luma3DS:
+
+1. Press **L + D-Pad Down + Select** to open the Rosalina menu
+2. Select **Miscellaneous options...**
+3. Select **Dump DSP firmware**
+4. Press **B** to return, then **B** again to close the menu
+
+This only needs to be done once. The file is saved to `sdmc:/3ds/dspfirm.cdc` and is used by all homebrew that supports audio.
+
 ## Usage
 
 On first launch, you'll be prompted to configure your server connection:
