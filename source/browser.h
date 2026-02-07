@@ -24,9 +24,13 @@ bool browser_update(u32 kDown);
 // Select the currently highlighted folder
 bool browser_select_current(void);
 
+// Prompt user for a new folder name via keyboard
+// Returns true if user confirmed with a non-empty name
+bool browser_prompt_folder_name(char *outName, size_t nameSize);
+
 // Create a new folder in current directory and select it in the list
 // Returns true if folder was created
-bool browser_create_folder(void);
+bool browser_create_folder(const char *name);
 
 // Get the name of the currently highlighted entry
 const char *browser_get_current_name(void);

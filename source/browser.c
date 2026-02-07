@@ -196,33 +196,35 @@ bool browser_select_current(void) {
     return true;
 }
 
-bool browser_create_folder(void) {
-    char newFolderName[MAX_NAME_LEN];
+bool browser_prompt_folder_name(char *outName, size_t nameSize) {
     if (defaultNewFolderName[0]) {
-        snprintf(newFolderName, sizeof(newFolderName), "%s", defaultNewFolderName);
+        snprintf(outName, nameSize, "%s", defaultNewFolderName);
     } else {
-        newFolderName[0] = '\0';
+        outName[0] = '\0';
     }
-    if (ui_show_keyboard("New Folder Name", newFolderName, sizeof(newFolderName), false)) {
-        if (newFolderName[0] != '\0') {
-            char newPath[PATH_BUFFER_LEN];
-            snprintf(newPath, sizeof(newPath), "%s/%s", currentPath, newFolderName);
-            if (mkdir(newPath, 0755) == 0) {
-                load_directory(currentPath);
-                // Find and select the newly created folder
-                for (int i = 0; i < nav.count; i++) {
-                    if (strcmp(entries[i].name, newFolderName) == 0) {
-                        nav.selectedIndex = i;
-                        int vis = nav.visibleItems > 0 ? nav.visibleItems : UI_VISIBLE_ITEMS;
-                        if (nav.selectedIndex >= nav.scrollOffset + vis) {
-                            nav.scrollOffset = nav.selectedIndex - vis + 1;
-                        }
-                        break;
-                    }
+    if (ui_show_keyboard("New Folder Name", outName, nameSize, false)) {
+        return outName[0] != '\0';
+    }
+    return false;
+}
+
+bool browser_create_folder(const char *name) {
+    char newPath[PATH_BUFFER_LEN];
+    snprintf(newPath, sizeof(newPath), "%s/%s", currentPath, name);
+    if (mkdir(newPath, 0755) == 0) {
+        load_directory(currentPath);
+        // Find and select the newly created folder
+        for (int i = 0; i < nav.count; i++) {
+            if (strcmp(entries[i].name, name) == 0) {
+                nav.selectedIndex = i;
+                int vis = nav.visibleItems > 0 ? nav.visibleItems : UI_VISIBLE_ITEMS;
+                if (nav.selectedIndex >= nav.scrollOffset + vis) {
+                    nav.scrollOffset = nav.selectedIndex - vis + 1;
                 }
-                return true;
+                break;
             }
         }
+        return true;
     }
     return false;
 }

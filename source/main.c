@@ -627,9 +627,13 @@ static void handle_state_select_folder(u32 kDown, BottomAction bottomAction) {
     bottom_set_folder_name(browser_get_current_name());
 
     if (bottomAction == BOTTOM_ACTION_CREATE_FOLDER) {
-        if (browser_create_folder()) {
-            browser_select_current();
-            bottomAction = BOTTOM_ACTION_SELECT_FOLDER;
+        char newName[256];
+        if (browser_prompt_folder_name(newName, sizeof(newName))) {
+            show_loading("Selecting folder...");
+            if (browser_create_folder(newName)) {
+                browser_select_current();
+                bottomAction = BOTTOM_ACTION_SELECT_FOLDER;
+            }
         }
     }
 
