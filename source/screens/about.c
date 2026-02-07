@@ -28,4 +28,6 @@ void about_draw(void) {
                          "Rommlet is a free, open source application. "
                          "To say thanks, scan the QR code below to sponsor the project.",
                          UI_COLOR_TEXT, 4, 0);
+
+    ui_draw_text(UI_PADDING, SCREEN_TOP_HEIGHT - UI_LINE_HEIGHT - UI_PADDING, "B: Back", UI_COLOR_TEXT_DIM);
 }

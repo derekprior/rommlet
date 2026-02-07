@@ -82,13 +82,15 @@ typedef enum { UI_BUTTON_PRIMARY, UI_BUTTON_SECONDARY, UI_BUTTON_DANGER } UIButt
 // Draw a styled button with shadow and gradient
 void ui_draw_button(float x, float y, float w, float h, const char *text, bool pressed, UIButtonStyle style);
 
+// Draw a subtle full-width dock button with rounded top corners
+void ui_draw_dock_button(float x, float y, float w, float h, float radius, const char *text, bool pressed);
+
 // Icon drawing functions (designed for 20px, scales to any size)
 void ui_draw_icon_bug(float x, float y, float size, u32 color);
 void ui_draw_icon_gear(float x, float y, float size, u32 color);
 void ui_draw_icon_queue(float x, float y, float size, u32 color);
 void ui_draw_icon_search(float x, float y, float size, u32 color);
 void ui_draw_icon_home(float x, float y, float size, u32 color);
-void ui_draw_icon_info(float x, float y, float size, u32 color);
 
 // Draw QR code for sponsor link
 void ui_draw_qr_code(float x, float y, float size);

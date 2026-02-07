@@ -14,7 +14,7 @@
 #define ICON_SIZE 20
 #define ICON_PADDING 4
 
-// Touch zones - right side: bug, gear, queue, search, info (right to left)
+// Touch zones - right side: bug, gear, queue, search (right to left)
 #define BUG_ICON_X (SCREEN_BOTTOM_WIDTH - ICON_SIZE - ICON_PADDING)
 #define BUG_ICON_Y (ICON_PADDING)
 #define GEAR_ICON_X (SCREEN_BOTTOM_WIDTH - (ICON_SIZE + ICON_PADDING) * 2)
@@ -23,8 +23,6 @@
 #define QUEUE_ICON_Y (ICON_PADDING)
 #define SEARCH_ICON_X (SCREEN_BOTTOM_WIDTH - (ICON_SIZE + ICON_PADDING) * 4)
 #define SEARCH_ICON_Y (ICON_PADDING)
-#define INFO_ICON_X (SCREEN_BOTTOM_WIDTH - (ICON_SIZE + ICON_PADDING) * 5)
-#define INFO_ICON_Y (ICON_PADDING)
 // Left side: home icon
 #define HOME_ICON_X (ICON_PADDING)
 #define HOME_ICON_Y (ICON_PADDING)
@@ -48,6 +46,13 @@ static char folderName[256] = "";
 static bool selectFolderPressed = false;
 static bool createFolderPressed = false;
 static bool showCancelButton = false;
+static bool aboutButtonPressed = false;
+static bool backButtonPressed = false;
+
+// Dock button layout (full-width button at screen bottom)
+#define DOCK_BTN_HEIGHT 34
+#define DOCK_BTN_Y (SCREEN_BOTTOM_HEIGHT - DOCK_BTN_HEIGHT)
+#define DOCK_BTN_RADIUS 12
 
 // Render target for bottom screen
 static C3D_RenderTarget *bottomTarget = NULL;
@@ -123,6 +128,8 @@ void bottom_set_mode(BottomMode mode) {
     searchButtonPressed = false;
     selectFolderPressed = false;
     createFolderPressed = false;
+    aboutButtonPressed = false;
+    backButtonPressed = false;
     if (mode != BOTTOM_MODE_SETTINGS) {
         showCancelButton = false;
     }
@@ -224,6 +231,16 @@ BottomAction bottom_update(void) {
             {BUTTON_X, CANCEL_BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT, &createFolderPressed, BOTTOM_ACTION_CREATE_FOLDER},
         };
         action = handle_touch_buttons(buttons, 2, kDown, kHeld, kUp);
+    } else if (currentMode == BOTTOM_MODE_DEFAULT) {
+        TouchButton buttons[] = {
+            {0, DOCK_BTN_Y, SCREEN_BOTTOM_WIDTH, DOCK_BTN_HEIGHT, &aboutButtonPressed, BOTTOM_ACTION_OPEN_ABOUT},
+        };
+        action = handle_touch_buttons(buttons, 1, kDown, kHeld, kUp);
+    } else if (currentMode == BOTTOM_MODE_ABOUT) {
+        TouchButton buttons[] = {
+            {0, DOCK_BTN_Y, SCREEN_BOTTOM_WIDTH, DOCK_BTN_HEIGHT, &backButtonPressed, BOTTOM_ACTION_ABOUT_BACK},
+        };
+        action = handle_touch_buttons(buttons, 1, kDown, kHeld, kUp);
     }
 
     // Toolbar touch handling
@@ -251,11 +268,6 @@ BottomAction bottom_update(void) {
             ui_touch_in_rect(touch.px, touch.py, SEARCH_ICON_X, SEARCH_ICON_Y, ICON_SIZE, ICON_SIZE)) {
             return BOTTOM_ACTION_OPEN_SEARCH;
         }
-        // Info icon
-        if (currentMode != BOTTOM_MODE_ABOUT &&
-            ui_touch_in_rect(touch.px, touch.py, INFO_ICON_X, INFO_ICON_Y, ICON_SIZE, ICON_SIZE)) {
-            return BOTTOM_ACTION_OPEN_ABOUT;
-        }
         // Home icon
         if (ui_touch_in_rect(touch.px, touch.py, HOME_ICON_X, HOME_ICON_Y, ICON_SIZE, ICON_SIZE)) {
             return BOTTOM_ACTION_GO_HOME;
@@ -268,7 +280,6 @@ BottomAction bottom_update(void) {
 static void draw_toolbar(void) {
     ui_draw_rect(0, 0, SCREEN_BOTTOM_WIDTH, TOOLBAR_HEIGHT, UI_COLOR_HEADER);
     ui_draw_icon_home(HOME_ICON_X, HOME_ICON_Y, ICON_SIZE, UI_COLOR_TEXT);
-    ui_draw_icon_info(INFO_ICON_X, INFO_ICON_Y, ICON_SIZE, UI_COLOR_TEXT);
     ui_draw_icon_search(SEARCH_ICON_X, SEARCH_ICON_Y, ICON_SIZE, UI_COLOR_TEXT);
     ui_draw_icon_queue(QUEUE_ICON_X, QUEUE_ICON_Y, ICON_SIZE, UI_COLOR_TEXT);
     ui_draw_icon_gear(GEAR_ICON_X, GEAR_ICON_Y, ICON_SIZE, UI_COLOR_TEXT);
@@ -377,10 +388,15 @@ void bottom_draw(void) {
 
         float qrSize = 150.0f;
         float qrX = (SCREEN_BOTTOM_WIDTH - qrSize) / 2;
-        float qrY = TOOLBAR_HEIGHT + (SCREEN_BOTTOM_HEIGHT - TOOLBAR_HEIGHT - qrSize) / 2;
+        float qrY = TOOLBAR_HEIGHT + (DOCK_BTN_Y - TOOLBAR_HEIGHT - qrSize) / 2;
         ui_draw_qr_code(qrX, qrY, qrSize);
+
+        ui_draw_dock_button(0, DOCK_BTN_Y, SCREEN_BOTTOM_WIDTH, DOCK_BTN_HEIGHT, DOCK_BTN_RADIUS, "Back",
+                            backButtonPressed);
     } else {
         draw_toolbar();
+        ui_draw_dock_button(0, DOCK_BTN_Y, SCREEN_BOTTOM_WIDTH, DOCK_BTN_HEIGHT, DOCK_BTN_RADIUS, "About",
+                            aboutButtonPressed);
     }
 }
 

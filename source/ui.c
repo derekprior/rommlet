@@ -250,6 +250,30 @@ void ui_draw_button(float x, float y, float w, float h, const char *text, bool p
 }
 
 // ---------------------------------------------------------------------------
+// Dock button (full-width, rounded top corners, subtle style)
+// ---------------------------------------------------------------------------
+
+#define DOCK_BTN_COLOR C2D_Color32(0x2d, 0x2d, 0x44, 0xFF)
+#define DOCK_BTN_PRESS C2D_Color32(0x22, 0x22, 0x36, 0xFF)
+
+void ui_draw_dock_button(float x, float y, float w, float h, float radius, const char *text, bool pressed) {
+    u32 color = pressed ? DOCK_BTN_PRESS : DOCK_BTN_COLOR;
+
+    // Rounded top corners
+    C2D_DrawCircleSolid(x + radius, y + radius, 0, radius, color);
+    C2D_DrawCircleSolid(x + w - radius, y + radius, 0, radius, color);
+    // Fill between the two corner circles
+    C2D_DrawRectSolid(x + radius, y, 0, w - radius * 2, radius, color);
+    // Main body below the rounded portion
+    C2D_DrawRectSolid(x, y + radius, 0, w, h - radius, color);
+
+    float textWidth = ui_get_text_width(text);
+    float textX = x + (w - textWidth) / 2;
+    float textY = y + (h - 16) / 2;
+    ui_draw_text(textX, textY, text, UI_COLOR_TEXT_DIM);
+}
+
+// ---------------------------------------------------------------------------
 // Icons (designed for 20px, scale to any size)
 // ---------------------------------------------------------------------------
 
@@ -358,22 +382,6 @@ void ui_draw_icon_home(float x, float y, float size, u32 color) {
 
     C2D_DrawRectSolid(cx - halfW + 2 * scale, roofMid, 0, (halfW - 2 * scale) * 2, 8 * scale, color);
     C2D_DrawRectSolid(cx - 2 * scale, roofMid + 2 * scale, 0, 4 * scale, 6 * scale, UI_COLOR_HEADER);
-}
-
-void ui_draw_icon_info(float x, float y, float size, u32 color) {
-    float cx = x + size / 2;
-    float cy = y + size / 2;
-    float r = size / 2 - 1;
-
-    for (int a = 0; a < 360; a += 10) {
-        float rad = a * 3.14159f / 180.0f;
-        float px = cx + r * cosf(rad);
-        float py = cy + r * sinf(rad);
-        C2D_DrawRectSolid(px - 0.5f, py - 0.5f, 0, 1.5f, 1.5f, color);
-    }
-
-    C2D_DrawRectSolid(cx - 1, cy - r * 0.55f, 0, 2, 2, color);
-    C2D_DrawRectSolid(cx - 1, cy - r * 0.15f, 0, 2, r * 0.7f, color);
 }
 
 // ---------------------------------------------------------------------------

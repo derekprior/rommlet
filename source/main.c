@@ -403,6 +403,11 @@ static void handle_bottom_action(BottomAction action) {
         currentState = STATE_ABOUT;
         return;
     }
+    if (action == BOTTOM_ACTION_ABOUT_BACK && currentState == STATE_ABOUT) {
+        bottom_set_mode(BOTTOM_MODE_DEFAULT);
+        currentState = nav_pop();
+        return;
+    }
 
     // ROM actions (download/queue) — valid in any rom-focused state
     bool romFocused =
