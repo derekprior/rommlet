@@ -23,7 +23,7 @@ static Rom *resultList = NULL;
 static ListNav nav;
 
 // Platform list layout
-#define TOOLBAR_HEIGHT 24
+#define TOOLBAR_HEIGHT 36
 #define FORM_FIELD_Y (TOOLBAR_HEIGHT + UI_PADDING)
 #define FORM_FIELD_HEIGHT 22
 #define PLATFORM_LIST_Y (FORM_FIELD_Y + FORM_FIELD_HEIGHT + UI_PADDING + UI_LINE_HEIGHT + UI_PADDING)

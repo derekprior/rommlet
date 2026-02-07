@@ -10,9 +10,9 @@
 #include <string.h>
 
 // Layout constants for bottom screen
-#define TOOLBAR_HEIGHT 24
-#define ICON_SIZE 20
-#define ICON_PADDING 4
+#define TOOLBAR_HEIGHT 36
+#define ICON_SIZE 30
+#define ICON_PADDING 3
 
 // Touch zones - right side: bug, gear, queue, search (right to left)
 #define BUG_ICON_X (SCREEN_BOTTOM_WIDTH - ICON_SIZE - ICON_PADDING)
