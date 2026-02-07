@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <dirent.h>
 #include <3ds.h>
 #include <citro2d.h>
 #include "config.h"
@@ -27,6 +28,7 @@
 #include "screens/search.h"
 #include "screens/about.h"
 #include "debuglog.h"
+#include "zip.h"
 
 // App states
 typedef enum {
@@ -119,7 +121,29 @@ static bool download_progress(u32 downloaded, u32 total) {
     C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
     C2D_TargetClear(topScreen, UI_COLOR_BG);
     C2D_SceneBegin(topScreen);
-    ui_draw_download_progress(progress, sizeText, downloadName, downloadQueueText);
+    ui_draw_progress(progress, "Downloading...", sizeText, downloadName, downloadQueueText);
+    bottom_draw();
+    C3D_FrameEnd(0);
+
+    return !bottom_check_cancel();
+}
+
+// Extraction progress callback - renders progress bar each chunk
+static bool extract_progress(uint32_t extracted, uint32_t total) {
+    float progress = total > 0 ? (float)extracted / total : -1.0f;
+
+    char sizeText[64];
+    if (total > 0) {
+        snprintf(sizeText, sizeof(sizeText), "%.1f / %.1f MB", extracted / (1024.0f * 1024.0f),
+                 total / (1024.0f * 1024.0f));
+    } else {
+        snprintf(sizeText, sizeof(sizeText), "%.1f MB extracted", extracted / (1024.0f * 1024.0f));
+    }
+
+    C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
+    C2D_TargetClear(topScreen, UI_COLOR_BG);
+    C2D_SceneBegin(topScreen);
+    ui_draw_progress(progress, "Extracting...", sizeText, downloadName, downloadQueueText);
     bottom_draw();
     C3D_FrameEnd(0);
 
@@ -148,14 +172,48 @@ static void build_rom_path(char *dest, size_t destSize, const char *folderName, 
     snprintf(dest, destSize, "%s/%s/%s", config.romFolder, folderName, fsName);
 }
 
-// Check if a ROM file exists on disk by platform slug and filename
+// Check if a ROM file exists on disk by platform slug and filename.
+// For zip files, checks if any extracted file with the same stem exists.
 static bool check_file_exists(const char *platformSlug, const char *fileName) {
     const char *folderName = config_get_platform_folder(platformSlug);
     if (!folderName || !folderName[0]) return false;
     char path[CONFIG_MAX_PATH_LEN + CONFIG_MAX_SLUG_LEN + 256 + 3];
     build_rom_path(path, sizeof(path), folderName, fileName);
+
+    // Exact match first
     struct stat st;
-    return (stat(path, &st) == 0 && S_ISREG(st.st_mode));
+    if (stat(path, &st) == 0 && S_ISREG(st.st_mode)) return true;
+
+    // For zip files, check for extracted files matching the stem
+    if (!zip_is_zip_file(fileName)) return false;
+
+    // Get the stem (filename without .zip extension)
+    char stem[256];
+    snprintf(stem, sizeof(stem), "%s", fileName);
+    char *dot = strrchr(stem, '.');
+    if (dot) *dot = '\0';
+    size_t stemLen = strlen(stem);
+
+    // Scan the directory for files starting with the stem
+    char dirPath[CONFIG_MAX_PATH_LEN + CONFIG_MAX_SLUG_LEN + 2];
+    snprintf(dirPath, sizeof(dirPath), "%s/%s", config.romFolder, folderName);
+    DIR *dir = opendir(dirPath);
+    if (!dir) return false;
+
+    struct dirent *entry;
+    bool found = false;
+    while ((entry = readdir(dir)) != NULL) {
+        if (strncmp(entry->d_name, stem, stemLen) == 0 && entry->d_name[stemLen] == '.') {
+            char fullPath[CONFIG_MAX_PATH_LEN + CONFIG_MAX_SLUG_LEN + 256 + 3];
+            snprintf(fullPath, sizeof(fullPath), "%s/%s", dirPath, entry->d_name);
+            if (stat(fullPath, &st) == 0 && S_ISREG(st.st_mode)) {
+                found = true;
+                break;
+            }
+        }
+    }
+    closedir(dir);
+    return found;
 }
 
 // Check if a platform folder is configured and valid on disk
@@ -250,6 +308,24 @@ static void sync_roms_bottom(int index) {
     lastRomListIndex = index;
 }
 
+// Extract a zip file after download, showing progress. Returns true on success.
+static bool extract_if_zip(const char *destPath, const char *destDir) {
+    // Get just the filename from the path
+    const char *filename = strrchr(destPath, '/');
+    filename = filename ? filename + 1 : destPath;
+
+    if (!zip_is_zip_file(filename)) return true;
+
+    log_info("Extracting zip: %s", destPath);
+    if (zip_extract(destPath, destDir, extract_progress)) {
+        log_info("Extraction complete!");
+        return true;
+    } else {
+        log_error("Extraction failed!");
+        return false;
+    }
+}
+
 // Download the currently focused ROM to the given platform folder
 static void download_focused_rom(const Rom *rom, const char *slug, const char *folderName) {
     char destPath[CONFIG_MAX_PATH_LEN + CONFIG_MAX_SLUG_LEN + 256 + 3];
@@ -260,6 +336,9 @@ static void download_focused_rom(const Rom *rom, const char *slug, const char *f
     log_info("Downloading to: %s", destPath);
     if (api_download_rom(rom->id, rom->fsName, destPath, download_progress)) {
         log_info("Download complete!");
+        char destDir[CONFIG_MAX_PATH_LEN + CONFIG_MAX_SLUG_LEN + 2];
+        snprintf(destDir, sizeof(destDir), "%s/%s", config.romFolder, folderName);
+        extract_if_zip(destPath, destDir);
     } else {
         log_error("Download failed!");
     }
@@ -275,7 +354,10 @@ static bool download_queue_entry(QueueEntry *entry) {
     char destPath[CONFIG_MAX_PATH_LEN + CONFIG_MAX_SLUG_LEN + 256 + 3];
     build_rom_path(destPath, sizeof(destPath), folderName, entry->fsName);
     log_info("Downloading '%s' to: %s", entry->name, destPath);
-    return api_download_rom(entry->romId, entry->fsName, destPath, download_progress);
+    if (!api_download_rom(entry->romId, entry->fsName, destPath, download_progress)) return false;
+    char destDir[CONFIG_MAX_PATH_LEN + CONFIG_MAX_SLUG_LEN + 2];
+    snprintf(destDir, sizeof(destDir), "%s/%s", config.romFolder, folderName);
+    return extract_if_zip(destPath, destDir);
 }
 
 // Fetch and display ROM detail, updating all navigation state
