@@ -12,7 +12,7 @@
 #include <string.h>
 
 #define SAMPLE_RATE 22050
-#define CLICK_SAMPLES 1102 // ~50ms
+#define CLICK_SAMPLES 1764 // ~80ms
 #define POP_SAMPLES 1764   // ~80ms
 #define AMPLITUDE 0.3f
 
@@ -26,11 +26,14 @@ static ndspWaveBuf clickWaveBuf;
 static ndspWaveBuf popWaveBuf;
 
 static void generate_click(void) {
+    float phase = 0.0f;
     for (int i = 0; i < CLICK_SAMPLES; i++) {
-        float t = (float)i / SAMPLE_RATE;
-        float env = 1.0f - (float)i / CLICK_SAMPLES;
+        float progress = (float)i / CLICK_SAMPLES;
+        float env = 1.0f - progress;
         env *= env;
-        float wave = (fmodf(t * 800.0f, 1.0f) < 0.5f) ? 1.0f : -1.0f;
+        float freq = 300.0f + 500.0f * progress;
+        phase += freq / SAMPLE_RATE;
+        float wave = sinf(2.0f * M_PI * phase);
         clickBuf[i] = (s16)(wave * env * AMPLITUDE * 32767);
     }
 }
