@@ -253,26 +253,6 @@ void ui_draw_button(float x, float y, float w, float h, const char *text, bool p
 // Dock button (full-width, rounded top corners, subtle style)
 // ---------------------------------------------------------------------------
 
-#define DOCK_BTN_COLOR C2D_Color32(0x2d, 0x2d, 0x44, 0xFF)
-#define DOCK_BTN_PRESS C2D_Color32(0x22, 0x22, 0x36, 0xFF)
-
-void ui_draw_dock_button(float x, float y, float w, float h, float radius, const char *text, bool pressed) {
-    u32 color = pressed ? DOCK_BTN_PRESS : DOCK_BTN_COLOR;
-
-    // Rounded top corners
-    C2D_DrawCircleSolid(x + radius, y + radius, 0, radius, color);
-    C2D_DrawCircleSolid(x + w - radius, y + radius, 0, radius, color);
-    // Fill between the two corner circles
-    C2D_DrawRectSolid(x + radius, y, 0, w - radius * 2, radius, color);
-    // Main body below the rounded portion
-    C2D_DrawRectSolid(x, y + radius, 0, w, h - radius, color);
-
-    float textWidth = ui_get_text_width(text);
-    float textX = x + (w - textWidth) / 2;
-    float textY = y + (h - 16) / 2;
-    ui_draw_text(textX, textY, text, UI_COLOR_TEXT_DIM);
-}
-
 // ---------------------------------------------------------------------------
 // Icons (designed for 20px, scale to any size)
 // ---------------------------------------------------------------------------
