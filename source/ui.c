@@ -76,7 +76,8 @@ void ui_draw_loading(const char *message) {
     ui_draw_text(x, y, message, UI_COLOR_TEXT);
 }
 
-void ui_draw_download_progress(float progress, const char *sizeText, const char *name, const char *queueText) {
+void ui_draw_progress(float progress, const char *label, const char *sizeText, const char *name,
+                      const char *queueText) {
     ui_draw_rect(0, 0, SCREEN_TOP_WIDTH, SCREEN_TOP_HEIGHT, C2D_Color32(0x1a, 0x1a, 0x2e, 0xE0));
 
     float centerY = SCREEN_TOP_HEIGHT / 2;
@@ -88,8 +89,7 @@ void ui_draw_download_progress(float progress, const char *sizeText, const char 
                      UI_COLOR_TEXT);
     }
 
-    // "Downloading..." label
-    const char *label = "Downloading...";
+    // Action label
     float labelWidth = ui_get_text_width(label);
     ui_draw_text((SCREEN_TOP_WIDTH - labelWidth) / 2, centerY - UI_LINE_HEIGHT - UI_PADDING, label, UI_COLOR_TEXT_DIM);
 

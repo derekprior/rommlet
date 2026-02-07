@@ -64,10 +64,11 @@ float ui_get_text_width_scaled(const char *text, float scale);
 // Draw a centered loading message on top screen
 void ui_draw_loading(const char *message);
 
-// Draw download progress on top screen (progress 0.0 to 1.0, negative if unknown)
+// Draw progress bar on top screen (progress 0.0 to 1.0, negative if unknown)
+// label: action label (e.g., "Downloading...", "Extracting...")
 // name: ROM name to display above progress bar
 // queueText: optional queue context (e.g., "ROM 1 of 3 in your queue"), NULL if not queued
-void ui_draw_download_progress(float progress, const char *sizeText, const char *name, const char *queueText);
+void ui_draw_progress(float progress, const char *label, const char *sizeText, const char *name, const char *queueText);
 
 // Show software keyboard and get input
 // Returns true if user confirmed, false if cancelled
