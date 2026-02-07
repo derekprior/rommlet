@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <time.h>
 #include <3ds.h>
 
 #define MAX_URL_LEN 1024
@@ -394,14 +395,16 @@ RomDetail *api_get_rom_detail(int romId) {
     cJSON *fsName = cJSON_GetObjectItem(json, "fs_name");
     cJSON *summary = cJSON_GetObjectItem(json, "summary");
     cJSON *md5Hash = cJSON_GetObjectItem(json, "md5_hash");
-    cJSON *firstReleaseDate = cJSON_GetObjectItem(json, "first_release_date");
 
-    // Platform name from nested platform object
-    cJSON *platform = cJSON_GetObjectItem(json, "platform");
-    cJSON *platformName = platform ? cJSON_GetObjectItem(platform, "display_name") : NULL;
-    if (!platformName && platform) {
-        platformName = cJSON_GetObjectItem(platform, "name");
+    // Platform name is a flat field, not nested
+    cJSON *platformName = cJSON_GetObjectItem(json, "platform_display_name");
+    if (!platformName || !cJSON_IsString(platformName) || !platformName->valuestring[0]) {
+        platformName = cJSON_GetObjectItem(json, "platform_slug");
     }
+
+    // Release date is inside the metadatum object (epoch seconds)
+    cJSON *metadatum = cJSON_GetObjectItem(json, "metadatum");
+    cJSON *firstReleaseDate = metadatum ? cJSON_GetObjectItem(metadatum, "first_release_date") : NULL;
 
     if (cJSON_IsNumber(id)) detail->id = id->valueint;
     if (cJSON_IsNumber(platformId)) detail->platformId = platformId->valueint;
@@ -411,8 +414,11 @@ RomDetail *api_get_rom_detail(int romId) {
     if (cJSON_IsString(md5Hash)) snprintf(detail->md5Hash, sizeof(detail->md5Hash), "%s", md5Hash->valuestring);
     if (cJSON_IsString(platformName))
         snprintf(detail->platformName, sizeof(detail->platformName), "%s", platformName->valuestring);
-    if (cJSON_IsString(firstReleaseDate))
-        snprintf(detail->firstReleaseDate, sizeof(detail->firstReleaseDate), "%s", firstReleaseDate->valuestring);
+    if (cJSON_IsNumber(firstReleaseDate)) {
+        time_t epoch = (time_t)(firstReleaseDate->valuedouble / 1000.0);
+        struct tm *tm = gmtime(&epoch);
+        if (tm) strftime(detail->firstReleaseDate, sizeof(detail->firstReleaseDate), "%B %d, %Y", tm);
+    }
 
     cJSON_Delete(json);
     return detail;
