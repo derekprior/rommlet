@@ -16,6 +16,7 @@
 #include "log.h"
 #include "ui.h"
 #include "browser.h"
+#include "sound.h"
 #include "screens/settings.h"
 #include "screens/platforms.h"
 #include "screens/roms.h"
@@ -339,6 +340,7 @@ static void handle_bottom_action(BottomAction action) {
 
     // Settings actions
     if (action == BOTTOM_ACTION_SAVE_SETTINGS && currentState == STATE_SETTINGS) {
+        sound_play_click();
         config_save(&config);
         api_set_auth(config.username, config.password);
         api_set_base_url(config.serverUrl);
@@ -349,6 +351,7 @@ static void handle_bottom_action(BottomAction action) {
         return;
     }
     if (action == BOTTOM_ACTION_CANCEL_SETTINGS && currentState == STATE_SETTINGS) {
+        sound_play_pop();
         bottom_set_mode(BOTTOM_MODE_DEFAULT);
         currentState = nav_pop();
         return;
@@ -356,12 +359,14 @@ static void handle_bottom_action(BottomAction action) {
 
     // Toolbar navigation
     if (action == BOTTOM_ACTION_OPEN_SETTINGS && currentState != STATE_SETTINGS) {
+        sound_play_click();
         nav_push(currentState);
         bottom_set_settings_mode(config_is_valid(&config));
         currentState = STATE_SETTINGS;
         return;
     }
     if (action == BOTTOM_ACTION_GO_HOME && currentState != STATE_PLATFORMS) {
+        sound_play_pop();
         bottom_set_mode(BOTTOM_MODE_DEFAULT);
         lastRomListIndex = -1;
         lastSearchListIndex = -1;
@@ -371,6 +376,7 @@ static void handle_bottom_action(BottomAction action) {
         return;
     }
     if (action == BOTTOM_ACTION_OPEN_QUEUE && currentState != STATE_QUEUE) {
+        sound_play_click();
         nav_push(currentState);
         queue_clear_failed();
         queue_screen_init();
@@ -380,6 +386,7 @@ static void handle_bottom_action(BottomAction action) {
         return;
     }
     if (action == BOTTOM_ACTION_OPEN_SEARCH) {
+        sound_play_click();
         if (currentState == STATE_SEARCH_RESULTS) {
             nav_pop(); // discard SearchForm entry; we're returning to it
         } else if (currentState != STATE_SEARCH_FORM) {
@@ -398,12 +405,14 @@ static void handle_bottom_action(BottomAction action) {
         return;
     }
     if (action == BOTTOM_ACTION_OPEN_ABOUT && currentState != STATE_ABOUT) {
+        sound_play_click();
         nav_push(currentState);
         bottom_set_mode(BOTTOM_MODE_ABOUT);
         currentState = STATE_ABOUT;
         return;
     }
     if (action == BOTTOM_ACTION_ABOUT_BACK && currentState == STATE_ABOUT) {
+        sound_play_pop();
         bottom_set_mode(BOTTOM_MODE_DEFAULT);
         currentState = nav_pop();
         return;
@@ -414,6 +423,7 @@ static void handle_bottom_action(BottomAction action) {
         (currentState == STATE_ROM_DETAIL || currentState == STATE_ROMS || currentState == STATE_SEARCH_RESULTS);
 
     if (action == BOTTOM_ACTION_DOWNLOAD_ROM && romFocused) {
+        sound_play_click();
         const char *slug;
         Rom rom;
         if (get_focused_rom(&rom, &slug)) {
@@ -431,6 +441,7 @@ static void handle_bottom_action(BottomAction action) {
         return;
     }
     if (action == BOTTOM_ACTION_QUEUE_ROM && romFocused) {
+        sound_play_click();
         const char *slug;
         Rom rom;
         if (get_focused_rom(&rom, &slug)) {
@@ -464,12 +475,14 @@ static void handle_bottom_action(BottomAction action) {
         return;
     }
     if (action == BOTTOM_ACTION_SEARCH_EXECUTE && currentState == STATE_SEARCH_FORM) {
+        sound_play_click();
         execute_search();
         return;
     }
 
     // Queue management actions
     if (action == BOTTOM_ACTION_START_DOWNLOADS && currentState == STATE_QUEUE) {
+        sound_play_click();
         int count = queue_count();
         if (count > 0) {
             bottom_set_mode(BOTTOM_MODE_DOWNLOADING);
@@ -506,6 +519,7 @@ static void handle_bottom_action(BottomAction action) {
         return;
     }
     if (action == BOTTOM_ACTION_CLEAR_QUEUE && currentState == STATE_QUEUE) {
+        sound_play_click();
         if (queueConfirmShown) {
             queueConfirmShown = false;
             queue_clear();
@@ -520,6 +534,7 @@ static void handle_bottom_action(BottomAction action) {
         return;
     }
     if (action == BOTTOM_ACTION_CANCEL_CLEAR && currentState == STATE_QUEUE) {
+        sound_play_pop();
         queueConfirmShown = false;
         bottom_set_mode(BOTTOM_MODE_QUEUE);
         return;
@@ -545,6 +560,7 @@ static void handle_state_settings(u32 kDown) {
     SettingsResult result = settings_update(kDown);
     if (result == SETTINGS_CANCELLED) {
         if (config_is_valid(&config)) {
+            sound_play_pop();
             bottom_set_mode(BOTTOM_MODE_DEFAULT);
             currentState = nav_pop();
         } else {
@@ -556,6 +572,7 @@ static void handle_state_settings(u32 kDown) {
 static void handle_state_platforms(u32 kDown) {
     PlatformsResult result = platforms_update(kDown, &selectedPlatformIndex);
     if (result == PLATFORMS_SELECTED && platforms && selectedPlatformIndex < platformCount) {
+        sound_play_click();
         show_loading("Fetching ROMs...");
         log_info("Fetching ROMs for %s...", platforms[selectedPlatformIndex].displayName);
         roms_clear();
@@ -586,10 +603,12 @@ static void handle_state_roms(u32 kDown) {
     }
 
     if (result == ROMS_BACK) {
+        sound_play_pop();
         bottom_set_mode(BOTTOM_MODE_DEFAULT);
         lastRomListIndex = -1;
         currentState = nav_pop();
     } else if (result == ROMS_SELECTED) {
+        sound_play_click();
         int romId = roms_get_id_at(roms_get_selected_index());
         if (romId >= 0) {
             open_rom_detail(romId, platforms[selectedPlatformIndex].slug);
@@ -610,6 +629,7 @@ static void handle_state_roms(u32 kDown) {
 static void handle_state_rom_detail(u32 kDown) {
     RomDetailResult result = romdetail_update(kDown);
     if (result == ROMDETAIL_BACK) {
+        sound_play_pop();
         AppState returnState = nav_pop();
         if (returnState == STATE_QUEUE) {
             queue_screen_init();
@@ -629,6 +649,7 @@ static void handle_state_select_folder(u32 kDown, BottomAction bottomAction) {
     if (bottomAction == BOTTOM_ACTION_CREATE_FOLDER) {
         char newName[256];
         if (browser_prompt_folder_name(newName, sizeof(newName))) {
+            sound_play_click();
             show_loading("Selecting folder...");
             if (browser_create_folder(newName)) {
                 browser_select_current();
@@ -638,6 +659,7 @@ static void handle_state_select_folder(u32 kDown, BottomAction bottomAction) {
     }
 
     if (bottomAction == BOTTOM_ACTION_SELECT_FOLDER) {
+        sound_play_click();
         if (browser_select_current()) {
             const char *folderName = browser_get_selected_folder_name();
             config_set_platform_folder(&config, currentPlatformSlug, folderName);
@@ -669,6 +691,7 @@ static void handle_state_select_folder(u32 kDown, BottomAction bottomAction) {
     }
 
     if (browser_was_cancelled()) {
+        sound_play_pop();
         browser_exit();
         queueAddPending = false;
         sync_bottom_after_action(nav_pop());
@@ -678,9 +701,11 @@ static void handle_state_select_folder(u32 kDown, BottomAction bottomAction) {
 static void handle_state_queue(u32 kDown) {
     QueueResult qResult = queue_screen_update(kDown);
     if (qResult == QUEUE_BACK) {
+        sound_play_pop();
         bottom_set_mode(BOTTOM_MODE_DEFAULT);
         currentState = nav_pop();
     } else if (qResult == QUEUE_SELECTED) {
+        sound_play_click();
         QueueEntry *entry = queue_get(queue_screen_get_selected_index());
         if (entry) {
             open_rom_detail(entry->romId, entry->platformSlug);
@@ -691,6 +716,7 @@ static void handle_state_queue(u32 kDown) {
 static void handle_state_search_form(u32 kDown) {
     SearchFormResult sfResult = search_form_update(kDown);
     if (sfResult == SEARCH_FORM_BACK) {
+        sound_play_pop();
         bottom_set_mode(BOTTOM_MODE_DEFAULT);
         currentState = nav_pop();
     } else if (sfResult == SEARCH_FORM_EXECUTE) {
@@ -702,6 +728,7 @@ static void handle_state_search_results(u32 kDown) {
     SearchResultsResult srResult = search_results_update(kDown);
 
     if (srResult == SEARCH_RESULTS_BACK) {
+        sound_play_pop();
         bottom_set_mode(BOTTOM_MODE_SEARCH_FORM);
         currentState = nav_pop();
         return;
@@ -719,6 +746,7 @@ static void handle_state_search_results(u32 kDown) {
     }
 
     if (srResult == SEARCH_RESULTS_SELECTED) {
+        sound_play_click();
         int romId = search_get_result_id_at(curSearchIdx);
         if (romId >= 0) {
             const Rom *selRom = search_get_result_at(curSearchIdx);
@@ -742,6 +770,7 @@ static void handle_state_search_results(u32 kDown) {
 static void handle_state_about(u32 kDown) {
     AboutResult result = about_update(kDown);
     if (result == ABOUT_BACK) {
+        sound_play_pop();
         bottom_set_mode(BOTTOM_MODE_DEFAULT);
         currentState = nav_pop();
     }
@@ -804,6 +833,7 @@ int main(int argc, char *argv[]) {
     httpcInit(0);
 
     ui_init();
+    sound_init();
     log_init();
     config_init(&config);
     api_init();
@@ -882,6 +912,7 @@ int main(int argc, char *argv[]) {
     if (romDetail) api_free_rom_detail(romDetail);
 
     bottom_exit();
+    sound_exit();
     ui_exit();
     api_exit();
 
