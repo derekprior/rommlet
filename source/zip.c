@@ -91,6 +91,12 @@ bool zip_extract(const char *zipPath, const char *destDir, ExtractProgressCb pro
         char destPath[512];
         snprintf(destPath, sizeof(destPath), "%s/%s", destDir, filename);
 
+        // Reject path traversal (Zip Slip)
+        if (strstr(filename, "..") != NULL) {
+            log_error("Zip entry contains path traversal, skipping: %s", filename);
+            continue;
+        }
+
         // Skip directories (entries ending with /)
         size_t nameLen = strlen(filename);
         if (nameLen > 0 && filename[nameLen - 1] == '/') {
@@ -135,8 +141,14 @@ bool zip_extract(const char *zipPath, const char *destDir, ExtractProgressCb pro
         fclose(outFile);
         unzCloseCurrentFile(uf);
 
+        if (!success) {
+            remove(destPath);
+            break;
+        }
+
         if (bytesRead < 0) {
             log_error("Error reading from zip: %s", filename);
+            remove(destPath);
             success = false;
         }
 

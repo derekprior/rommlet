@@ -338,7 +338,9 @@ static void download_focused_rom(const Rom *rom, const char *slug, const char *f
         log_info("Download complete!");
         char destDir[CONFIG_MAX_PATH_LEN + CONFIG_MAX_SLUG_LEN + 2];
         snprintf(destDir, sizeof(destDir), "%s/%s", config.romFolder, folderName);
-        extract_if_zip(destPath, destDir);
+        if (!extract_if_zip(destPath, destDir)) {
+            remove(destPath);
+        }
     } else {
         log_error("Download failed!");
     }
@@ -357,7 +359,11 @@ static bool download_queue_entry(QueueEntry *entry) {
     if (!api_download_rom(entry->romId, entry->fsName, destPath, download_progress)) return false;
     char destDir[CONFIG_MAX_PATH_LEN + CONFIG_MAX_SLUG_LEN + 2];
     snprintf(destDir, sizeof(destDir), "%s/%s", config.romFolder, folderName);
-    return extract_if_zip(destPath, destDir);
+    if (!extract_if_zip(destPath, destDir)) {
+        remove(destPath);
+        return false;
+    }
+    return true;
 }
 
 // Fetch and display ROM detail, updating all navigation state
