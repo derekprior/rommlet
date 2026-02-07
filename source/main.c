@@ -78,6 +78,7 @@ static RomDetail *romDetail = NULL;
 static int lastRomListIndex = -1;                     // Track selection changes in ROM list
 static int lastSearchListIndex = -1;                  // Track selection changes in search results
 static char currentPlatformSlug[CONFIG_MAX_SLUG_LEN]; // For folder mapping
+static AppState folderPickerReturnState;               // Modal return state for folder picker
 
 // Render target (needed for loading screen)
 static C3D_RenderTarget *topScreen = NULL;
@@ -434,7 +435,7 @@ static void handle_bottom_action(BottomAction action) {
             } else {
                 browser_init_rooted(config.romFolder, slug);
                 bottom_set_mode(BOTTOM_MODE_FOLDER_BROWSER);
-                nav_push(currentState);
+                folderPickerReturnState = currentState;
                 currentState = STATE_SELECT_ROM_FOLDER;
             }
         }
@@ -461,7 +462,7 @@ static void handle_bottom_action(BottomAction action) {
                     queueAddPending = true;
                     browser_init_rooted(config.romFolder, slug);
                     bottom_set_mode(BOTTOM_MODE_FOLDER_BROWSER);
-                    nav_push(currentState);
+                    folderPickerReturnState = currentState;
                     currentState = STATE_SELECT_ROM_FOLDER;
                 }
             }
@@ -666,7 +667,7 @@ static void handle_state_select_folder(u32 kDown, BottomAction bottomAction) {
             browser_exit();
 
             // Restore the originating state so get_focused_rom works
-            AppState returnState = nav_pop();
+            AppState returnState = folderPickerReturnState;
             currentState = returnState;
 
             if (queueAddPending) {
@@ -694,7 +695,7 @@ static void handle_state_select_folder(u32 kDown, BottomAction bottomAction) {
         sound_play_pop();
         browser_exit();
         queueAddPending = false;
-        sync_bottom_after_action(nav_pop());
+        sync_bottom_after_action(folderPickerReturnState);
     }
 }
 
