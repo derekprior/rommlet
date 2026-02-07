@@ -1,0 +1,49 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    container:
+      image: devkitpro/devkitarm:latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install build tools
+        run: |
+          apt-get update && apt-get install -y --no-install-recommends clang-format librsvg2-bin wget unzip zip
+          mkdir -p /opt/3ds-tools && cd /opt/3ds-tools
+          wget -q https://github.com/Epicpkmn11/bannertool/releases/download/v1.2.2/bannertool.zip
+          unzip -q bannertool.zip
+          cp linux-x86_64/bannertool /usr/local/bin/
+          chmod +x /usr/local/bin/bannertool
+          wget -q https://github.com/3DSGuy/Project_CTR/releases/download/makerom-v0.18.4/makerom-v0.18.4-ubuntu_x86_64.zip
+          unzip -q makerom-v0.18.4-ubuntu_x86_64.zip
+          cp makerom /usr/local/bin/
+          chmod +x /usr/local/bin/makerom
+
+      - name: Build
+        run: make EXTRA_CFLAGS=-Werror && make cia
+
+      - name: Check formatting
+        run: make format-check
+
+      - name: Package release
+        run: |
+          cd build/output
+          zip rommlet.zip rommlet.3dsx rommlet.smdh rommlet.cia
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: build/output/rommlet.zip
