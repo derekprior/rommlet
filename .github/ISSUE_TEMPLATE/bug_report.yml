@@ -1,0 +1,50 @@
+name: Bug Report
+description: Report a bug or issue with Rommlet
+labels: ["bug"]
+body:
+  - type: input
+    id: rommlet-version
+    attributes:
+      label: Rommlet Version
+      description: Found in the About screen in the app
+      placeholder: "1.0.0"
+    validations:
+      required: true
+  - type: input
+    id: romm-version
+    attributes:
+      label: RomM Version
+      description: The version of your RomM server
+      placeholder: "4.6.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: hardware
+    attributes:
+      label: 3DS Hardware
+      options:
+        - Old 3DS
+        - Old 3DS XL
+        - Old 2DS
+        - New 3DS
+        - New 3DS XL
+        - New 2DS XL
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: launch-method
+    attributes:
+      label: Launched Via
+      options:
+        - Home Menu (CIA)
+        - Homebrew Launcher (3DSX)
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What happened? What did you expect to happen?
+    validations:
+      required: true
